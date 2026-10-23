@@ -1,3 +1,4 @@
+
 ## 오늘 완성할 파일과 입력 데이터
 
 ```text
@@ -14,9 +15,13 @@ subject9_machinevision/
             └── preprocess_compare.png ← 최종 2×2 비교 결과
 ```
 
-**실습 시작 전:** VS Code에서 `subject9_machinevision` 프로젝트를 열고, 1일차부터 사용한 가상환경을 **Jupyter Kernel**로 선택합니다. 프로젝트 최상위 폴더에서 Notebook을 실행해야 `samples/day02/...` 상대경로를 찾을 수 있습니다. `matplotlib`이 없는 환경이라면 해당 가상환경에 `python -m pip install matplotlib ipykernel`을 설치합니다. `opencv-python`, `numpy`가 이미 있다면 다시 설치할 필요는 없습니다.
+**실습 시작 전:** VS Code에서 `subject9_machinevision` 프로젝트를 열고, 1일차부터 사용한 WSL2 가상환경을 **Jupyter Kernel**로 선택합니다. 필요할 때만 Notebook 셀에서 `%pip install matplotlib ipykernel`을 실행하고 **Kernel Restart**합니다. 이미 설치된 OpenCV와 NumPy는 다시 설치하지 않습니다.
 
-**실행 원칙:** 아래 **각 Python 코드 블록을 별도의 Jupyter Code Cell로 복사**합니다. `STEP` 번호는 각 셀의 실행 순서이며, 변수는 다음 셀에서 그대로 사용합니다. 설명용 `text` 코드 블록과 표는 Python으로 실행하지 않습니다. 코드를 변경한 후에는 의존하는 뒤쪽 셀도 다시 실행하고, 최종 검증 시 **Kernel Restart → Run All**을 권장합니다.
+**이번 수정의 핵심:** VS Code 탐색기에 `samples/day02/low_contrast.jpg`가 존재해도 Jupyter Kernel의 현재 작업 폴더가 다르면 `cv2.imread("samples/day02/low_contrast.jpg")`는 실패할 수 있습니다. **STEP 2에서 프로젝트의 실제 위치를 찾고, STEP 3에서 모든 경로를 절대경로로 설정**합니다. STEP 5에서는 파일이 없을 때와 파일은 있지만 읽기에 실패했을 때를 구별합니다. 파일이 있는 상태에서 데이터를 덮어쓰지 않습니다.
+
+> **중요:** 본 자료는 Markdown 교재입니다. 설명과 표를 한꺼번에 Jupyter 코드 셀에 붙여넣지 마세요. 각 STEP의 `python` 코드 블록만 별도 셀에서 위에서 아래로 실행합니다. 기존 코드와 같은 계산 결과를 만들지만, 학습 목적의 통계·검증용 셀을 추가했습니다.
+
+**실행 원칙:** 각 STEP의 `python` 블록을 Jupyter Code Cell로 옮깁니다. 변수는 다음 셀에서 이어서 사용합니다. 설정이나 입력을 수정했다면 **영향받는 뒤쪽 STEP을 모두 다시 실행**합니다. 검증할 때는 **Kernel Restart → Run All**로 재현성을 확인합니다. STEP 53의 원본 스크립트 별도 실행은 선택 항목입니다.
 
 ## 1. 전체 흐름
 
@@ -72,121 +77,179 @@ preprocess_compare.png 저장 → 재읽기 → 원본 .py 실행
 
 # BLOCK 1 — 이미지 입력과 오류 처리 (Input + Validation)
 
+**실제 문제 사례:** VS Code 탐색기에는 `samples/day02/low_contrast.jpg`가 보이지만 Jupyter에서 `이미지 읽기 성공: False`가 나왔습니다. 이 현상은 **파일이 없어서가 아니라 Kernel의 작업 기준 위치가 달라져 상대경로가 틀렸을 가능성**이 큽니다. 이번 실습에서는 파일 존재 여부와 절대경로를 먼저 확인하여 이 문제를 해결합니다.
+
 ### 의사코드
 
 ```text
-1. 사용할 파일과 저장 폴더 위치를 정한다.
-2. 저장 폴더가 없으면 생성한다.
-3. low_contrast.jpg를 읽는다.
-4. 정상적으로 읽었다면 그 이미지를 사용한다.
-5. 읽지 못했다면 cap_on_reference.jpg를 읽는다.
-6. 기준 이미지도 읽지 못했다면 오류를 발생시킨다.
-7. 기준 이미지의 대비를 낮추어 low_contrast.jpg를 만든다.
-8. 이후 셀에서 사용할 image 배열을 확인한다.
+STEP 1. OpenCV, NumPy, Matplotlib을 가져오고 Jupyter 커널을 확인한다.
+STEP 2. 실제 프로젝트 폴더를 찾는다. (자동 탐색 실패 시 경로 직접 지정)
+STEP 3. project_root를 이용해 기준 이미지·저대비 이미지·출력 폴더의 절대경로를 만든다.
+STEP 4. 결과 저장 폴더를 준비한다.
+STEP 5. low_contrast.jpg가 있으면 읽는다. 파일은 있는데 읽지 못하면 오류를 발생시킨다.
+STEP 6. 저대비 이미지가 없다면 cap_on_reference.jpg를 읽는다.
+STEP 7. 기준 이미지로 저대비 이미지를 만들고 저장한다. 기존 파일은 덮어쓰지 않는다.
+STEP 8. image가 실제 3채널 uint8 배열인지 확인한다.
+STEP 9. 입력 이미지가 제대로 보이는지 화면에서 확인한다.
 ```
 
 ## STEP 1. 라이브러리를 가져옵니다
 
 ```python
-### BLOCK 1 / STEP 1 — 사용할 도구 준비
+# BLOCK 1 / STEP 1 — 라이브러리 및 Jupyter Kernel 확인
 from pathlib import Path
+import sys
 import cv2
-import numpy as np                 # [Jupyter 추가] 픽셀 통계·배열 검증
-import matplotlib.pyplot as plt   # [Jupyter 추가] 이미지·Histogram 표시
+import numpy as np                 # Jupyter 분석용
+import matplotlib.pyplot as plt   # Jupyter 시각화용
+
+print("현재 Python:", sys.executable)
+print("OpenCV 버전:", cv2.__version__)
 ```
 
-`Path`는 파일 경로를 처리하고, `cv2`는 이미지를 읽고 변환합니다. `np`와 `plt`는 **원본 16번 코드에는 없지만, Jupyter에서 픽셀값을 검증하기 위해 추가한 도구**입니다. 이 셀을 실행해도 화면에 이미지가 나오지 않는 것이 정상입니다.
+`Path`는 경로, OpenCV는 영상처리, NumPy는 픽셀 배열 검증, Matplotlib은 이미지와 Histogram 출력에 사용합니다. `sys.executable`에 표시된 Python이 수업에서 사용하는 **WSL2 프로젝트 가상환경**인지 확인합니다. `ModuleNotFoundError`가 발생한 **라이브러리만** `%pip install matplotlib`과 같은 형태로 설치한 후 커널을 다시 시작하세요.
 
 ## STEP 2. 현재 작업 폴더를 확인합니다
 
 ```python
-### STEP 2 — 상대경로의 기준 확인
-print("현재 작업 폴더:", Path.cwd())
+# STEP 2 — 프로젝트의 실제 위치 찾기 (경로 문제 핵심 수정)
+# Jupyter가 프로젝트 내부, notebooks/ 하위 폴더, 다른 작업 폴더에서
+# 실행되더라도 프로젝트를 찾을 수 있게 합니다.
+
+current_dir = Path.cwd().resolve()
+candidates = [
+    current_dir,
+    *current_dir.parents,
+    Path.home() / "ai_vision" / "subject9_machinevision",
+    Path.home() / "subject9_machinevision",
+]
+
+project_root = None
+for folder in candidates:
+    if (folder / "samples/day02/cap_on_reference.jpg").is_file():
+        project_root = folder.resolve()
+        break
+
+print("Jupyter 현재 작업 폴더:", current_dir)
+print("찾은 프로젝트 폴더:", project_root)
+
+if project_root is None:
+    raise FileNotFoundError(
+        "프로젝트 위치를 자동으로 찾지 못했습니다. "
+        "Jupyter가 WSL2 가상환경에서 실행 중인지 확인하고, "
+        "STEP 2의 project_root를 실제 프로젝트 절대경로로 지정하세요. "
+        "예: project_root = Path.home() / 'ai_vision' / 'subject9_machinevision'"
+    )
 ```
 
-출력 경로의 마지막이 `subject9_machinevision`인지 확인합니다. 다른 폴더라면 코드의 `samples/day02/...` 파일을 못 찾을 수 있으므로 작업 위치를 먼저 바로잡으세요.
+**이 STEP은 원본 `.py`에는 없는 Jupyter 경로 문제 예방 코드입니다.** 실제 프로젝트의 `cap_on_reference.jpg`가 있는 폴더를 기준으로 찾습니다. 프로젝트가 별도 위치라면 자동 탐색을 대신하여 `project_root = Path("/실제/프로젝트/절대경로")`로 직접 지정하세요. 예시 경로가 내 PC에 존재한다고 가정하지 마세요.
+
+- `Path.cwd()`는 Jupyter Kernel의 **현재 실행 기준 위치**입니다. VS Code 탐색기 위치와 다를 수 있습니다.
+- `project_root`가 `None`이면 파일을 읽기 전에 즉시 중단합니다. 잘못된 위치에 새 `samples` 폴더를 만드는 실수를 방지합니다.
 
 ## STEP 3. 입력 파일 경로 세 개를 정합니다
 
 ```python
-### STEP 3 — 원본 .py와 동일한 경로 설정
-reference_path = Path("samples/day02/cap_on_reference.jpg")
-low_contrast_path = Path("samples/day02/low_contrast.jpg")
-output_dir = Path("outputs/day02/compare")
+# STEP 3 — 절대경로로 입력·출력 파일 지정 (원본 .py와 같은 실습 데이터)
+reference_path = project_root / "samples/day02/cap_on_reference.jpg"
+low_contrast_path = project_root / "samples/day02/low_contrast.jpg"
+output_dir = project_root / "outputs/day02/compare"
 
-print("기준 이미지:", reference_path)
-print("저대비 이미지:", low_contrast_path)
-print("저장 폴더:", output_dir)
+print("기준 ROI 경로:", reference_path)
+print("저대비 이미지 경로:", low_contrast_path)
+print("저대비 이미지 존재:", low_contrast_path.is_file())
+print("결과 저장 폴더:", output_dir)
 ```
 
-여기서는 `Path` 객체만 만들어 둡니다. **경로를 지정했다고 이미지가 읽히거나 저장 폴더가 자동 생성되는 것은 아닙니다.**
+프로젝트의 실제 위치인 `project_root`부터 경로를 이어 붙입니다. 따라서 Jupyter가 어느 폴더에서 시작했든 파일 경로가 고정됩니다. `low_contrast.jpg`가 이미 있다면 **`저대비 이미지 존재: True`**가 표시되어야 합니다. 없을 경우에는 STEP 6~7에서 기준 ROI를 이용해 생성합니다.
 
 ## STEP 4. 결과를 저장할 폴더를 생성합니다
 
 ```python
-### STEP 4 — 저장 폴더 준비
+# STEP 4 — 결과 폴더 생성
 output_dir.mkdir(parents=True, exist_ok=True)
 print("결과 폴더 존재:", output_dir.is_dir())
 ```
 
-- `parents=True`: 상위 폴더가 없어도 함께 생성합니다.
-- `exist_ok=True`: 이미 만들어진 폴더라도 오류를 내지 않습니다.
-
-`True`가 나오면 결과를 저장할 위치가 준비된 것입니다.
+- `parents=True`: 중간 경로도 필요하면 함께 생성합니다.
+- `exist_ok=True`: 이미 존재하는 폴더를 유지합니다.
+- 이 STEP은 **출력 폴더만** 만들며 입력 이미지 파일에는 영향을 주지 않습니다.
 
 ## STEP 5. 저대비 이미지를 읽습니다
 
 ```python
-### STEP 5 — 이미지 입력
-image = cv2.imread(str(low_contrast_path))
-print("이미지 읽기 성공:", image is not None)
+# STEP 5 — 파일 존재 여부와 실제 이미지 읽기 성공을 구분
+# 파일이 존재한다면 읽고, 읽기 실패 시 원인을 확인하도록 중단합니다.
+# 파일이 없는 경우에만 STEP 6~7에서 새로 만듭니다.
+
+image = None
+if low_contrast_path.is_file():
+    image = cv2.imread(str(low_contrast_path))
+    if image is None:
+        raise OSError(
+            f"파일은 존재하지만 OpenCV가 읽지 못했습니다: {low_contrast_path}. "
+            "파일 손상·권한·형식을 확인하세요."
+        )
+    print("이미지 읽기 성공: True")
+    print("읽은 파일:", low_contrast_path)
+else:
+    print("이미지 파일이 아직 없습니다. STEP 6~7에서 생성합니다.")
 ```
 
-`cv2.imread()`가 성공하면 `image`는 픽셀 배열(`numpy.ndarray`)입니다. 실패하면 `None`입니다. `low_contrast.jpg`가 아직 없으면 OpenCV가 경로 관련 경고를 표시할 수 있으며, **다음 단계에서 생성하도록 의도한 상황**입니다.
+**문제가 발생했던 부분을 수정한 STEP입니다.** 파일이 이미 있는 상황에서 `False`가 나오던 문제는 대부분 잘못된 상대경로 기준 때문에 발생합니다. 이번에는 **절대경로**를 사용합니다. 파일이 없으면 `cv2.imread`를 시도하지 않아 불필요한 OpenCV 경고도 줄어듭니다. 파일은 있지만 읽을 수 없다면 **없는 것으로 취급해 덮어쓰지 않고**, 실제 문제를 확인하도록 오류를 발생시킵니다.
 
 ## STEP 6. 이미지가 없다면 기준 ROI를 읽습니다
 
 ```python
-### STEP 6 — 입력이 없을 때 사용할 원본 확인
+# STEP 6 — 저대비 이미지가 없을 경우에만 기준 ROI 읽기
 if image is None:
-    print("low_contrast.jpg가 없어 기준 이미지에서 생성합니다.")
+    print("저대비 이미지가 없어 기준 ROI로 생성합니다.")
     reference = cv2.imread(str(reference_path))
-
     if reference is None:
-        raise FileNotFoundError(f"기준 이미지를 읽지 못했습니다: {reference_path}")
-
+        raise FileNotFoundError(
+            f"기준 ROI 이미지를 읽지 못했습니다: {reference_path}"
+        )
     print("기준 ROI Shape:", reference.shape)
+else:
+    print("이미 존재하는 low_contrast.jpg를 그대로 사용합니다.")
 ```
 
-`if image is None:` 아래는 **저대비 이미지가 없을 때만 실행**됩니다. `reference`가 없는 정상 경로에서는 사용되지 않으므로, 현재 `low_contrast.jpg`가 있다면 출력이 없어도 정상입니다. 기준 파일까지 없다면 1일차 ROI 준비 상태부터 확인해야 합니다.
+이미 STEP 5에서 파일을 읽었다면 `reference`는 새로 읽지 않습니다. 따라서 `reference` 변수가 없는 것은 **정상 경로에서 문제가 아닙니다**. `image is None`일 때에만 다음 STEP 7에서 `reference`를 사용합니다.
 
 ## STEP 7. 기준 이미지로 저대비 이미지를 생성하고 저장합니다
 
 ```python
-### STEP 7 — [입력이 없을 때만] 저대비 이미지 생성
+# STEP 7 — 저대비 이미지가 없을 때만 생성·저장
 if image is None:
     image = cv2.convertScaleAbs(reference, alpha=0.35, beta=80)
     created = cv2.imwrite(str(low_contrast_path), image)
     if not created:
         raise IOError(f"저대비 이미지 저장 실패: {low_contrast_path}")
-    print("문제 이미지 생성:", low_contrast_path)
+    print("새 저대비 이미지 생성:", low_contrast_path)
+else:
+    print("기존 이미지 유지: 새 파일을 생성하지 않았습니다.")
 ```
 
-`alpha=0.35`는 기존 명암 차이를 줄이고, `beta=80`은 밝기값을 이동시킵니다. `convertScaleAbs`는 연산 후 **절댓값과 8비트 변환**을 적용합니다. 여기서는 `0.35×픽셀값+80`이 양수이므로 절댓값에 따른 차이가 사실상 없습니다. **픽셀마다 동일한 수식을 적용하는 단계이지, 새로운 병뚜껑 모양을 만드는 단계는 아닙니다.** `low_contrast.jpg`가 원래 존재했다면 해당 파일을 그대로 사용하고 덮어쓰지 않습니다.
+이 코드는 원본 16번의 **`low_contrast.jpg`가 없을 때만 생성**하는 처리와 일치합니다. `alpha=0.35`는 픽셀 간 차이를 작게 만들고, `beta=80`은 모든 픽셀값을 이동시킵니다. `cv2.convertScaleAbs`는 절댓값 후 `uint8` 변환을 수행합니다. 이 입력과 설정에서는 값이 양수이므로 절댓값에 따른 별도 왜곡은 없습니다. 이미 있던 파일은 덮어쓰지 않습니다.
 
 ## STEP 8. 최종 입력 배열의 크기와 픽셀값을 확인합니다
 
 ```python
-### STEP 8 — 입력 QA
+# STEP 8 — 최종 입력 배열 검사: 문제를 조기에 발견
+if image is None or image.size == 0:
+    raise ValueError("이미지 배열이 비어 있습니다. STEP 2~7을 확인하세요.")
+if image.ndim != 3 or image.shape[2] != 3:
+    raise ValueError(f"3채널 BGR 이미지가 필요합니다: shape={image.shape}")
+if image.dtype != np.uint8:
+    raise ValueError(f"8비트 이미지가 필요합니다: dtype={image.dtype}")
+
 print("image 자료형:", type(image))
 print("image Shape:", image.shape)
 print("image Dtype:", image.dtype)
 print("첫 픽셀(BGR):", image[0, 0])
 ```
 
-- `image.shape`: 일반적인 컬러 이미지라면 `(세로, 가로, 3)`입니다.
-- `image.dtype`: 보통 `uint8`이며, 각 채널 값은 0~255입니다.
-- `image[0, 0]`: 맨 위 왼쪽 픽셀의 **B, G, R** 숫자 세 개입니다.
+`shape`는 `(세로, 가로, 3)`, `dtype`은 `uint8`이어야 합니다. 파일 경로 문제가 없어도 형식이 잘못되면 이후 `cv2.cvtColor`가 실패할 수 있으므로 입력에서 확인합니다.
 
 ## STEP 9. 저대비 입력 이미지를 눈으로 확인합니다
 
@@ -905,22 +968,33 @@ print("저장 전후 픽셀 같음:", np.array_equal(saved_compare, compare))
 
 ## STEP 53. 원본 `.py`를 전체 실행합니다
 
-VS Code **터미널에서 프로젝트 최상위 폴더**를 기준으로 실행합니다.
+이 STEP은 **선택 실행**입니다. 앞의 Jupyter 코드 검증을 끝낸 뒤, 원본 `src/16_preprocess_compare.py`도 같은 데이터와 설정으로 실행되는지 확인합니다. 원본 파일은 Jupyter와 달리 **현재 작업 폴더를 기준으로 상대경로를 사용**하므로 프로젝트 루트에서 실행해야 합니다.
+
+VS Code **WSL2 터미널**에서:
 
 ```bash
+cd ~/ai_vision/subject9_machinevision
 python src/16_preprocess_compare.py
 ```
 
-Jupyter에서 별도 프로세스로 실행하려면 다음을 **선택적으로** 사용합니다.
+Jupyter에서 별도 프로세스로 실행할 경우에는 아래 셀을 **필요할 때만** 실행합니다.
 
 ```python
-### STEP 53 — [선택] 원본 .py 전체 실행
-import sys
+# STEP 53 — [선택] 원본 .py 실행: 작업 폴더를 명시
 import subprocess
-subprocess.run([sys.executable, "src/16_preprocess_compare.py"], check=True)
+source_script = project_root / "src/16_preprocess_compare.py"
+if source_script.is_file():
+    subprocess.run(
+        [sys.executable, str(source_script)],
+        cwd=str(project_root),  # 원본의 상대경로 문제 예방
+        check=True,
+    )
+    print("원본 .py 실행 완료:", source_script)
+else:
+    print("원본 .py가 없어 선택 실행을 건너뜁니다:", source_script)
 ```
 
-**주의:** 원본 `.py`와 Notebook은 **동일한 `outputs/day02/compare/preprocess_compare.png`를 저장**하므로, 나중에 실행한 쪽이 결과를 덮어씁니다. 실험 전·후를 별도로 비교하려면 미리 복사해 두거나 별도 경로에 저장하세요.
+**주의:** 이 원본 스크립트와 Notebook은 **같은 `preprocess_compare.png`를 저장**합니다. 나중에 실행한 쪽이 기존 결과를 덮어쓸 수 있습니다. 파라미터를 변경한 실험 결과를 남기려면 미리 다른 파일명으로 저장하세요.
 
 ## STEP 54. 직접 바꾸어 보는 작은 코드 리뷰 Challenge
 
@@ -951,6 +1025,23 @@ subprocess.run([sys.executable, "src/16_preprocess_compare.py"], check=True)
 13. 왜 화면 제목이 덧그려진 `compare`에서 병뚜껑의 픽셀값을 분석하면 안 되나요?
 14. Notebook에서 바꾼 CLAHE 설정이 원본 `.py`에 자동 반영되지 않는 이유는 무엇인가요?
 15. 3일차가 2일차 `preprocess_compare.png` 대신 ROI 기준 이미지를 다시 읽는 이유는 무엇인가요?
+
+---
+
+## 실행 점검 체크리스트
+
+- [ ] STEP 1: `sys.executable`이 수업에 사용 중인 Jupyter 커널의 Python 경로인가?
+- [ ] STEP 2: `project_root`가 `None`이 아니며 실제 프로젝트 위치인가?
+- [ ] STEP 3: 기준 ROI는 존재하며, 저대비 이미지의 절대경로가 VS Code 탐색기와 일치하는가?
+- [ ] STEP 5: 기존 `low_contrast.jpg`를 정상적으로 읽거나, 없으면 STEP 6~7에서 생성했는가?
+- [ ] STEP 8: `image.shape`가 `(높이, 너비, 3)`이고 dtype이 `uint8`인가?
+- [ ] STEP 17: Binary 픽셀값이 0과 255로 확인되는가?
+- [ ] STEP 23·29: Gaussian 및 CLAHE 결과에도 각각 Otsu를 적용했는가?
+- [ ] STEP 33: 흰색 비율은 측정했지만 검사 정확도로 오해하지 않았는가?
+- [ ] STEP 41·46: 비교 타일 `(300, 400, 3)`, 전체 비교 화면 `(600, 800, 3)`인가?
+- [ ] STEP 49~51: PNG 저장 성공과 저장 전후 픽셀 동일성을 확인했는가?
+
+**결과 해석 유의사항:** 이번 실습의 `Original + Otsu`에서 Original은 촬영한 `cap_on_reference.jpg` 그대로가 아니라, **`low_contrast.jpg`를 Gray로 변환한 뒤 추가 전처리 없이** Otsu를 적용한 경우입니다. 세 Otsu의 임계값이나 전체 흰색 픽셀 비율만으로 실제 병뚜껑 검사 성능을 확정하지 않습니다.
 
 ---
 
