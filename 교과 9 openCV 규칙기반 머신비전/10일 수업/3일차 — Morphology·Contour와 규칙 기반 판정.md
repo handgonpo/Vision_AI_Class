@@ -127,10 +127,9 @@ CSV · 분석문서 · README · Local Git
 python src/22_cap_batch_test.py
 ```
 
-![[Pasted image 20261021105135.png|160]]![[Pasted image 20261021105144.png|171]]![[Pasted image 20261021105154.png|172]]![[Pasted image 20261021105202.png|170]]
+![[Pasted image 20261021105135.png|160]]![[Pasted image 20261021105144.png|171]]![[Pasted image 20261021105154 (2).png|172]]![[Pasted image 20261021105202 1.png|168]]
 
 사진에 표시된 `0.290`, `0.317`, `0.560`, `0.457`은 Area Ratio(면적 비율) 입니다.
-
 
 ---
 ### 오늘의 사고방식
@@ -374,7 +373,6 @@ subject9_machinevision/
 ├── src/
 │   ├── 00_check_env.py
 │   ├── ...
-│   ├── 17_day02_challenge.py
 │   ├── 18_morphology_compare.py
 │   ├── 19_contour_measure.py
 │   ├── 20_cap_feature_compare.py
@@ -644,11 +642,26 @@ src/18_morphology_compare.py
 다음 코드는 `cap_on.jpg` 전체를 이미 ROI라고 보고 처리합니다.
 
 ```python
+
+# ============================================================
+# ① 필요한 라이브러리 불러오기
+# - Path  : 이미지 파일 및 저장 폴더 경로 처리
+# - cv2   : 이미지 전처리와 Morphology 수행
+# - numpy : 이미지 배열 처리
+# ============================================================
+
 from pathlib import Path
 
 import cv2
 import numpy as np
 
+
+# ============================================================
+# ② 입력 이미지 및 결과 저장 경로 설정
+# - cap_on.jpg : 병뚜껑이 있는 기준 이미지
+# - output_dir : 전처리 결과 이미지 저장 폴더
+# - 폴더가 없으면 자동으로 생성합니다.
+# ============================================================
 
 image_path = Path(
     "samples/day03/reference/cap_on.jpg"
@@ -664,6 +677,12 @@ output_dir.mkdir(
 )
 
 
+# ============================================================
+# ③ 병뚜껑 이미지 불러오기 및 오류 확인
+# - imread()로 기준 이미지를 읽습니다.
+# - 이미지가 없거나 읽지 못하면 오류를 발생시킵니다.
+# ============================================================
+
 image = cv2.imread(
     str(image_path)
 )
@@ -674,16 +693,14 @@ if image is None:
     )
 
 
-# --------------------------------------------------
-# 1. 이미 ROI 이미지이므로 다시 Crop하지 않습니다.
-# --------------------------------------------------
+# ============================================================
+# ④ ROI 이미지 확인 및 Gray 변환
+# - 입력 이미지는 이미 ROI로 잘린 이미지입니다.
+# - 따라서 추가로 Crop하지 않습니다.
+# - BGR 컬러 이미지를 Gray 이미지로 변환합니다.
+# ============================================================
 
 roi = image
-
-
-# --------------------------------------------------
-# 2. Gray
-# --------------------------------------------------
 
 gray = cv2.cvtColor(
     roi,
@@ -691,10 +708,12 @@ gray = cv2.cvtColor(
 )
 
 
-# --------------------------------------------------
-# 3. Day02 기준과 같은 Otsu Binary
-# 어두운 병뚜껑을 흰색 객체로 봅니다.
-# --------------------------------------------------
+# ============================================================
+# ⑤ Otsu 이진화 및 Gray·Binary 이미지 저장
+# - Otsu가 밝기 기준값을 자동으로 계산합니다.
+# - BINARY_INV : 어두운 병뚜껑을 흰색 객체로 변환
+# - Gray와 Binary 결과를 각각 JPG로 저장합니다.
+# ============================================================
 
 otsu_value, binary = cv2.threshold(
     gray,
@@ -703,7 +722,6 @@ otsu_value, binary = cv2.threshold(
     cv2.THRESH_BINARY_INV
     + cv2.THRESH_OTSU,
 )
-
 
 cv2.imwrite(
     str(output_dir / "01_gray.jpg"),
@@ -716,9 +734,11 @@ cv2.imwrite(
 )
 
 
-# --------------------------------------------------
-# 4. Kernel 크기를 바꾸어 비교합니다.
-# --------------------------------------------------
+# ============================================================
+# ⑥ 비교할 Kernel 크기 설정
+# - 3×3, 5×5, 9×9 Kernel을 비교합니다.
+# - Kernel 크기에 따라 노이즈 제거와 객체 형태가 달라집니다.
+# ============================================================
 
 kernel_sizes = [
     3,
@@ -727,13 +747,23 @@ kernel_sizes = [
 ]
 
 
+# ============================================================
+# ⑦ Kernel 크기별 Opening → Closing 반복 실행
+# - 반복문으로 3×3, 5×5, 9×9 Kernel을 차례대로 사용합니다.
+# - Opening : 작은 흰색 노이즈 제거
+# - Closing : 작은 검은색 틈이나 구멍 메우기
+# - 각 Kernel의 결과 이미지를 2장씩 저장합니다.
+# ============================================================
+
 for size in kernel_sizes:
 
+    # 현재 크기의 타원형 Kernel 생성
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE,
         (size, size),
     )
 
+    # Opening 적용
     opened = cv2.morphologyEx(
         binary,
         cv2.MORPH_OPEN,
@@ -741,6 +771,7 @@ for size in kernel_sizes:
         iterations=1,
     )
 
+    # Opening 결과에 Closing 적용
     cleaned = cv2.morphologyEx(
         opened,
         cv2.MORPH_CLOSE,
@@ -748,6 +779,7 @@ for size in kernel_sizes:
         iterations=1,
     )
 
+    # Opening 결과 저장
     cv2.imwrite(
         str(
             output_dir
@@ -756,6 +788,7 @@ for size in kernel_sizes:
         opened,
     )
 
+    # Closing 결과 저장
     cv2.imwrite(
         str(
             output_dir
@@ -765,60 +798,123 @@ for size in kernel_sizes:
     )
 
 
+# ============================================================
+# ⑧ 실행 결과 출력
+# - 사용한 입력 이미지 경로를 확인합니다.
+# - Otsu가 계산한 이진화 기준값을 확인합니다.
+# - Morphology 비교 이미지 저장 완료 메시지를 출력합니다.
+# ============================================================
+
 print("입력:", image_path)
 print("Otsu Threshold:", otsu_value)
 print("Morphology 비교 결과 저장 완료")
 ```
 
-실행합니다.
+### 의사코드
+
+```text
+[① 필요한 라이브러리 불러오기]
+Path, OpenCV, NumPy 준비
+        ↓
+[② 입력 이미지 및 결과 저장 경로 설정]
+입력: samples/day03/reference/cap_on.jpg
+출력: outputs/day03/morphology/
+        ↓
+결과 저장 폴더 생성
+        ↓
+[③ 병뚜껑 이미지 불러오기]
+cap_on.jpg 읽기
+        ↓
+이미지를 정상적으로 읽었는지 확인
+        ↓
+이미지 읽기 실패 → 오류 발생
+        ↓
+[④ ROI 이미지 확인 및 Gray 변환]
+이미 ROI로 잘린 이미지이므로
+추가 Crop 없이 그대로 사용
+        ↓
+BGR → Gray 변환
+        ↓
+[⑤ Otsu 이진화 및 결과 저장]
+Otsu로 밝기 기준값 자동 계산
+        ↓
+어두운 병뚜껑 → 흰색 객체
+밝은 배경 → 검은색
+        ↓
+01_gray.jpg 저장
+02_binary.jpg 저장
+        ↓
+[⑥ 비교할 Kernel 크기 설정]
+3×3, 5×5, 9×9
+        ↓
+[⑦ Kernel 크기별 Morphology 반복 실행]
+        ↓
+3×3 Kernel 생성
+  → Opening → Closing → 이미지 저장
+        ↓
+5×5 Kernel 생성
+  → Opening → Closing → 이미지 저장
+        ↓
+9×9 Kernel 생성
+  → Opening → Closing → 이미지 저장
+        ↓
+Kernel별 Opening / Closing 결과 총 6장 저장
+        ↓
+[⑧ 실행 결과 출력]
+입력 이미지 경로 출력
+Otsu Threshold 출력
+Morphology 비교 결과 저장 완료 출력
+```
+
+### 실행합니다.
 
 ```bash
 python src/18_morphology_compare.py
 ```
 
-결과를 확인합니다.
+### 실행 결과 확인
+
+앞에서 작성한 코드를 실행하여 
+**Kernel 크기(3×3, 5×5, 9×9)에 따라 병뚜껑 이미지가 어떻게 달라지는지** 확인하겠습니다.
 
 ```text
-outputs/day03/morphology/
-├── 01_gray.jpg
-├── 02_binary.jpg
-├── kernel_3_opening.jpg
-├── kernel_3_closing.jpg
-├── kernel_5_opening.jpg
-├── kernel_5_closing.jpg
-├── kernel_9_opening.jpg
-└── kernel_9_closing.jpg
+입력: samples/day03/reference/cap_on.jpg
+Otsu Threshold: 111.0
+Morphology 비교 결과 저장 완료
 ```
 
-### 의사코드
+각 출력의 의미는 다음과 같습니다.
+
+| 실행 결과 | 의미 |
+|---|---|
+| `입력: .../cap_on.jpg` | 병뚜껑이 있는 기준 이미지를 정상적으로 불러왔습니다. |
+| `Otsu Threshold: 111.0` | Otsu 알고리즘이 이미지의 밝기를 분석하여 이진화 기준값을 111로 결정했습니다. |
+| `Morphology 비교 결과 저장 완료` | Gray, Binary, Kernel별 Opening·Closing 결과를 저장하는 작업이 끝났습니다. |
+
+**Otsu Threshold 111.0이란?**
+
+Gray 이미지의 밝기는 0(검정)부터 255(흰색)까지입니다. Otsu 알고리즘이 자동으로 찾은 기준값은 111이며, 이번 코드에서는 `BINARY_INV`를 사용하므로 111보다 어두운 픽셀은 흰색, 밝은 픽셀은 검정으로 변환됩니다.
+
+이 값은 검사 정확도나 병뚜껑 면적 비율이 아니라 **흑백 이진화에 사용하는 밝기 기준값**입니다.
+
+### 저장된 결과 이미지의 경로확인
+
+```
+outputs/day03/morphology/
+```
 
 ```text
-1. 실제 cap_on ROI 이미지를 읽는다.
-
-2. 이미 ROI이므로 다시 좌표로 자르지 않는다.
-
-3. Gray로 변환한다.
-
-4. 2일차에서 사용한 방향과 같이
-   Otsu + Binary Inverse를 적용한다.
-
-5. Binary 결과를 저장한다.
-
-6. 3×3 Kernel을 만든다.
-
-7. Opening을 한 번 적용한다.
-
-8. 이어서 Closing을 한 번 적용한다.
-
-9. 결과를 저장한다.
-
-10. 같은 방법으로 5×5를 적용한다.
-
-11. 같은 방법으로 9×9를 적용한다.
-
-12. 어떤 Kernel에서
-    Noise는 줄면서 실제 병뚜껑 형태는
-    가장 잘 유지되는지 비교한다.
+subject9_machinevision/
+└── outputs/
+    └── day03/
+        └── morphology/
+            ├── 01_gray.jpg
+            ├── 02_binary.jpg
+            ├── kernel_3_opening.jpg
+            ├── kernel_3_closing.jpg
+            ├── kernel_5_opening.jpg
+            ├── kernel_5_closing.jpg
+            ├── kernel_9_opening.jpg
 ```
 
 ---
@@ -847,7 +943,7 @@ Contour를 측정하기 좋은지 확인
 
 출력된 결과 이미지는 다음과 같습니다.
 
-![[{4DDC9176-F926-48FC-A92B-1E80A7D5EBD1}.png]]
+![[Pasted image 20261025130648.png]]
 
 ## 11.1 먼저 원본 Binary Image를 확인합니다
 
@@ -1095,9 +1191,11 @@ Noise는 줄었는가?
 측정할 수 있는가?
 ```
 
-> Morphology의 목표는 가장 깨끗한 Binary Image를 만드는 것이 아니라, 실제 객체의 형태를 최대한 유지하면서 Contour를 안정적으로 측정할 수 있을 정도로만 정리하는 것입니다.
+> Morphology의 목표는 가장 깨끗한 Binary Image를 만드는 것이 아니라, 
+> 실제 객체의 형태를 최대한 유지하면서 Contour를 안정적으로 측정할 수 있을 정도로만 
+> 정리하는 것입니다.
 
-다음 Contour 실습에서는 우선 `Kernel 3×3 + Opening 1회 + Closing 1회`를 기준값으로 사용하고, 이후 실제 측정 결과를 보면서 필요하면 조정합니다.
+##### 다음 Contour 실습에서는 우선 `Kernel 3×3 + Opening 1회 + Closing 1회`를 기준값으로 사용하고, 이후 실제 측정 결과를 보면서 필요하면 조정합니다.
 
 ---
 
@@ -1145,11 +1243,26 @@ src/19_contour_measure.py
 ```
 
 ```python
+
+# ============================================================
+# ① 필요한 라이브러리 불러오기
+# - Path  : 이미지 파일 및 저장 폴더 경로 처리
+# - cv2   : 이진화, Morphology, Contour 검출 및 측정
+# - numpy : 이미지 배열 처리
+# ============================================================
+
 from pathlib import Path
 
 import cv2
 import numpy as np
 
+
+# ============================================================
+# ② 입력 이미지 및 결과 저장 경로 설정
+# - cap_on.jpg : 병뚜껑이 있는 기준 ROI 이미지
+# - output_dir : Contour 검사 결과 저장 폴더
+# - 저장 폴더가 없으면 자동으로 생성합니다.
+# ============================================================
 
 image_path = Path(
     "samples/day03/reference/cap_on.jpg"
@@ -1165,6 +1278,12 @@ output_dir.mkdir(
 )
 
 
+# ============================================================
+# ③ 병뚜껑 이미지 불러오기 및 오류 확인
+# - imread()로 기준 이미지를 읽습니다.
+# - 이미지가 없거나 읽지 못하면 오류를 발생시킵니다.
+# ============================================================
+
 image = cv2.imread(
     str(image_path)
 )
@@ -1175,6 +1294,12 @@ if image is None:
     )
 
 
+# ============================================================
+# ④ ROI 이미지 확인 및 Gray 변환
+# - 이미 ROI로 잘린 이미지이므로 다시 Crop하지 않습니다.
+# - BGR 컬러 이미지를 Gray 이미지로 변환합니다.
+# ============================================================
+
 roi = image
 
 gray = cv2.cvtColor(
@@ -1182,6 +1307,12 @@ gray = cv2.cvtColor(
     cv2.COLOR_BGR2GRAY,
 )
 
+
+# ============================================================
+# ⑤ Otsu 이진화
+# - Otsu 알고리즘으로 밝기 기준값을 자동 계산합니다.
+# - BINARY_INV로 어두운 병뚜껑을 흰색 객체로 변환합니다.
+# ============================================================
 
 _, binary = cv2.threshold(
     gray,
@@ -1192,11 +1323,17 @@ _, binary = cv2.threshold(
 )
 
 
+# ============================================================
+# ⑥ Morphology로 이진 이미지 정리
+# - 3×3 타원형 Kernel을 생성합니다.
+# - Opening : 작은 흰색 노이즈 제거
+# - Closing : 작은 검은색 틈이나 구멍 정리
+# ============================================================
+
 kernel = cv2.getStructuringElement(
     cv2.MORPH_ELLIPSE,
     (3, 3),
 )
-
 
 opened = cv2.morphologyEx(
     binary,
@@ -1204,7 +1341,6 @@ opened = cv2.morphologyEx(
     kernel,
     iterations=1,
 )
-
 
 cleaned = cv2.morphologyEx(
     opened,
@@ -1214,12 +1350,18 @@ cleaned = cv2.morphologyEx(
 )
 
 
+# ============================================================
+# ⑦ Contour 검출 및 검출 실패 확인
+# - 정리된 이미지에서 외곽 Contour를 검출합니다.
+# - 검출한 전체 Contour 개수를 출력합니다.
+# - Contour가 없으면 중간 결과를 저장하고 종료합니다.
+# ============================================================
+
 contours, _ = cv2.findContours(
     cleaned.copy(),
     cv2.RETR_EXTERNAL,
     cv2.CHAIN_APPROX_SIMPLE,
 )
-
 
 print("전체 Contour 수:", len(contours))
 
@@ -1241,26 +1383,39 @@ if not contours:
     raise SystemExit
 
 
+# ============================================================
+# ⑧ 가장 큰 Contour 선택 및 면적·Bounding Box 계산
+# - 검출된 Contour 중 면적이 가장 큰 객체를 선택합니다.
+# - Area : 선택한 Contour의 실제 면적
+# - BBox : 객체를 둘러싸는 사각형의 위치와 크기
+# - x, y : 사각형 왼쪽 위 좌표
+# - w, h : 사각형 너비와 높이
+# ============================================================
+
 largest = max(
     contours,
     key=cv2.contourArea,
 )
 
-
 area = float(
     cv2.contourArea(largest)
 )
-
 
 x, y, w, h = cv2.boundingRect(
     largest
 )
 
 
+# ============================================================
+# ⑨ Contour 중심점 계산
+# - Moments를 이용하여 객체의 중심 좌표를 계산합니다.
+# - m00이 0이 아니면 중심점(cx, cy)을 구합니다.
+# - 계산할 수 없는 경우 center는 None으로 유지합니다.
+# ============================================================
+
 moments = cv2.moments(
     largest
 )
-
 
 center = None
 
@@ -1282,6 +1437,13 @@ if moments["m00"] != 0:
     )
 
 
+# ============================================================
+# ⑩ Area Ratio 계산
+# - ROI 전체 면적 = 이미지 너비 × 높이
+# - Area Ratio = 가장 큰 Contour 면적 / ROI 전체 면적
+# - 객체가 ROI에서 차지하는 면적 비율을 구합니다.
+# ============================================================
+
 height, width = roi.shape[:2]
 
 roi_area = float(
@@ -1295,9 +1457,18 @@ area_ratio = (
 )
 
 
+# ============================================================
+# ⑪ 검사 결과를 원본 ROI 이미지에 표시
+# - 초록색 : 가장 큰 Contour 윤곽선
+# - 파란색 : Bounding Box
+# - 빨간색 : 객체 중심점
+# - 노란색 : Area Ratio 측정값
+# ============================================================
+
 result = roi.copy()
 
 
+# 가장 큰 Contour를 초록색으로 표시
 cv2.drawContours(
     result,
     [largest],
@@ -1307,6 +1478,7 @@ cv2.drawContours(
 )
 
 
+# Bounding Box를 파란색 사각형으로 표시
 cv2.rectangle(
     result,
     (x, y),
@@ -1316,6 +1488,7 @@ cv2.rectangle(
 )
 
 
+# Contour 중심점을 빨간색 점으로 표시
 if center is not None:
 
     cv2.circle(
@@ -1327,6 +1500,7 @@ if center is not None:
     )
 
 
+# Area Ratio를 노란색 글자로 표시
 cv2.putText(
     result,
     f"AreaRatio: {area_ratio:.3f}",
@@ -1337,6 +1511,13 @@ cv2.putText(
     2,
 )
 
+
+# ============================================================
+# ⑫ 검사 결과 이미지 저장
+# - binary.jpg         : Otsu 이진화 결과
+# - cleaned.jpg        : Morphology 처리 결과
+# - contour_result.jpg : Contour·BBox·중심점·비율 표시
+# ============================================================
 
 cv2.imwrite(
     str(output_dir / "binary.jpg"),
@@ -1354,6 +1535,14 @@ cv2.imwrite(
 )
 
 
+# ============================================================
+# ⑬ 측정 결과 출력
+# - Largest Area : 가장 큰 Contour의 면적
+# - Area Ratio   : ROI 전체 면적 대비 Contour 면적 비율
+# - BBox         : 객체를 둘러싼 사각형 좌표와 크기
+# - Center       : 객체의 중심 좌표
+# ============================================================
+
 print("Largest Area:", area)
 print("Area Ratio:", area_ratio)
 print("BBox:", (x, y, w, h))
@@ -1370,90 +1559,80 @@ python src/19_contour_measure.py
 ### 의사코드
 
 ```
-1. 병뚜껑이 있는 기준 ROI 이미지
-   cap_on.jpg를 읽는다.
-
-2. 결과 이미지를 저장할
-   outputs/day03/contour 폴더를 준비한다.
-
-3. 이미지를 정상적으로 읽었는지 확인한다.
-
-4. 입력 이미지는 이미 ROI이므로
-   다시 Crop하지 않고 그대로 사용한다.
-
-5. 컬러 ROI 이미지를 Gray로 변환한다.
-
-6. Gray 이미지에 Otsu + Binary Inverse를 적용한다.
-
-7. 어두운 병뚜껑 영역을
-   흰색 객체로 만든 Binary Image를 생성한다.
-
-8. 3×3 타원형 Kernel을 만든다.
-
-9. Binary Image에 Opening을 1회 적용하여
-   작은 흰색 Noise를 줄인다.
-
-10. Opening 결과에 Closing을 1회 적용하여
-    작은 검은 구멍이나 끊어진 영역을 정리한다.
-
-11. 정리된 Binary Image에서
-    외곽 Contour들을 찾는다.
-
-12. 찾은 전체 Contour 개수를 확인한다.
-
-13. Contour가 하나도 없다면
-    Binary와 Morphology 결과를 저장하고 종료한다.
-
-14. Contour가 있다면
-    가장 면적이 큰 Contour를 선택한다.
-
-15. 가장 큰 Contour의 Area를 계산한다.
-
-16. 가장 큰 Contour를 감싸는
-    Bounding Box의 x, y, width, height를 계산한다.
-
-17. Moments를 이용하여
-    Contour의 중심점 Center를 계산한다.
-
-18. ROI 전체 면적을 계산한다.
-
-19. 다음 식으로 Area Ratio를 계산한다.
-
-    Area Ratio
-    =
-    가장 큰 Contour Area
-    ÷
-    ROI 전체 면적
-
-20. 원본 ROI 이미지를 복사한다.
-
-21. 복사한 이미지 위에
-    가장 큰 Contour를 초록색 선으로 그린다.
-
-22. Bounding Box를 파란색 사각형으로 그린다.
-
-23. Center가 존재하면
-    중심점을 빨간색 점으로 표시한다.
-
-24. Area Ratio 값을
-    이미지 위에 글자로 표시한다.
-
-25. 다음 결과를 각각 저장한다.
-
-    binary.jpg
-    cleaned.jpg
-    contour_result.jpg
-
-26. 터미널에 다음 측정값을 출력한다.
-
-    Largest Area
-    Area Ratio
-    Bounding Box
-    Center
-
-27. 이제 눈으로 보던 병뚜껑의 형태가
-    Area, 위치, 크기 같은 숫자로
-    변환되었는지 확인한다.
+[① 필요한 라이브러리 불러오기]
+Path, OpenCV, NumPy 준비
+        ↓
+[② 입력 이미지와 결과 저장 경로 설정]
+입력: samples/day03/reference/cap_on.jpg
+출력: outputs/day03/contour/
+        ↓
+결과 저장 폴더 생성
+        ↓
+[③ 병뚜껑 이미지 불러오기]
+cap_on.jpg 읽기
+        ↓
+이미지를 읽지 못하면 오류 발생
+        ↓
+[④ ROI 확인 및 Gray 변환]
+이미 ROI로 잘린 이미지이므로 그대로 사용
+        ↓
+BGR → Gray 변환
+        ↓
+[⑤ Otsu 이진화]
+밝기 기준값 자동 계산
+        ↓
+어두운 병뚜껑을 흰색 객체로 변환
+        ↓
+[⑥ Morphology로 이미지 정리]
+3×3 Kernel 생성
+        ↓
+Opening → 작은 노이즈 제거
+        ↓
+Closing → 작은 틈 정리
+        ↓
+[⑦ Contour 검출]
+정리된 이진 이미지에서
+객체의 외곽 윤곽선 찾기
+        ↓
+전체 Contour 개수 출력
+        ↓
+Contour가 없으면 결과 이미지 저장 후 종료
+        ↓
+[⑧ 가장 큰 Contour 선택 및 측정]
+가장 큰 Contour 선택
+        ↓
+Contour Area 측정
+        ↓
+Bounding Box 좌표 계산
+        ↓
+[⑨ Contour 중심점 계산]
+Moments 계산
+        ↓
+객체의 중심 좌표(cx, cy) 계산
+        ↓
+[⑩ Area Ratio 계산]
+ROI 전체 면적 계산
+        ↓
+가장 큰 Contour 면적 ÷ ROI 전체 면적
+        ↓
+[⑪ 검사 결과를 이미지에 표시]
+초록색 → Contour
+파란색 → Bounding Box
+빨간색 → 중심점
+노란색 → Area Ratio
+        ↓
+[⑫ 결과 이미지 저장]
+binary.jpg
+cleaned.jpg
+contour_result.jpg
+        ↓
+[⑬ 측정 결과 출력]
+전체 Contour 수
+Largest Area
+Area Ratio
+BBox
+Center
+Contour 측정 완료
 ```
 
 ---
@@ -1632,12 +1811,28 @@ src/20_cap_feature_compare.py
 ```
 
 ```python
+
+# ============================================================
+# ① 필요한 라이브러리 불러오기
+# - Path  : 이미지 파일과 저장 폴더 경로 처리
+# - csv   : 측정된 Feature를 CSV 파일로 저장
+# - cv2   : 영상 전처리와 Contour 검출 및 측정
+# - numpy : 이미지 배열 처리를 위한 라이브러리
+# ============================================================
+
 from pathlib import Path
 import csv
 
 import cv2
 import numpy as np
 
+
+# ============================================================
+# ② 검사할 기준 이미지 2장의 경로 설정
+# - cap_on  : 병뚜껑이 있는 정상 이미지
+# - cap_off : 병뚜껑이 없는 불량 이미지
+# - 두 이미지에 동일한 검사 함수를 적용합니다.
+# ============================================================
 
 input_files = {
     "cap_on": Path(
@@ -1649,6 +1844,14 @@ input_files = {
 }
 
 
+# ============================================================
+# ③ 결과 저장 경로 및 Noise 제거 기준 설정
+# - output_dir : 처리된 이미지 저장 폴더
+# - report_path: 측정 Feature를 저장할 CSV 경로
+# - MIN_CONTOUR_AREA_RATIO:
+#   전체 이미지 면적의 0.1% 미만인 Contour 제외
+# ============================================================
+
 output_dir = Path(
     "outputs/day03/feature"
 )
@@ -1658,16 +1861,20 @@ output_dir.mkdir(
     exist_ok=True,
 )
 
-
 report_path = Path(
     "reports/day03_reference_features.csv"
 )
 
-
-# 작은 Noise Contour를 제외하기 위한
-# 교육용 시작 비율입니다.
 MIN_CONTOUR_AREA_RATIO = 0.001
 
+
+# ============================================================
+# ④ Gray → Otsu 이진화
+# - measure_features()는 이미지 한 장을 입력받아 검사합니다.
+# - 컬러 이미지를 Gray로 변환합니다.
+# - Otsu로 이진화 기준값을 자동 계산합니다.
+# - 어두운 병뚜껑 영역을 흰색 객체로 변환합니다.
+# ============================================================
 
 def measure_features(image):
 
@@ -1683,6 +1890,14 @@ def measure_features(image):
         cv2.THRESH_BINARY_INV
         + cv2.THRESH_OTSU,
     )
+
+
+    # ========================================================
+    # ⑤ Morphology로 이진 이미지 정리
+    # - 3×3 타원형 Kernel을 사용합니다.
+    # - Opening : 작은 흰색 노이즈 제거
+    # - Closing : 작은 검은색 틈이나 구멍 메우기
+    # ========================================================
 
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE,
@@ -1702,6 +1917,14 @@ def measure_features(image):
         kernel,
         iterations=1,
     )
+
+
+    # ========================================================
+    # ⑥ Contour 검출 및 작은 객체 제외
+    # - 정리된 이미지에서 외곽 Contour를 찾습니다.
+    # - 이미지 전체 면적을 계산합니다.
+    # - 너무 작은 Contour는 Noise로 보고 제외합니다.
+    # ========================================================
 
     contours, _ = cv2.findContours(
         cleaned.copy(),
@@ -1727,6 +1950,14 @@ def measure_features(image):
         >= min_area
     ]
 
+
+    # ========================================================
+    # ⑦ 측정 Feature 저장 구조 준비
+    # - Otsu 기준값과 유효 Contour 수를 저장합니다.
+    # - 면적, 중심점, 경계 접촉 여부를 저장할 공간을 만듭니다.
+    # - Contour가 없다면 기본값을 반환합니다.
+    # ========================================================
+
     features = {
         "otsu_value": float(otsu_value),
         "valid_count": len(valid_contours),
@@ -1747,6 +1978,15 @@ def measure_features(image):
             cleaned,
             annotated,
         )
+
+
+    # ========================================================
+    # ⑧ 가장 큰 Contour 선택 및 면적·중심점 측정
+    # - 가장 면적이 큰 Contour를 선택합니다.
+    # - Contour Area를 계산합니다.
+    # - Bounding Box의 위치와 크기를 구합니다.
+    # - Moments를 이용하여 객체 중심점을 계산합니다.
+    # ========================================================
 
     largest = max(
         valid_contours,
@@ -1780,6 +2020,17 @@ def measure_features(image):
             / moments["m00"]
         )
 
+
+    # ========================================================
+    # ⑨ 객체의 주요 Feature 계산 및 저장
+    # - touches_border:
+    #   Bounding Box가 이미지 경계에 닿는지 확인
+    # - largest_area_ratio:
+    #   가장 큰 객체 면적 ÷ 이미지 전체 면적
+    # - center_x_norm / center_y_norm:
+    #   중심점 좌표를 0~1 범위로 정규화
+    # ========================================================
+
     touches_border = (
         x <= 0
         or y <= 0
@@ -1812,6 +2063,15 @@ def measure_features(image):
     features[
         "touches_border"
     ] = touches_border
+
+
+    # ========================================================
+    # ⑩ 검사 결과를 이미지에 표시하고 반환
+    # - 초록색 : 가장 큰 Contour
+    # - 파란색 : Bounding Box
+    # - 빨간색 : Contour 중심점
+    # - Feature와 중간 결과 이미지를 함께 반환합니다.
+    # ========================================================
 
     cv2.drawContours(
         annotated,
@@ -1853,6 +2113,13 @@ def measure_features(image):
     )
 
 
+# ============================================================
+# ⑪ 기준 이미지 2장을 반복해서 검사
+# - rows : CSV에 저장할 측정 결과 목록
+# - cap_on과 cap_off 이미지를 차례대로 불러옵니다.
+# - measure_features() 함수를 호출하여 특징을 측정합니다.
+# ============================================================
+
 rows = []
 
 
@@ -1876,6 +2143,15 @@ for label, image_path in input_files.items():
     ) = measure_features(
         image
     )
+
+
+    # ========================================================
+    # ⑫ 이미지별 Feature 정리 및 결과 저장
+    # - label과 파일명을 측정 Feature에 추가합니다.
+    # - CSV 저장을 위해 rows 목록에 추가합니다.
+    # - 각 이미지의 Binary, Cleaned, Contour 결과를 저장합니다.
+    # - 측정한 Feature 값을 터미널에 출력합니다.
+    # ========================================================
 
     row = {
         "label": label,
@@ -1921,11 +2197,18 @@ for label, image_path in input_files.items():
         )
 
 
+# ============================================================
+# ⑬ 측정 Feature를 CSV 보고서로 저장
+# - reports 폴더가 없으면 자동으로 생성합니다.
+# - CSV의 열 이름(fieldnames)을 지정합니다.
+# - cap_on과 cap_off의 측정값을 각각 한 행으로 저장합니다.
+# - utf-8-sig : Excel에서 한글을 읽기 쉽게 저장
+# ============================================================
+
 report_path.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
-
 
 with report_path.open(
     "w",
@@ -1956,6 +2239,11 @@ with report_path.open(
     )
 
 
+# ============================================================
+# ⑭ 최종 CSV 저장 결과 출력
+# - 측정 결과를 저장한 CSV 파일 경로를 출력합니다.
+# ============================================================
+
 print()
 print(
     "측정 결과 CSV:",
@@ -1972,194 +2260,97 @@ python src/20_cap_feature_compare.py
 의사코드
 
 ```
-1. 비교할 두 이미지를 준비한다.
-
-   cap_on.jpg
-   → 병뚜껑이 있는 이미지
-
-   cap_off.jpg
-   → 병뚜껑이 없는 이미지
-
-
-2. 결과 이미지를 저장할 폴더와
-   CSV 파일 경로를 준비한다.
-
-   outputs/day03/feature/
-   reports/day03_reference_features.csv
-
-
-3. 작은 Noise Contour를 제외하기 위한
-   최소 면적 비율을 정한다.
-
-   MIN_CONTOUR_AREA_RATIO = 0.001
-
-
-4. 이미지 한 장을 측정하는
-   measure_features() 함수를 만든다.
-
-
-5. 입력 이미지를 Gray로 변환한다.
-
-
-6. Gray 이미지에
-   Otsu + Binary Inverse를 적용한다.
-
-   어두운 병뚜껑 영역
-   → 흰색 객체로 만든다.
-
-
-7. 3×3 타원형 Kernel을 만든다.
-
-
-8. Binary Image에 Opening을 1회 적용하여
-   작은 흰색 Noise를 줄인다.
-
-
-9. Opening 결과에 Closing을 1회 적용하여
-   작은 검은 구멍이나 끊어진 영역을 정리한다.
-
-
-10. 정리된 Binary Image에서
-    외곽 Contour들을 찾는다.
-
-
-11. ROI 이미지의 전체 면적을 계산한다.
-
-    image_area
-    =
-    width × height
-
-
-12. ROI 전체 면적의 0.1%보다 작은 Contour는
-    Noise로 보고 제외한다.
-
-
-13. 남은 Contour의 개수를 계산한다.
-
-    valid_count
-    =
-    유효 Contour 개수
-
-
-14. 측정 결과를 저장할 Feature 항목을 준비한다.
-
-    Otsu Threshold 값
-    유효 Contour 개수
-    가장 큰 Contour Area
-    가장 큰 Contour Area Ratio
-    객체 중심 X 위치
-    객체 중심 Y 위치
-    객체가 ROI 경계에 닿았는지 여부
-
-
-15. 유효한 Contour가 하나도 없다면
-
-    측정값을 기본값으로 두고
-    Binary, Morphology 결과와 함께 반환한다.
-
-
-16. 유효 Contour가 있다면
-    그중 면적이 가장 큰 Contour를 선택한다.
-
-
-17. 가장 큰 Contour의 Area를 계산한다.
-
-
-18. 가장 큰 Contour를 감싸는
-    Bounding Box를 계산한다.
-
-
-19. Moments를 이용하여
-    가장 큰 객체의 중심점
-    cx, cy를 계산한다.
-
-
-20. 객체가 ROI 바깥 경계에
-    닿아 있는지 확인한다.
-
-    왼쪽
-    오른쪽
-    위
-    아래
-
-    중 하나라도 닿으면
-    touches_border = True
-
-
-21. 가장 큰 Contour의
-    Area Ratio를 계산한다.
-
-    largest_area_ratio
-    =
-    가장 큰 Contour Area
-    ÷
-    ROI 전체 면적
-
-
-22. 객체 중심 위치를
-    ROI 크기로 나누어 0~1 사이 값으로 바꾼다.
-
-    center_x_norm = cx / width
-    center_y_norm = cy / height
-
-
-23. 원본 이미지 위에
-    가장 큰 Contour를 그린다.
-
-
-24. 가장 큰 객체의
-    Bounding Box를 그린다.
-
-
-25. 객체의 Center를 점으로 표시한다.
-
-
-26. 계산한 Feature와
-    Binary Image,
-    Morphology 결과,
-    표시용 이미지를 반환한다.
-
-
-27. 이제 cap_on과 cap_off를
-    하나씩 같은 함수에 넣어 측정한다.
-
-
-28. 각 이미지에서 나온 Feature를
-    한 행씩 저장한다.
-
-
-29. 각 이미지의 결과를 저장한다.
-
-    cap_on_binary.jpg
-    cap_on_cleaned.jpg
-    cap_on_contour.jpg
-
-    cap_off_binary.jpg
-    cap_off_cleaned.jpg
-    cap_off_contour.jpg
-
-
-30. 터미널에도 각 이미지의
-    측정값을 출력한다.
-
-
-31. cap_on과 cap_off의 모든 측정값을
-    day03_reference_features.csv에 저장한다.
-
-
-32. CSV를 열어 두 이미지의 값을 비교한다.
-
-    largest_area_ratio가 다른가?
-
-    valid_count가 다른가?
-
-    Center 위치가 다른가?
-
-    ROI 경계에 닿는지가 다른가?
-
-
-33. 두 이미지에서 차이가 크게 나는 Feature를 찾아
-    다음 단계의 Rule 후보로 사용한다.
+[① 필요한 라이브러리 불러오기]
+Path, CSV, OpenCV, NumPy 준비
+        ↓
+[② 입력 이미지 경로 설정]
+cap_on.jpg  → 병뚜껑 있음
+cap_off.jpg → 병뚜껑 없음
+        ↓
+[③ 결과 저장 경로와 Noise 제거 기준 설정]
+이미지 출력 폴더 생성
+CSV 저장 경로 지정
+작은 Contour 제외 기준 설정
+        ↓
+[④ Gray → Otsu 이진화 함수 작성]
+입력 이미지 받기
+        ↓
+BGR → Gray 변환
+        ↓
+Otsu 이진화
+어두운 객체를 흰색으로 변환
+        ↓
+[⑤ Morphology로 이미지 정리]
+3×3 Kernel 생성
+        ↓
+Opening → 작은 노이즈 제거
+        ↓
+Closing → 작은 틈 정리
+        ↓
+[⑥ Contour 검출 및 작은 객체 제외]
+외곽 Contour 검출
+        ↓
+ROI 전체 면적 계산
+        ↓
+너무 작은 Contour 제외
+        ↓
+[⑦ 측정 결과 저장 구조 준비]
+Otsu 값
+유효 Contour 수
+가장 큰 객체의 면적
+Area Ratio
+중심점 좌표
+경계 접촉 여부
+        ↓
+유효 Contour가 없으면 기본 결과 반환
+        ↓
+[⑧ 가장 큰 Contour 선택 및 위치 측정]
+가장 큰 Contour 선택
+        ↓
+Contour Area 계산
+        ↓
+Bounding Box 계산
+        ↓
+Moments로 중심점 계산
+        ↓
+[⑨ 객체 특징값 계산]
+Area Ratio 계산
+        ↓
+중심점 좌표를 0~1 비율로 변환
+        ↓
+객체가 ROI 경계에 닿는지 확인
+        ↓
+Feature 딕셔너리에 저장
+        ↓
+[⑩ 측정 결과를 이미지에 표시]
+초록색 → Contour
+파란색 → Bounding Box
+빨간색 → 중심점
+        ↓
+측정 Feature와 결과 이미지 반환
+        ↓
+[⑪ 기준 이미지 2장 반복 검사]
+cap_on.jpg 불러오기
+        ↓
+measure_features() 실행
+        ↓
+cap_off.jpg 불러오기
+        ↓
+measure_features() 실행
+        ↓
+[⑫ 이미지 결과 저장 및 측정값 출력]
+각 이미지의
+Binary / Cleaned / Contour 결과 저장
+        ↓
+측정된 Feature 출력
+        ↓
+[⑬ CSV 보고서 생성]
+두 이미지의 Feature를 표로 정리
+        ↓
+reports/day03_reference_features.csv 저장
+        ↓
+[⑭ 최종 결과 경로 출력]
+생성된 CSV 파일 위치 안내
 ```
 
 ---
@@ -2492,11 +2683,27 @@ src/21_cap_rule.py
 ```
 
 ```python
+
+# ============================================================
+# ① 필요한 라이브러리 불러오기
+# - Path  : 기준 이미지 및 결과 저장 경로 처리
+# - cv2   : 영상 전처리, Contour 검출 및 판정 결과 표시
+# - numpy : 이미지 배열 처리를 위한 라이브러리
+# ============================================================
+
 from pathlib import Path
 
 import cv2
 import numpy as np
 
+
+# ============================================================
+# ② 기준 이미지와 결과 저장 경로 설정
+# - cap_on.jpg  : 병뚜껑이 있는 기준 이미지
+# - cap_off.jpg : 병뚜껑이 없는 기준 이미지
+# - OUTPUT_DIR  : 검사 결과 이미지 저장 폴더
+# - MIN_CONTOUR_AREA_RATIO : 작은 객체 제외 기준(0.1%)
+# ============================================================
 
 CAP_ON_PATH = Path(
     "samples/day03/reference/cap_on.jpg"
@@ -2515,9 +2722,14 @@ OUTPUT_DIR.mkdir(
     exist_ok=True,
 )
 
-
 MIN_CONTOUR_AREA_RATIO = 0.001
 
+
+# ============================================================
+# ③ 이미지 불러오기 및 오류 확인
+# - 입력받은 경로에서 이미지를 읽습니다.
+# - 이미지가 없거나 읽을 수 없으면 오류를 발생시킵니다.
+# ============================================================
 
 def measure_area_ratio(
     image_path,
@@ -2533,6 +2745,14 @@ def measure_area_ratio(
             f"{image_path}"
         )
 
+
+    # ========================================================
+    # ④ Gray → Otsu 이진화
+    # - BGR 컬러 이미지를 Gray로 변환합니다.
+    # - Otsu로 이진화 밝기 기준값을 자동 계산합니다.
+    # - BINARY_INV로 어두운 병뚜껑을 흰색 객체로 변환합니다.
+    # ========================================================
+
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY,
@@ -2545,6 +2765,14 @@ def measure_area_ratio(
         cv2.THRESH_BINARY_INV
         + cv2.THRESH_OTSU,
     )
+
+
+    # ========================================================
+    # ⑤ Morphology로 이미지 정리
+    # - 3×3 타원형 Kernel을 사용합니다.
+    # - Opening : 작은 흰색 노이즈 제거
+    # - Closing : 작은 검은색 틈이나 구멍 정리
+    # ========================================================
 
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE,
@@ -2564,6 +2792,16 @@ def measure_area_ratio(
         kernel,
         iterations=1,
     )
+
+
+    # ========================================================
+    # ⑥ Contour 검출 및 Area Ratio 측정
+    # - 정리된 이미지에서 외곽 Contour를 찾습니다.
+    # - ROI 전체 면적의 0.1%보다 작은 객체는 제외합니다.
+    # - 가장 큰 Contour의 면적을 계산합니다.
+    # - Area Ratio = Contour 면적 / ROI 전체 면적
+    # - Contour가 없으면 0.0과 None을 반환합니다.
+    # ========================================================
 
     contours, _ = cv2.findContours(
         cleaned.copy(),
@@ -2619,6 +2857,13 @@ def measure_area_ratio(
     )
 
 
+# ============================================================
+# ⑦ 정상·불량 기준 이미지의 Area Ratio 측정
+# - 앞에서 만든 measure_area_ratio() 함수를 호출합니다.
+# - cap_on과 cap_off의 면적 비율을 각각 계산합니다.
+# - 측정값은 다음 단계의 판정 기준값 생성에 사용합니다.
+# ============================================================
+
 cap_on_ratio, _, _ = (
     measure_area_ratio(
         CAP_ON_PATH
@@ -2632,6 +2877,13 @@ cap_off_ratio, _, _ = (
 )
 
 
+# ============================================================
+# ⑧ OK / NG 판정 기준값 생성
+# - 두 기준 이미지의 Area Ratio 중간값을 계산합니다.
+# - 이 값을 candidate_threshold로 저장합니다.
+# - 뚜껑이 있을 때 면적 비율이 더 큰지도 확인합니다.
+# ============================================================
+
 candidate_threshold = (
     cap_on_ratio
     + cap_off_ratio
@@ -2643,6 +2895,14 @@ cap_present_when_greater = (
     > cap_off_ratio
 )
 
+
+# ============================================================
+# ⑨ 병뚜껑 유무 판정 함수 작성
+# - 새로 측정한 Area Ratio를 기준값과 비교합니다.
+# - 뚜껑이 있을 때 비율이 큰 경우와 작은 경우를 구분합니다.
+# - 병뚜껑이 있다고 판정하면 OK를 반환합니다.
+# - 병뚜껑이 없다고 판정하면 NG와 사유를 반환합니다.
+# ============================================================
 
 def judge_cap(
     area_ratio,
@@ -2675,6 +2935,15 @@ def judge_cap(
     )
 
 
+# ============================================================
+# ⑩ 기준값 측정 결과 출력
+# - cap_on ratio      : 병뚜껑이 있는 이미지의 면적 비율
+# - cap_off ratio     : 병뚜껑이 없는 이미지의 면적 비율
+# - reference gap     : 두 기준 측정값의 차이
+# - candidate threshold : OK / NG 구분을 위한 후보 기준값
+# - GREATER / LESS    : 뚜껑이 있을 때의 비율 방향
+# ============================================================
+
 print(
     "cap_on ratio :",
     cap_on_ratio,
@@ -2706,6 +2975,13 @@ print(
 )
 
 
+# ============================================================
+# ⑪ 정상·불량 기준 이미지에 판정 규칙 적용
+# - cap_on과 cap_off 이미지를 차례대로 검사합니다.
+# - measure_area_ratio()로 면적 비율을 다시 측정합니다.
+# - judge_cap()으로 OK / NG를 판정합니다.
+# ============================================================
+
 for label, image_path in [
     (
         "cap_on",
@@ -2726,6 +3002,15 @@ for label, image_path in [
     decision, reason = judge_cap(
         area_ratio
     )
+
+
+    # ========================================================
+    # ⑫ 판정 결과를 이미지에 표시하고 저장
+    # - 가장 큰 Contour를 초록색으로 표시합니다.
+    # - OK는 초록색, NG는 빨간색 글자로 표시합니다.
+    # - Area Ratio도 이미지에 함께 표시합니다.
+    # - cap_on_rule.jpg / cap_off_rule.jpg로 저장합니다.
+    # ========================================================
 
     result = image.copy()
 
@@ -2774,11 +3059,21 @@ for label, image_path in [
         result,
     )
 
+
+    # ========================================================
+    # ⑬ 최종 판정 결과 출력
+    # - file       : 검사한 이미지 파일명
+    # - area_ratio : 측정한 객체 면적 비율
+    # - decision   : OK 또는 NG
+    # - reason     : NG 판정 사유
+    # ========================================================
+
     print()
     print("file:", image_path.name)
     print("area_ratio:", area_ratio)
     print("decision:", decision)
     print("reason:", reason)
+
 ```
 
 실행합니다.
@@ -2790,210 +3085,95 @@ python src/21_cap_rule.py
 ## 의사코드
 
 ```
-1. 병뚜껑이 있는 기준 이미지와
-   병뚜껑이 없는 기준 이미지의 경로를 준비한다.
-
-   cap_on.jpg
-   → 병뚜껑 있음
-
-   cap_off.jpg
-   → 병뚜껑 없음
-
-
-2. Rule 결과 이미지를 저장할
-   outputs/day03/rule 폴더를 준비한다.
-
-
-3. 너무 작은 Contour를 Noise로 제외하기 위한
-   최소 면적 비율을 정한다.
-
-   MIN_CONTOUR_AREA_RATIO = 0.001
-
-
-4. 이미지 한 장에서 Area Ratio를 측정하는
-   measure_area_ratio() 함수를 만든다.
-
-
-5. 입력 이미지를 읽는다.
-
-
-6. 이미지를 읽지 못했다면
-   오류를 발생시키고 종료한다.
-
-
-7. 컬러 이미지를 Gray로 변환한다.
-
-
-8. Gray 이미지에
-   Otsu + Binary Inverse를 적용한다.
-
-   어두운 병뚜껑 영역
-   → 흰색 객체로 만든다.
-
-
-9. 3×3 타원형 Kernel을 만든다.
-
-
-10. Binary Image에 Opening을 1회 적용한다.
-
-    → 작은 흰색 Noise를 줄인다.
-
-
-11. Opening 결과에 Closing을 1회 적용한다.
-
-    → 작은 검은 구멍이나
-      끊어진 영역을 정리한다.
-
-
-12. 정리된 Binary Image에서
-    외곽 Contour들을 찾는다.
-
-
-13. 이미지 전체 면적을 계산한다.
-
-    image_area
-    =
-    width × height
-
-
-14. 이미지 전체 면적의 0.1%보다 작은 Contour는
-    Noise로 보고 제외한다.
-
-
-15. 유효한 Contour가 하나도 없다면
-
-    Area Ratio = 0
-
-    으로 반환한다.
-
-
-16. 유효한 Contour가 있다면
-    가장 면적이 큰 Contour를 선택한다.
-
-
-17. 가장 큰 Contour의 Area를 계산한다.
-
-
-18. 다음 식으로 Area Ratio를 계산한다.
-
-    Area Ratio
-    =
-    가장 큰 Contour Area
-    ÷
-    이미지 전체 면적
-
-
-19. 계산한 Area Ratio와
-    원본 이미지,
-    가장 큰 Contour를 반환한다.
-
-
-20. 같은 함수를 사용하여
-    cap_on과 cap_off를 각각 측정한다.
-
-
-21. 두 이미지의 Area Ratio를 구한다.
-
-    cap_on_ratio
-    → 병뚜껑 있음의 Area Ratio
-
-    cap_off_ratio
-    → 병뚜껑 없음의 Area Ratio
-
-
-22. 두 값의 중간값을
-    후보 기준값으로 계산한다.
-
-    candidate_threshold
-    =
-    (cap_on_ratio + cap_off_ratio) / 2
-
-
-23. 병뚜껑이 있을 때 Area Ratio가
-    더 큰지 확인한다.
-
-    cap_on_ratio > cap_off_ratio
-    → True이면 큰 값 쪽이 병뚜껑 있음
-
-
-24. judge_cap() 함수를 만든다.
-
-
-25. 새로운 Area Ratio가 들어오면
-    후보 기준값과 비교한다.
-
-
-26. 현재 측정 결과처럼
-    병뚜껑이 있을 때 값이 더 크다면:
-
-    Area Ratio >= 후보 기준값
-    → 병뚜껑 있음
-    → OK
-
-    Area Ratio < 후보 기준값
-    → 병뚜껑 없음
-    → NG
-    → NG_CAP_AREA
-
-
-27. cap_on과 cap_off의 측정값을
-    터미널에 출력한다.
-
-    cap_on ratio
-    cap_off ratio
-    두 값의 차이
-    후보 기준값
-
-
-28. cap_on과 cap_off 이미지를
-    다시 하나씩 검사한다.
-
-
-29. 각 이미지의 Area Ratio를 측정한다.
-
-
-30. judge_cap()에 Area Ratio를 넣어
-    OK / NG를 판정한다.
-
-
-31. 원본 이미지를 복사한다.
-
-
-32. 가장 큰 Contour가 있다면
-    결과 이미지에 Contour를 그린다.
-
-
-33. 결과 이미지 위에 다음 내용을 표시한다.
-
-    OK 또는 NG
-    Area Ratio
-
-
-34. 판정 결과 이미지를 저장한다.
-
-    cap_on_rule.jpg
-    cap_off_rule.jpg
-
-
-35. 터미널에 각 이미지의 결과를 출력한다.
-
-    파일명
-    Area Ratio
-    Decision
-    Reason
-
-
-36. 최종적으로 다음 흐름을 확인한다.
-
-    cap_on / cap_off 실제 이미지
-            ↓
-    같은 방법으로 Area Ratio 측정
-            ↓
-    두 값의 중간값을 후보 기준으로 설정
-            ↓
-    새로운 Area Ratio와 기준값 비교
-            ↓
-    OK / NG 판정
+[① 필요한 라이브러리 불러오기]
+Path, OpenCV, NumPy 준비
+        ↓
+[② 기준 이미지와 결과 저장 경로 설정]
+cap_on.jpg  → 병뚜껑 있음
+cap_off.jpg → 병뚜껑 없음
+        ↓
+결과 저장 폴더 생성
+작은 Contour 제외 기준 설정
+        ↓
+[③ 이미지 불러오기 및 오류 확인]
+이미지 파일 읽기
+        ↓
+파일이 없거나 읽을 수 없으면 오류 발생
+        ↓
+[④ Gray → Otsu 이진화]
+컬러 이미지를 Gray로 변환
+        ↓
+Otsu로 밝기 기준값 자동 계산
+        ↓
+어두운 병뚜껑 영역을 흰색으로 변환
+        ↓
+[⑤ Morphology로 이미지 정리]
+3×3 Kernel 생성
+        ↓
+Opening → 작은 노이즈 제거
+        ↓
+Closing → 작은 틈 정리
+        ↓
+[⑥ Contour 검출 및 Area Ratio 측정]
+외곽 Contour 검출
+        ↓
+너무 작은 Contour 제외
+        ↓
+가장 큰 Contour 선택
+        ↓
+Contour 면적 ÷ 이미지 전체 면적
+        ↓
+Area Ratio 반환
+        ↓
+[⑦ 기준 이미지 2장의 Area Ratio 측정]
+cap_on.jpg  → cap_on_ratio
+cap_off.jpg → cap_off_ratio
+        ↓
+[⑧ OK / NG 판정 기준값 생성]
+두 Area Ratio의 중간값 계산
+        ↓
+candidate_threshold 생성
+        ↓
+병뚜껑이 있을 때 비율이
+더 큰지 또는 작은지 확인
+        ↓
+[⑨ 병뚜껑 판정 함수 작성]
+새로운 Area Ratio 입력
+        ↓
+기준값과 비교
+        ↓
+뚜껑 있음 → OK
+뚜껑 없음 → NG
+        ↓
+[⑩ 기준값 측정 결과 출력]
+cap_on ratio
+cap_off ratio
+두 측정값 차이
+판정 기준값
+비교 방향 출력
+        ↓
+[⑪ 기준 이미지 2장에 판정 규칙 적용]
+cap_on.jpg 검사
+        ↓
+Area Ratio 계산 → OK / NG 판정
+        ↓
+cap_off.jpg 검사
+        ↓
+Area Ratio 계산 → OK / NG 판정
+        ↓
+[⑫ 검사 결과 이미지 생성 및 저장]
+검출된 Contour를 초록색으로 표시
+        ↓
+OK / NG와 Area Ratio를 이미지에 표시
+        ↓
+cap_on_rule.jpg
+cap_off_rule.jpg 저장
+        ↓
+[⑬ 최종 판정 결과 출력]
+검사 파일명
+Area Ratio
+OK / NG 판정값
+판정 사유 출력
 ```
 
 ---
@@ -3340,15 +3520,27 @@ src/22_cap_batch_test.py
 ```
 
 ```python
+
+# ============================================================
+# ① 필요한 라이브러리 불러오기
+# - Path : 이미지 및 결과 저장 경로 처리
+# - csv  : 검사 결과를 CSV 파일로 저장
+# - cv2  : 이미지 전처리, Contour 검출 및 판정 결과 표시
+# ============================================================
+
 from pathlib import Path
 import csv
 
 import cv2
 
 
-# --------------------------------------------------
-# 데이터 경로
-# --------------------------------------------------
+# ============================================================
+# ② 이미지 경로, 결과 저장 폴더 및 Noise 제거 기준 설정
+# - cap_on / cap_off 폴더 지정
+# - Reference 이미지 2장 지정
+# - 검사 결과 이미지 및 CSV 저장 경로 지정
+# - ROI 면적의 0.1%보다 작은 Contour는 제외
+# ============================================================
 
 CAP_ON_DIR = Path(
     "samples/day03/cap_on"
@@ -3358,8 +3550,6 @@ CAP_OFF_DIR = Path(
     "samples/day03/cap_off"
 )
 
-
-# 기준값을 정할 Reference 이미지
 REFERENCE_ON = (
     CAP_ON_DIR / "cap_on_001.jpg"
 )
@@ -3368,8 +3558,6 @@ REFERENCE_OFF = (
     CAP_OFF_DIR / "cap_off_001.jpg"
 )
 
-
-# 결과 저장 위치
 OUTPUT_DIR = Path(
     "outputs/day03/batch"
 )
@@ -3388,14 +3576,14 @@ REPORT_PATH.parent.mkdir(
     exist_ok=True,
 )
 
-
-# 너무 작은 Contour는 제외
 MIN_CONTOUR_AREA_RATIO = 0.001
 
 
-# --------------------------------------------------
-# 이미지 측정 함수
-# --------------------------------------------------
+# ============================================================
+# ③ 검사할 이미지 불러오기
+# - measure()는 이미지 한 장의 특징을 측정하는 함수입니다.
+# - 이미지를 읽지 못하면 None을 반환합니다.
+# ============================================================
 
 def measure(image_path):
 
@@ -3407,14 +3595,18 @@ def measure(image_path):
         return None
 
 
-    # Gray 변환
+    # ========================================================
+    # ④ Gray → Otsu 이진화
+    # - BGR 이미지를 Gray로 변환합니다.
+    # - Otsu로 밝기 기준값을 자동 계산합니다.
+    # - BINARY_INV로 어두운 객체를 흰색으로 변환합니다.
+    # ========================================================
+
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY,
     )
 
-
-    # Otsu Threshold
     otsu_value, binary = cv2.threshold(
         gray,
         0,
@@ -3424,7 +3616,13 @@ def measure(image_path):
     )
 
 
-    # Morphology
+    # ========================================================
+    # ⑤ Morphology로 이미지 정리
+    # - 3×3 타원형 Kernel을 사용합니다.
+    # - Opening : 작은 흰색 노이즈 제거
+    # - Closing : 작은 검은색 틈이나 구멍 정리
+    # ========================================================
+
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE,
         (3, 3),
@@ -3445,13 +3643,18 @@ def measure(image_path):
     )
 
 
-    # Contour 찾기
+    # ========================================================
+    # ⑥ Contour 검출 및 작은 객체 제외
+    # - 정리된 이미지에서 외곽 Contour를 검출합니다.
+    # - 이미지 전체 면적을 계산합니다.
+    # - 너무 작은 Contour는 Noise로 보고 제외합니다.
+    # ========================================================
+
     contours, _ = cv2.findContours(
         cleaned.copy(),
         cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE,
     )
-
 
     height, width = image.shape[:2]
 
@@ -3459,14 +3662,10 @@ def measure(image_path):
         width * height
     )
 
-
-    # 이미지 전체 크기에 비례하여
-    # 너무 작은 Contour 제거
     min_area = (
         image_area
         * MIN_CONTOUR_AREA_RATIO
     )
-
 
     valid_contours = [
         contour
@@ -3476,14 +3675,21 @@ def measure(image_path):
     ]
 
 
+    # ========================================================
+    # ⑦ 가장 큰 Contour의 Feature 측정 및 반환
+    # - 가장 큰 Contour를 선택합니다.
+    # - Area Ratio = Contour 면적 / ROI 전체 면적
+    # - Moments를 이용하여 객체 중심점을 계산합니다.
+    # - 중심점은 0~1 비율 좌표로 저장합니다.
+    # - 측정 결과를 딕셔너리로 반환합니다.
+    # ========================================================
+
     largest_contour = None
     largest_area_ratio = 0.0
 
     center_x_norm = ""
     center_y_norm = ""
 
-
-    # 가장 큰 Contour 선택
     if valid_contours:
 
         largest_contour = max(
@@ -3497,17 +3703,12 @@ def measure(image_path):
             )
         )
 
-
-        # 단순 픽셀 면적이 아니라
-        # 전체 ROI에서 차지하는 비율 사용
         largest_area_ratio = (
             largest_area / image_area
             if image_area > 0
             else 0.0
         )
 
-
-        # Contour 중심점 계산
         moments = cv2.moments(
             largest_contour
         )
@@ -3524,7 +3725,6 @@ def measure(image_path):
                 / moments["m00"]
             )
 
-
             center_x_norm = (
                 cx / width
             )
@@ -3532,7 +3732,6 @@ def measure(image_path):
             center_y_norm = (
                 cy / height
             )
-
 
     return {
         "image": image,
@@ -3557,9 +3756,13 @@ def measure(image_path):
     }
 
 
-# --------------------------------------------------
-# Reference 이미지 측정
-# --------------------------------------------------
+# ============================================================
+# ⑧ Reference 이미지 2장으로 판정 기준값 생성
+# - cap_on_001.jpg와 cap_off_001.jpg를 측정합니다.
+# - 이미지가 없으면 오류를 발생시킵니다.
+# - 두 Area Ratio의 중간값을 판정 기준값으로 사용합니다.
+# - cap_on일 때 Area Ratio가 더 큰지도 확인합니다.
+# ============================================================
 
 reference_on = measure(
     REFERENCE_ON
@@ -3569,7 +3772,6 @@ reference_off = measure(
     REFERENCE_OFF
 )
 
-
 if (
     reference_on is None
     or reference_off is None
@@ -3578,7 +3780,6 @@ if (
     raise RuntimeError(
         "Reference 이미지를 확인하세요."
     )
-
 
 on_ratio = (
     reference_on[
@@ -3592,19 +3793,13 @@ off_ratio = (
     ]
 )
 
-
-# 두 Reference 값의 중간을
-# 임시 기준값으로 사용
 candidate_threshold = (
     on_ratio + off_ratio
 ) / 2.0
 
-
-# cap_on일 때 값이 더 큰지 확인
 cap_present_when_greater = (
     on_ratio > off_ratio
 )
-
 
 print(
     "Reference ON :",
@@ -3622,9 +3817,13 @@ print(
 )
 
 
-# --------------------------------------------------
-# 판정 함수
-# --------------------------------------------------
+# ============================================================
+# ⑨ OK / NG 판정 함수 작성
+# - 새로운 이미지의 Area Ratio를 입력받습니다.
+# - Reference에서 만든 기준값과 비교합니다.
+# - 뚜껑이 있다고 판정하면 cap_on, OK를 반환합니다.
+# - 뚜껑이 없다고 판정하면 cap_off, NG를 반환합니다.
+# ============================================================
 
 def judge(area_ratio):
 
@@ -3642,7 +3841,6 @@ def judge(area_ratio):
             <= candidate_threshold
         )
 
-
     if cap_present:
 
         return (
@@ -3651,7 +3849,6 @@ def judge(area_ratio):
             "",
         )
 
-
     return (
         "cap_off",
         "NG",
@@ -3659,9 +3856,14 @@ def judge(area_ratio):
     )
 
 
-# --------------------------------------------------
-# Test 이미지
-# --------------------------------------------------
+# ============================================================
+# ⑩ Test 이미지 4장 및 평가 변수 준비
+# - Reference로 사용한 001 이미지는 제외합니다.
+# - cap_on 2장, cap_off 2장을 검사합니다.
+# - expected는 각 이미지의 실제 정답입니다.
+# - total   : 실제로 검사한 이미지 수
+# - correct : 정답과 일치한 이미지 수
+# ============================================================
 
 TEST_IMAGES = [
     (
@@ -3686,16 +3888,19 @@ TEST_IMAGES = [
     ),
 ]
 
-
 rows = []
 
 total = 0
 correct = 0
 
 
-# --------------------------------------------------
-# 같은 Rule을 Test 이미지에 적용
-# --------------------------------------------------
+# ============================================================
+# ⑪ Test 이미지에 동일한 검사 규칙 적용
+# - 새로운 이미지를 한 장씩 불러옵니다.
+# - measure()를 이용하여 Area Ratio를 측정합니다.
+# - judge()로 cap_on / cap_off 및 OK / NG를 판정합니다.
+# - 읽지 못한 이미지는 검사에서 제외합니다.
+# ============================================================
 
 for expected, image_path in TEST_IMAGES:
 
@@ -3712,7 +3917,6 @@ for expected, image_path in TEST_IMAGES:
 
         continue
 
-
     predicted, decision, reason = (
         judge(
             measured[
@@ -3722,10 +3926,17 @@ for expected, image_path in TEST_IMAGES:
     )
 
 
+    # ========================================================
+    # ⑫ 예측 결과와 실제 정답 비교
+    # - expected  : 실제 정답(cap_on / cap_off)
+    # - predicted : 코드가 예측한 결과
+    # - is_correct : 두 값의 일치 여부
+    # - 전체 검사 수와 정답 수를 누적합니다.
+    # ========================================================
+
     is_correct = (
         predicted == expected
     )
-
 
     total += 1
 
@@ -3733,19 +3944,21 @@ for expected, image_path in TEST_IMAGES:
         correct += 1
 
 
-    # ----------------------------------------------
-    # 결과 이미지 생성
-    # ----------------------------------------------
+    # ========================================================
+    # ⑬ 검사 결과 이미지를 생성하고 저장
+    # - 검출된 Contour를 초록색으로 표시합니다.
+    # - 예측 결과와 Area Ratio를 이미지에 표시합니다.
+    # - 정답과 일치하면 초록색, 불일치하면 빨간색입니다.
+    # - 이미지별 결과를 JPG 파일로 저장합니다.
+    # ========================================================
 
     result = measured[
         "image"
     ].copy()
 
-
     contour = measured[
         "largest_contour"
     ]
-
 
     if contour is not None:
 
@@ -3757,12 +3970,10 @@ for expected, image_path in TEST_IMAGES:
             2,
         )
 
-
     text = (
         f"{predicted} "
         f"{measured['largest_area_ratio']:.3f}"
     )
-
 
     cv2.putText(
         result,
@@ -3784,12 +3995,10 @@ for expected, image_path in TEST_IMAGES:
         2,
     )
 
-
     output_path = (
         OUTPUT_DIR
         / f"{image_path.stem}_result.jpg"
     )
-
 
     cv2.imwrite(
         str(output_path),
@@ -3797,9 +4006,12 @@ for expected, image_path in TEST_IMAGES:
     )
 
 
-    # ----------------------------------------------
-    # CSV 기록
-    # ----------------------------------------------
+    # ========================================================
+    # ⑭ 이미지별 검사 결과를 CSV 저장 목록에 추가
+    # - 파일명, 실제 정답, 예측값을 기록합니다.
+    # - 정답 여부와 Area Ratio도 저장합니다.
+    # - Contour 수, 중심점, 판정 사유를 함께 기록합니다.
+    # ========================================================
 
     rows.append(
         {
@@ -3825,9 +4037,12 @@ for expected, image_path in TEST_IMAGES:
     )
 
 
-# --------------------------------------------------
-# 결과 확인
-# --------------------------------------------------
+# ============================================================
+# ⑮ 검사 이미지 수 확인 및 CSV 보고서 저장
+# - 검사한 이미지가 하나도 없다면 프로그램을 종료합니다.
+# - 각 이미지의 검사 결과를 CSV 표로 저장합니다.
+# - utf-8-sig로 저장하여 Excel에서 한글을 읽기 쉽게 합니다.
+# ============================================================
 
 if total == 0:
 
@@ -3836,11 +4051,6 @@ if total == 0:
     )
 
     raise SystemExit
-
-
-# --------------------------------------------------
-# CSV 저장
-# --------------------------------------------------
 
 with REPORT_PATH.open(
     "w",
@@ -3861,12 +4071,10 @@ with REPORT_PATH.open(
         "reason",
     ]
 
-
     writer = csv.DictWriter(
         file,
         fieldnames=fieldnames,
     )
-
 
     writer.writeheader()
 
@@ -3875,9 +4083,14 @@ with REPORT_PATH.open(
     )
 
 
-# --------------------------------------------------
-# 최종 결과 출력
-# --------------------------------------------------
+# ============================================================
+# ⑯ 최종 Batch Test 성능 결과 출력
+# - 확인 이미지 수 : 검사에 사용된 전체 이미지 수
+# - 기준과 일치   : 정답과 예측값이 일치한 수
+# - 불일치        : 틀리게 판정한 이미지 수
+# - Accuracy      : 정답 수 / 전체 검사 수
+# - 결과 CSV와 이미지 저장 경로를 출력합니다.
+# ============================================================
 
 print()
 print("==============================")
@@ -3916,6 +4129,7 @@ print(
     "결과 이미지:",
     OUTPUT_DIR,
 )
+
 ```
 
 실행합니다.
@@ -3927,126 +4141,115 @@ python src/22_cap_batch_test.py
 ### 의사코드
 
 ```
-1. 640×480 조건으로 촬영한
-   병뚜껑 있음/없음 폴더를 정한다.
-
-   cap_on/
-   cap_off/
-
-
-2. 첫 번째 촬영 한 쌍을
-   Reference 이미지로 선택한다.
-
-   cap_on_001.jpg
-   cap_off_001.jpg
-
-
-3. cap_on_001 이미지를 측정한다.
-
-   이미지 읽기
-      ↓
-   Gray
-      ↓
-   Otsu Threshold
-      ↓
-   Morphology
-      ↓
-   Contour
-      ↓
-   가장 큰 Contour 찾기
-      ↓
-   면적 비율 계산
-
-
-4. cap_off_001에도
-   같은 처리를 적용한다.
-
-
-5. 두 Reference 이미지의
-   largest_area_ratio 값을 비교한다.
-
-
-6. 두 값의 중간값을
-   임시 Rule 기준값으로 만든다.
-
-   cap_on 값
-        +
-   cap_off 값
+[① 필요한 라이브러리 불러오기]
+Path, CSV, OpenCV 준비
         ↓
-      2로 나눔
+[② 이미지 및 결과 저장 경로 설정]
+cap_on / cap_off 폴더 지정
+Reference 이미지 2장 지정
+결과 이미지 및 CSV 저장 폴더 생성
+작은 Contour 제외 기준 설정
         ↓
-   Candidate Threshold
-
-
-7. 이 시점에서 Rule을 고정한다.
-
-
-8. 나머지 네 장을 Test 이미지로 사용한다.
-
-   cap_on_002
-   cap_on_003
-
-   cap_off_002
-   cap_off_003
-
-
-9. 각 Test 이미지에
-   Reference와 동일한 처리를 적용한다.
-
-   Gray
-    ↓
-   Otsu
-    ↓
-   Morphology
-    ↓
-   Contour
-    ↓
-   면적 비율
-
-
-10. 측정한 면적 비율을
-    고정된 Threshold와 비교한다.
-
-
-11. 컴퓨터가 예측한다.
-
-    cap_on
-    또는
-    cap_off
-
-
-12. 실제 상태와 비교한다.
-
-    예상 cap_on
-    예측 cap_on
-    → Correct
-
-    예상 cap_off
-    예측 cap_on
-    → Incorrect
-
-
-13. 가장 큰 Contour와
-    예측 결과를 이미지에 표시한다.
-
-
-14. 결과 이미지를 저장한다.
-
-    outputs/day03/batch/
-
-
-15. 각 이미지의 측정값과
-    판정 결과를 CSV로 저장한다.
-
-    reports/day03_inspection_results.csv
-
-
-16. 마지막으로 다음 결과를 출력한다.
-
-    검사 이미지 수
-    맞은 이미지 수
-    틀린 이미지 수
-    Accuracy
+[③ 검사할 이미지 불러오기]
+measure() 함수 정의
+        ↓
+이미지 파일 읽기
+읽기 실패 → None 반환
+        ↓
+[④ Gray → Otsu 이진화]
+BGR → Gray 변환
+        ↓
+Otsu 이진화
+어두운 병뚜껑을 흰색 객체로 변환
+        ↓
+[⑤ Morphology로 이미지 정리]
+3×3 Kernel 생성
+        ↓
+Opening → 작은 노이즈 제거
+Closing → 작은 틈 정리
+        ↓
+[⑥ Contour 검출 및 작은 객체 제외]
+외곽 Contour 검출
+        ↓
+이미지 전체 면적 계산
+        ↓
+너무 작은 Contour 제외
+        ↓
+[⑦ 가장 큰 객체의 Feature 측정]
+가장 큰 Contour 선택
+        ↓
+Area Ratio 계산
+        ↓
+Moments로 중심점 계산
+        ↓
+중심점 좌표를 0~1로 변환
+        ↓
+측정 결과 반환
+        ↓
+[⑧ Reference 이미지로 판정 기준값 생성]
+cap_on_001.jpg  → on_ratio
+cap_off_001.jpg → off_ratio
+        ↓
+두 비율의 중간값 계산
+        ↓
+candidate_threshold 생성
+        ↓
+[⑨ OK / NG 판정 함수 작성]
+새로운 이미지의 Area Ratio 입력
+        ↓
+기준값과 비교
+        ↓
+cap_on → OK
+cap_off → NG
+        ↓
+[⑩ Test 이미지 4장 준비]
+cap_on_002.jpg
+cap_on_003.jpg
+cap_off_002.jpg
+cap_off_003.jpg
+        ↓
+결과 목록 및 정확도 계산 변수 준비
+        ↓
+[⑪ Test 이미지 반복 검사]
+이미지 한 장씩 불러오기
+        ↓
+measure()로 Area Ratio 측정
+        ↓
+judge()로 OK / NG 판정
+        ↓
+[⑫ 예측 결과와 실제 정답 비교]
+예측한 cap_on / cap_off
+        VS
+실제 cap_on / cap_off
+        ↓
+일치 여부 확인
+전체 검사 수와 정답 수 기록
+        ↓
+[⑬ 판정 결과 이미지 생성 및 저장]
+Contour를 초록색으로 표시
+예측값과 Area Ratio 표시
+        ↓
+정답과 일치 → 초록색 글자
+정답과 불일치 → 빨간색 글자
+        ↓
+결과 JPG 저장
+        ↓
+[⑭ 이미지별 검사 결과 기록]
+파일명, 실제 정답, 예측값
+Area Ratio, 중심점, OK / NG 등을
+CSV 저장용 목록에 추가
+        ↓
+[⑮ 검사 결과 확인 및 CSV 저장]
+검사한 이미지가 없으면 종료
+        ↓
+측정 결과 CSV 파일 생성
+        ↓
+[⑯ 최종 Batch Test 결과 출력]
+전체 검사 이미지 수
+정답 수
+오답 수
+Accuracy 계산
+CSV 및 결과 이미지 경로 출력
 ```
 
 ---
@@ -4216,8 +4419,18 @@ cap_on_002.jpg,cap_on,cap_on,True,0.5599226237580234,1,0.4865991955292156,0.4999
 cap_on_003.jpg,cap_on,cap_on,True,0.4566431924882629,2,0.48148468597358407,0.44985482102160756,OK,
 cap_off_002.jpg,cap_off,cap_off,True,0.29029781387642944,6,0.4529701984416369,0.5347417142101677,NG,NG_CAP_AREA
 cap_off_003.jpg,cap_off,cap_off,True,0.31687282566679553,7,0.4291398466942242,0.5606455874394706,NG,NG_CAP_AREA
-
 ```
+
+### Batch Test 검사 결과 — CSV 표
+
+|file|expected|predicted|correct|largest_area_ratio|valid_count|center_x_norm|center_y_norm|decision|reason|
+|---|---|---|---|---|---|---|---|---|---|
+|cap_on_002.jpg|cap_on|cap_on|True|0.559923|1|0.486599|0.499902|OK||
+|cap_on_003.jpg|cap_on|cap_on|True|0.456643|2|0.481485|0.449855|OK||
+|cap_off_002.jpg|cap_off|cap_off|True|0.290298|6|0.452970|0.534742|NG|NG_CAP_AREA|
+|cap_off_003.jpg|cap_off|cap_off|True|0.316873|7|0.429140|0.560646|NG|NG_CAP_AREA|
+
+가독성을 위해 소수점 여섯째 자리까지 표시했습니다.
 
 이 CSV는 각 테스트 이미지에서 어떤 수치가 측정되었고, 그 수치로 Rule이 어떤 판정을 내렸는지 기록한 결과표입니다.
 
