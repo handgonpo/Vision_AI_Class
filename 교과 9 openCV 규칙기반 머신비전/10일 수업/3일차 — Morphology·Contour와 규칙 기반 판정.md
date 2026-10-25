@@ -127,7 +127,7 @@ CSV · 분석문서 · README · Local Git
 python src/22_cap_batch_test.py
 ```
 
-![[Pasted image 20261021105135.png|160]]![[Pasted image 20261021105144.png|171]]![[Pasted image 20261021105154 (2).png|172]]![[Pasted image 20261021105202 1.png|168]]
+![[Pasted image 20261021105135.png|160]]![[Pasted image 20261021105144.png|171]]![[Pasted image 20261021105154.png|172]]![[Pasted image 20261021105202 1.png|168]]
 
 사진에 표시된 `0.290`, `0.317`, `0.560`, `0.457`은 Area Ratio(면적 비율) 입니다.
 
