@@ -40,7 +40,15 @@
 
 ### 5일차 전체 흐름
 
-![[Pasted image 20260831182816.png]]
+![[Pasted image 20261028152721.png]]
+
+| 용어              | 의미                           |
+| --------------- | ---------------------------- |
+| Threshold       | OK/NG를 구분하는 숫자 기준            |
+| Threshold 후보 탐색 | 여러 기준값을 시험하는 과정              |
+| Calibration     | 정상·불량 데이터를 측정하고 기준 후보를 찾는 과정 |
+| Rule            | Threshold를 조합한 판정 규칙         |
+| Rule Freeze     | 결정한 판정 규칙을 고정하는 작업           |
 
 그림의 흐름을 간단히 읽으면 다음과 같습니다.
 
@@ -104,6 +112,8 @@ README + 자가체크 + Git 기록
 
 를 여러 이미지에 반복 적용할 수 있도록 공통 함수로 정리합니다.
 
+![[Pasted image 20261028153154.png]]
+
 ---
 
 ## 2.3 PART3 — Calibration으로 기준 후보를 찾습니다
@@ -118,6 +128,15 @@ Calibration 12장을 측정하고:
 
 를 통해 판정 기준 후보를 찾습니다.
 
+![[Pasted image 20261028153919.png]]
+
+### X-Y 분포도는 무엇을 비교하나요?
+
+5일차 그림에서는 다음 두 가지 측정값을 사용합니다.
+
+- X축: SIFT Good Match — 기준 로고와 비슷하게 연결된 특징점의 개수
+- Y축: Homography Inlier Ratio — 연결된 특징점 중 기하학적 위치 관계까지 일치하는 비율
+
 ---
 
 ## 2.4 PART4 — 사용할 Rule을 결정합니다
@@ -131,6 +150,8 @@ Calibration에서 찾은 기준 중 하나를 선택하고:
 ```
 
 까지 진행합니다.
+
+![[Pasted image 20261028154445.png]]
 
 ---
 
@@ -487,9 +508,7 @@ OK / NG 분포 분석 → Threshold 후보 탐색
 | `37_day05_test.py`                | 새로운 이미지 OK / NG 검사     | 확정된 Rule을 처음 보는 Test 이미지 6장에 적용하여 OK / NG를 판정하고, 실제 정답 및 판정 이유를 CSV와 결과 이미지로 저장합니다.                            |
 | `38_day05_evaluate.py`            | 성능 평가·실패 분석            | Test 결과에서 TP·TN·FP·FN과 Accuracy·Precision·Recall을 계산하고, 잘못 판정한 이미지를 별도 폴더에 모읍니다.                               |
 | `39_day05_mini_challenge.py`      | 나만의 검사 Rule 만들기        | 다른 제품의 로고를 사용하여 Calibration → Threshold 결정 → Rule 확정 → Test → 실패 분석 과정을 학생 스스로 수행합니다.                          |
-![[Pasted image 20261020085525.png]]
-
-![[Pasted image 20261020085435.png]]
+![[Pasted image 20261028160132.png]]
 
 ---
 
@@ -691,6 +710,8 @@ test_ng_03.jpg
 
 먼저 다음 12장을 `Calibration` 데이터로 사용합니다.
 
+![[Pasted image 20261028160553.png]]
+
 ```
 OK
 ok_01.jpg
@@ -741,6 +762,8 @@ Reference와 정상적인 Matching이
 
 다음 6장은 Calibration에 사용하지 않고 따로 보관합니다.
 
+![[Pasted image 20261028160704.png]]
+
 ```
 OK
 test_ok_01.jpg
@@ -779,301 +802,126 @@ Test 6장
 
 # 10. 데이터를 준비했으니 이제 무엇을 할까요?
 
-앞에서 5일차 실습용 광천김 이미지 18장을 준비했습니다.
+앞의 9번 실습에서 광천김 이미지 18장을 `samples/day05/resized/`에 준비했습니다.
 
-```
-samples/day05/resized/
+이 가운데 **Calibration 12장(OK 6장, NG 6장)**은 검사 기준을 만드는 데 사용하고, **Test 6장(OK 3장, NG 3장)**은 기준을 확정한 뒤에 사용합니다.
 
-Calibration
-→ OK 6장
-→ NG 6장
+이제 해야 할 일은 **광천김 로고를 비교해 숫자로 측정하는 Python 코드를 작성하는 것**입니다. 그 숫자가 모이면 정상과 불량을 구별할 기준을 찾을 수 있습니다.
 
-Test
-→ OK 3장
-→ NG 3장
-```
+## 10.1 이번 PART2에서는 어디까지 하나요?
 
-가장 먼저 사용할 것은 **Calibration 12장**입니다.
+이번 PART2(10~15번)에서는 먼저 **공통 측정 함수를 만들고, 정상 이미지 한 장으로 동작을 확인**합니다.
 
-먼저 각각의 사진에서 **광천김 로고가 기준 로고와 얼마나 잘 맞는지를 숫자로 측정**합니다.
+Calibration 12장 전체를 측정하고 판정 기준을 찾는 작업은 다음 PART3에서 진행합니다.
 
-```
-기준 로고
-reference_label.jpg
-        +
-Calibration 이미지 한 장
-        ↓
-로고 비교
-        ↓
-측정값 생성
-```
+## 10.2 앞으로 어떤 Python 파일을 사용하나요?
 
-이 작업을 OK 6장과 NG 6장에 똑같이 반복합니다.
+|파일|언제 사용하나요?|하는 일|
+|---|---|---|
+|`day05_logo_features.py`|PART2|이미지에서 로고 관련 측정값을 계산하는 **공통 함수**를 정의합니다.|
+|`33_day05_check_features.py`|PART2|정상 이미지 `ok_01.jpg` 한 장으로 공통 함수가 작동하는지 확인합니다.|
+|`34_day05_measure_calibration.py`|PART3|공통 함수를 이용해 Calibration 12장을 측정하고 CSV로 저장합니다.|
+|`35_day05_analyze_calibration.py`|PART3|CSV의 OK/NG 측정값을 비교해 Threshold 후보를 찾습니다.|
 
-```
-ok_01.jpg  → 측정값
-ok_02.jpg  → 측정값
-...
-ok_06.jpg  → 측정값
+첫 번째 파일은 다른 프로그램에서 **불러 사용하는 함수 모듈**입니다. 두 번째 파일부터는 그 함수를 호출하여 실제 작업을 실행합니다.
 
-ng_01.jpg  → 측정값
-ng_02.jpg  → 측정값
-...
-ng_06.jpg  → 측정값
-```
+## 10.3 기억할 데이터 사용 순서
 
-그런 다음 정상과 불량의 결과가 실제로 얼마나 다른지 비교합니다.
+**지금은 측정 프로그램을 준비하는 단계**입니다.
 
-```
-OK 6장의 측정값
-        VS
-NG 6장의 측정값
-        ↓
-어떤 값이
-정상과 불량을 잘 구분하는지 확인
-```
+이후 Calibration 12장으로 기준 후보를 만들고, `36_day05_freeze_rule.py`에서 기준을 확정한 다음에야 Test 6장으로 성능을 확인합니다.
 
-> 5일차는 기준값을 먼저 정하는 것이 아니라, 실제 데이터를 먼저 측정한 뒤 OK와 NG의 차이를 보고 기준을 만드는 과정입니다.
+Test 이미지는 기준을 고르는 데 사용하지 않습니다.
 
 ---
 
 # 11. 어떤 값을 측정할까요?
 
-4일차에서 광천김 로고를 비교하면서 다음 기술을 이미 실습했습니다.
+4일차에서 배운 Template Matching·SIFT·RANSAC·Homography를 이용하면 이미지 한 장에서 다음 정보를 얻을 수 있습니다.
 
-```
-Template Matching
-SIFT
-RANSAC
-Homography
-```
+| 측정값                   | 초보자를 위한 의미                                           |
+| --------------------- | ---------------------------------------------------- |
+| **Template Score**    | 검사 이미지에서 기준 로고와 **모양이 얼마나 비슷한 영역을 찾았는지** 나타내는 점수     |
+| **SIFT Good Match**   | 두 이미지 사이에서 **비슷하다고 선택된 특징점 연결 개수**                   |
+| **Homography Inlier** | 연결된 특징점 중 **위치 관계까지 일관된 연결 개수**                      |
+| **Inlier Ratio**      | Good Match 중 Inlier가 차지하는 비율 (`Inlier ÷ Good Match`) |
+| **Homography Found**  | Homography 계산에 성공했는지 여부 (`1`: 성공, `0`: 실패)           |
 
-5일차에서는 새로운 기술을 배우는 것이 아니라, 이 방법들을 여러 이미지에 반복해서 적용합니다.
+예를 들어 Good Match가 100개이고 Inlier가 80개라면 **Inlier Ratio는 0.80**입니다.
 
-이번 Calibration에서 우선 다음 값을 확인합니다.
+이 숫자는 로고의 **유사도·특징점 연결·위치 관계**를 표현하는 측정 결과입니다.
 
-### Template Score
-
-```
-기준 로고와
-검사 이미지의 로고 모양이
-얼마나 비슷한가?
-```
-
-### SIFT Good Match
-
-```
-기준 로고와 검사 이미지 사이에서
-서로 비슷하게 연결된 특징점이
-몇 개인가?
-```
-
-### Homography Inlier
-
-```
-연결된 특징점 중에서
-실제로 같은 로고의 위치 관계라고
-판단할 수 있는 점이 몇 개인가?
-```
-
-### Inlier Ratio
-
-```
-Good Match 중
-올바른 대응점이 차지하는 비율
-```
-
-따라서 Calibration 이미지 한 장을 검사하면 대략 다음과 같은 결과가 만들어집니다.
-
-```
-ok_01.jpg
-
-Template Score
-SIFT Good Match
-Homography Inlier
-Inlier Ratio
-```
-
-이 작업을 12장에 반복합니다.
-
-```
-Reference
-   │
-   ├─ ok_01.jpg → 측정
-   ├─ ok_02.jpg → 측정
-   ├─ ...
-   ├─ ok_06.jpg → 측정
-   │
-   ├─ ng_01.jpg → 측정
-   ├─ ng_02.jpg → 측정
-   └─ ng_06.jpg → 측정
-
-          ↓
-
-12장의 측정 결과
-          ↓
-CSV로 저장
-          ↓
-OK / NG 비교
-```
-
-여기서 한 가지 문제가 있습니다.
-
-4일차처럼 이미지마다 같은 SIFT와 Homography 코드를 계속 복사해서 작성하면 코드가 매우 길어집니다.
-
-그래서 다음 단계에서는:
-
-```
-이미지 한 장 입력
-        ↓
-Template / SIFT / Homography 측정
-        ↓
-측정값 반환
-```
-
-을 담당하는 공통 측정 함수를 먼저 만들어 둡니다.
-
-그러면 이후에는:
-
-```
-ok_01.jpg → 공통 함수
-ok_02.jpg → 공통 함수
-...
-ng_06.jpg → 공통 함수
-```
-
-처럼 같은 코드를 반복해서 사용할 수 있습니다.
-
-> 즉, 다음에 만드는 공통 함수는 새로운 기술을 배우기 위한 코드가 아니라 4일차에서 배운 측정 방법을 여러 이미지에 반복 적용하기 쉽게 정리하는 코드입니다.
+아직 어떤 값부터 OK인지 정하지 않았으므로, 측정값이 높거나 Homography Found가 `1`이라고 해서 바로 OK로 판정하지 않습니다.
 
 ---
 
-# 12. 4일차 코드를 그대로 복사하지 않고 공통 측정 함수로 정리합니다
+# 12. 왜 4일차 코드를 공통 함수로 정리하나요?
 
-4일차에는 기술마다 별도 파일로 실습했습니다.
+4일차에는 `27_template_matching.py`, `29_sift_matching.py`, `30_homography.py`처럼 기술별 프로그램을 따로 작성했습니다.
 
-```text
-27_template_matching.py
-28_orb_matching.py
-29_sift_matching.py
-30_homography.py
-```
+각 기술을 배우기에는 좋았지만, 5일차에서 이미지마다 그 코드를 다시 작성하면 같은 내용이 반복됩니다.
 
-그 구조는 각 기술을 배우기에는 좋았습니다.
+그래서 **한 장의 이미지를 전달하면 필요한 측정값을 한 번에 돌려주는 함수**로 정리합니다.
 
-하지만 5일차에는 수십 장의 이미지에서 같은 측정을 반복해야 합니다.
-
-따라서 중복 코드를 줄이기 위해 공통 함수를 한 파일로 정리합니다.
-
-```text
-src/day05_logo_features.py
-```
-
-이 파일의 역할은 다음과 같습니다.
-
-```text
-Reference 준비
-        ↓
-Target 한 장 입력
-        ↓
-Template Score
-SIFT Good Match
-Homography Inlier
-Inlier Ratio
-Center
-Scale
-        ↓
-측정값 반환
-```
-
-오늘의 새 알고리즘을 만드는 것이 아니라 **4일차에서 배운 코드를 재사용 가능한 형태로 정리하는 작업**입니다.
-
----
-
-# 13. 여러 이미지를 반복 측정할 수 있도록 공통 함수를 만듭니다
-
-앞에서 준비한 Calibration 이미지는 총 12장입니다.
-
-```
-OK 6장
-NG 6장
-```
-
-이제 각 이미지에 4일차에서 배운 다음 처리를 반복해야 합니다.
-
-```
-Reference 읽기
-        ↓
-Template Matching
-        ↓
-SIFT 특징점 비교
-        ↓
-Good Match 선택
-        ↓
-RANSAC
-        ↓
-Homography
-        ↓
-측정값 반환
-```
-
-그런데 이 코드를 이미지마다 다시 작성하면 같은 코드가 계속 반복됩니다.
-
-예를 들어:
-
-```
-ok_01.jpg용 코드
-ok_02.jpg용 코드
-ok_03.jpg용 코드
-...
-ng_06.jpg용 코드
-```
-
-를 따로 만드는 것은 좋지 않습니다.
-
-그래서 실제 프로그램에서는 반복해서 사용하는 기능을 함수로 만들어 한곳에 정리합니다.
-
-```
-이미지 한 장 입력
-        ↓
-공통 측정 함수 실행
-        ↓
-측정 결과 반환
-```
-
-5일차에서는 다음 파일을 공통 측정 모듈로 사용합니다.
+이 함수들을 보관할 파일이 다음 공통 모듈입니다.
 
 ```
 src/day05_logo_features.py
 ```
 
-> 이 파일은 새로운 검사 기술을 배우기 위한 코드가 아닙니다.  
-> 4일차에서 배운 Template Matching, SIFT, Homography를 여러 이미지에 반복 적용하기 쉽게 함수로 정리하는 단계입니다.
+5일차 공통 모듈에는 **Template Matching + SIFT + RANSAC·Homography** 측정을 넣습니다.
+
+4일차에 학습했던 ORB는 이번 공통 모듈의 필수 측정 항목에 포함되지 않습니다.
+
+공통 함수를 만들면 나중에 검사할 이미지 수가 늘어나더라도 **함수 코드를 복사하지 않고 이미지 경로만 바꾸어 호출**할 수 있습니다.
+
+---
+
+# 13. 공통 함수 파일 안에는 어떤 기능을 만들까요?
+
+이번 파일은 다음 **세 가지 함수**로 구성합니다.
+
+|함수|역할|
+|---|---|
+|`read_image()`|전달받은 이미지 경로에서 사진을 읽습니다.|
+|`prepare_reference()`|기준 로고를 읽고 SIFT 특징점 정보를 **한 번 준비**합니다.|
+|`measure_target()`|검사 이미지 한 장을 기준 로고와 비교하고 측정값을 반환합니다.|
+
+함수들의 연결을 보면 다음과 같습니다.
+
+```
+기준 로고(reference_label.jpg)
+      ↓ prepare_reference() : 한 번 준비
+기준 로고의 특징점 정보(reference_data)
+      │
+      ├── 검사 이미지(ok_01.jpg)
+      │         ↓ measure_target()
+      │       측정값 반환
+      │
+      └── 이후 다른 검사 이미지도 같은 함수 호출
+```
+
+여기서 `measure_target()`이 반환하는 것은 **이미지 한 장의 측정값**입니다.
+
+Calibration 12장을 반복 실행하고 CSV로 저장하는 작업은 나중에 작성할 `34_day05_measure_calibration.py`가 담당합니다.
 
 ---
 
 # 14. `day05_logo_features.py` — 로고 측정 공통 함수를 만듭니다
 
-파일을 만듭니다.
+이제 앞에서 알아본 세 함수를 실제 Python 코드로 작성합니다.
+
+프로젝트의 `src` 폴더에 다음 파일을 만듭니다.
 
 ```
 src/day05_logo_features.py
 ```
 
-현재 단계에서는 측정에 필요한 기능만 만듭니다.
+**현재 파일은 측정만 담당합니다.**
 
-아직 Threshold와 Rule을 결정하지 않았으므로 다음 기능은 넣지 않습니다.
+OK/NG 판정 기준(Threshold), 복합 Rule, JSON 저장, FP/FN 평가는 아직 구현하지 않습니다. 이 기능들은 Calibration 분석 결과를 확인한 뒤 다른 실습에서 다룹니다.
 
-```
-OK / NG 판정
-FP / FN 계산
-NG Reason
-Rule JSON 적용
-```
-
-이 기능들은 Calibration 결과를 확인하고 Threshold를 정한 뒤 추가합니다.
-
-다음 코드를 작성합니다.
+아래 코드를 작성합니다.
 
 ```python
 from pathlib import Path
@@ -1083,7 +931,20 @@ import numpy as np
 
 
 # --------------------------------------------------
-# 1. 이미지 읽기
+# 1. 이미지 파일을 읽는 공통 함수
+#
+# 무엇을 하나요?
+# - 전달받은 이미지 경로를 Path 객체로 변환합니다.
+# - OpenCV로 이미지를 읽습니다.
+# - 이미지가 없거나 읽을 수 없으면 오류를 발생시킵니다.
+# - 정상적으로 읽었다면 이미지를 반환합니다.
+#
+# 왜 필요한가요?
+# Reference와 Target을 읽는 코드를
+# 여러 곳에서 반복하지 않기 위해서입니다.
+#
+# 입력: 이미지 파일 경로
+# 출력: OpenCV 이미지(BGR)
 # --------------------------------------------------
 
 def read_image(path):
@@ -1103,7 +964,18 @@ def read_image(path):
 
 
 # --------------------------------------------------
-# 2. Reference 준비
+# 2. 기준 이미지(Reference)를 읽고 흑백으로 변환
+#
+# 무엇을 하나요?
+# - 1번에서 만든 read_image()를 호출합니다.
+# - 광천김 기준 로고 이미지를 읽습니다.
+# - SIFT 특징점을 검출하기 위해 Grayscale로 변환합니다.
+#
+# 왜 필요한가요?
+# Reference는 앞으로 검사할 모든 Target에서
+# 동일하게 사용하는 기준 로고이기 때문입니다.
+#
+# 입력: Reference 이미지 경로
 # --------------------------------------------------
 
 def prepare_reference(reference_path):
@@ -1118,7 +990,18 @@ def prepare_reference(reference_path):
     )
 
 
-    # SIFT를 사용할 수 있는지 확인
+    # --------------------------------------------------
+    # 3. 현재 OpenCV에서 SIFT 사용 가능 여부 확인
+    #
+    # 무엇을 하나요?
+    # - OpenCV에 SIFT_create가 있는지 확인합니다.
+    # - SIFT 기능이 없으면 오류를 발생시킵니다.
+    #
+    # 왜 필요한가요?
+    # 이후 Reference와 Target에서 SIFT 특징점을
+    # 추출해야 하므로 실행 가능 여부를 먼저 확인합니다.
+    # --------------------------------------------------
+
     if not hasattr(
         cv2,
         "SIFT_create"
@@ -1128,13 +1011,33 @@ def prepare_reference(reference_path):
         )
 
 
-    # SIFT 객체 생성
+    # --------------------------------------------------
+    # 4. SIFT 생성 및 Reference 특징점 추출
+    #
+    # 무엇을 하나요?
+    # - SIFT 특징점 검출기를 생성합니다.
+    # - 기준 로고에서 Keypoint를 찾습니다.
+    # - 각 Keypoint의 Descriptor를 생성합니다.
+    #
+    # Keypoint:
+    # 이미지에서 특징적인 위치
+    #
+    # Descriptor:
+    # 특징점 주변의 정보를 표현한 숫자 데이터
+    #
+    # nfeatures=1500:
+    # SIFT에서 유지할 주요 특징점 수의
+    # 목표 상한을 지정합니다.
+    #
+    # 특징점이 4개 미만이거나 Descriptor가 없으면
+    # Homography 계산이 어려우므로 중단합니다.
+    # --------------------------------------------------
+
     sift = cv2.SIFT_create(
         nfeatures=1500
     )
 
 
-    # 기준 로고의 특징점과 Descriptor 생성
     ref_keypoints, ref_descriptors = (
         sift.detectAndCompute(
             reference_gray,
@@ -1152,6 +1055,23 @@ def prepare_reference(reference_path):
         )
 
 
+    # --------------------------------------------------
+    # 5. Reference 측정 정보를 딕셔너리로 반환
+    #
+    # 무엇을 하나요?
+    # - Reference 원본 이미지와 흑백 이미지를 저장합니다.
+    # - SIFT 객체를 저장합니다.
+    # - Keypoint와 Descriptor를 저장합니다.
+    # - Reference 이미지의 가로·세로 크기를 저장합니다.
+    #
+    # 왜 필요한가요?
+    # 여러 Target을 검사할 때 Reference 특징점을
+    # 매번 다시 계산하지 않고 재사용하기 위해서입니다.
+    #
+    # 반환값:
+    # reference_data 딕셔너리
+    # --------------------------------------------------
+
     return {
         "image": reference,
         "gray": reference_gray,
@@ -1164,7 +1084,23 @@ def prepare_reference(reference_path):
 
 
 # --------------------------------------------------
-# 3. Target 한 장 측정
+# 6. Target 이미지 한 장을 읽고 흑백으로 변환
+#
+# 무엇을 하나요?
+# - 검사할 Target 이미지 한 장을 입력받습니다.
+# - read_image() 함수를 이용해 이미지를 읽습니다.
+# - Grayscale로 변환합니다.
+#
+# 왜 필요한가요?
+# Template Matching과 SIFT에 사용할
+# 검사 이미지를 준비하기 위해서입니다.
+#
+# 입력:
+# target_path   : 검사 이미지 경로
+# reference_data: 5번에서 준비한 기준 정보
+#
+# 출력:
+# 이미지 한 장의 여러 측정값
 # --------------------------------------------------
 
 def measure_target(
@@ -1182,7 +1118,19 @@ def measure_target(
     )
 
 
-    # Reference에서 미리 준비한 값 가져오기
+    # --------------------------------------------------
+    # 7. Reference에서 미리 계산한 정보 가져오기
+    #
+    # 무엇을 하나요?
+    # - Reference의 흑백 이미지를 가져옵니다.
+    # - Reference의 Keypoint와 Descriptor를 가져옵니다.
+    # - 이미 생성한 SIFT 객체를 가져옵니다.
+    #
+    # 왜 필요한가요?
+    # Target마다 Reference 특징점을 다시 계산하지 않고
+    # 동일한 기준을 재사용하기 위해서입니다.
+    # --------------------------------------------------
+
     reference_gray = (
         reference_data["gray"]
     )
@@ -1200,9 +1148,27 @@ def measure_target(
     )
 
 
-    # ==================================================
-    # 1. Template Matching
-    # ==================================================
+    # --------------------------------------------------
+    # 8. Template Matching으로 로고 유사도 측정
+    #
+    # 무엇을 하나요?
+    # - Target 이미지에서 Reference와 비슷한 영역을 찾습니다.
+    # - TM_CCOEFF_NORMED 방법으로 유사도를 계산합니다.
+    # - 가장 높은 Template Score와 그 위치를 가져옵니다.
+    #
+    # template_score:
+    # 가장 유사한 영역의 정규화 상관계수 점수
+    #
+    # template_location:
+    # 가장 높은 점수가 나온 위치의 왼쪽 위 좌표
+    #
+    # 주의:
+    # 현재 코드는 Reference 크기를 바꾸지 않고
+    # Target을 검색하는 기본 Template Matching입니다.
+    # Reference는 Target보다 크지 않아야 합니다.
+    #
+    # 아직 OK / NG를 판정하지 않습니다.
+    # --------------------------------------------------
 
     template_result = cv2.matchTemplate(
         target_gray,
@@ -1221,9 +1187,20 @@ def measure_target(
     )
 
 
-    # ==================================================
-    # 2. Target SIFT 특징점
-    # ==================================================
+    # --------------------------------------------------
+    # 9. Target의 SIFT Keypoint와 Descriptor 추출
+    #
+    # 무엇을 하나요?
+    # - Target 이미지에서 SIFT 특징점을 찾습니다.
+    # - 각 특징점의 Descriptor를 생성합니다.
+    #
+    # 왜 필요한가요?
+    # Reference와 Target의 특징점을 비교하여
+    # 같은 로고가 존재하는지 확인하기 위해서입니다.
+    #
+    # good_matches:
+    # Ratio Test를 통과한 특징점 대응을 저장할 리스트
+    # --------------------------------------------------
 
     target_keypoints, target_descriptors = (
         sift.detectAndCompute(
@@ -1235,6 +1212,24 @@ def measure_target(
 
     good_matches = []
 
+
+    # --------------------------------------------------
+    # 10. BFMatcher로 Reference와 Target 특징점 비교
+    #
+    # 무엇을 하나요?
+    # - Target Descriptor가 있는지 확인합니다.
+    # - BFMatcher를 생성합니다.
+    # - L2 Distance로 두 이미지의 Descriptor를 비교합니다.
+    # - 가장 가까운 후보 2개를 찾습니다.
+    #
+    # k=2:
+    # 첫 번째로 가까운 후보와
+    # 두 번째로 가까운 후보를 찾는 설정입니다.
+    #
+    # 왜 필요한가요?
+    # 다음 Ratio Test에서 두 후보의 거리를 비교하여
+    # 모호한 Match를 제거하기 위해서입니다.
+    # --------------------------------------------------
 
     if target_descriptors is not None:
 
@@ -1250,7 +1245,23 @@ def measure_target(
         )
 
 
-        # Ratio Test
+        # --------------------------------------------------
+        # 11. Ratio Test로 Good Match 선별
+        #
+        # 무엇을 하나요?
+        # - 가장 가까운 후보와 두 번째 후보를 비교합니다.
+        # - 첫 번째 후보가 충분히 가까울 때만 남깁니다.
+        #
+        # 조건:
+        # 첫 번째 거리 < 두 번째 거리 × 0.75
+        #
+        # 조건을 통과한 대응점을 Good Match라고 합니다.
+        #
+        # 왜 필요한가요?
+        # 여러 위치에서 비슷하게 보이는 특징점의
+        # 잘못된 대응 가능성을 줄이기 위해서입니다.
+        # --------------------------------------------------
+
         for pair in knn_matches:
 
             if len(pair) < 2:
@@ -1270,9 +1281,28 @@ def measure_target(
                 )
 
 
-    # ==================================================
-    # 3. RANSAC + Homography
-    # ==================================================
+    # --------------------------------------------------
+    # 12. Homography 측정값 초기화
+    #
+    # 무엇을 하나요?
+    # - Homography 계산 결과를 저장할 변수를 준비합니다.
+    #
+    # homography_found:
+    # Homography 계산 성공 여부 (0 또는 1)
+    #
+    # inlier_count:
+    # RANSAC을 통과한 대응점 개수
+    #
+    # inlier_ratio:
+    # Good Match 중 Inlier가 차지하는 비율
+    #
+    # polygon:
+    # Target에서 검출한 로고 영역의 네 모서리 좌표
+    #
+    # 왜 필요한가요?
+    # 특징점이 부족하여 Homography 계산에 실패해도
+    # 기본 측정값을 반환할 수 있도록 하기 위해서입니다.
+    # --------------------------------------------------
 
     homography_found = 0
 
@@ -1282,6 +1312,29 @@ def measure_target(
 
     polygon = None
 
+
+    # --------------------------------------------------
+    # 13. Homography 계산에 필요한 대응점 좌표 준비
+    #
+    # 무엇을 하나요?
+    # - Good Match가 최소 4개인지 확인합니다.
+    # - Reference의 특징점 좌표를 추출합니다.
+    # - 그에 대응하는 Target 특징점 좌표를 추출합니다.
+    #
+    # queryIdx:
+    # Reference 특징점의 인덱스
+    #
+    # trainIdx:
+    # Target 특징점의 인덱스
+    #
+    # 왜 필요한가요?
+    # Homography를 계산하려면 두 이미지에서
+    # 서로 대응되는 점의 좌표가 필요하기 때문입니다.
+    #
+    # 주의:
+    # 대응점이 4개 이상이어도 위치 관계가 부적절하면
+    # Homography 계산에 실패할 수 있습니다.
+    # --------------------------------------------------
 
     if len(good_matches) >= 4:
 
@@ -1313,6 +1366,29 @@ def measure_target(
         )
 
 
+        # --------------------------------------------------
+        # 14. RANSAC을 이용하여 Homography 계산
+        #
+        # 무엇을 하나요?
+        # - 두 이미지의 대응점으로 Homography를 계산합니다.
+        # - RANSAC을 이용해 잘못된 대응점의 영향을 줄입니다.
+        # - Homography 행렬과 Inlier Mask를 반환받습니다.
+        #
+        # Homography:
+        # 한 평면의 위치가 다른 이미지에서
+        # 어떻게 변했는지 설명하는 변환 행렬입니다.
+        #
+        # RANSAC:
+        # 전체 대응점 중에서 기하학적으로
+        # 일관된 대응점을 찾아내는 알고리즘입니다.
+        #
+        # 5.0:
+        # RANSAC의 재투영 오차 허용 기준(픽셀)입니다.
+        #
+        # Homography가 계산되면
+        # homography_found를 1로 설정합니다.
+        # --------------------------------------------------
+
         homography, mask = (
             cv2.findHomography(
                 source_points,
@@ -1331,22 +1407,58 @@ def measure_target(
             homography_found = 1
 
 
-            # RANSAC을 통과한 Match 개수
+            # --------------------------------------------------
+            # 15. Inlier 개수와 Inlier Ratio 계산
+            #
+            # 무엇을 하나요?
+            # - RANSAC이 선택한 Inlier 개수를 계산합니다.
+            # - Good Match 전체에서 Inlier 비율을 계산합니다.
+            #
+            # Inlier Count:
+            # Homography 관계에 잘 맞는 대응점 개수
+            #
+            # Inlier Ratio:
+            # Inlier Count / Good Match Count
+            #
+            # 예:
+            # Good Match = 100개
+            # Inlier = 90개
+            #
+            # Inlier Ratio = 90 / 100 = 0.90
+            #
+            # 즉 Good Match의 90%가
+            # 계산된 Homography 관계를 따른다는 뜻입니다.
+            # --------------------------------------------------
+
             inlier_count = int(
                 mask.ravel().sum()
             )
 
 
-            # Good Match 중 Inlier 비율
             inlier_ratio = (
                 inlier_count
                 / len(good_matches)
             )
 
 
-            # ------------------------------------------
-            # Reference 로고 영역을 Target에 투영
-            # ------------------------------------------
+            # --------------------------------------------------
+            # 16. Reference 로고의 네 모서리 좌표 준비
+            #
+            # 무엇을 하나요?
+            # - Reference의 가로·세로 크기를 가져옵니다.
+            # - 기준 로고의 네 모서리 좌표를 만듭니다.
+            #
+            # 네 모서리:
+            # ① 왼쪽 위
+            # ② 오른쪽 위
+            # ③ 오른쪽 아래
+            # ④ 왼쪽 아래
+            #
+            # 왜 필요한가요?
+            # 이 네 점에 Homography를 적용하면
+            # Target에서 로고가 위치하는 영역을
+            # 계산할 수 있기 때문입니다.
+            # --------------------------------------------------
 
             ref_width = (
                 reference_data["width"]
@@ -1383,6 +1495,25 @@ def measure_target(
             )
 
 
+            # --------------------------------------------------
+            # 17. Reference 모서리를 Target 위치로 변환
+            #
+            # 무엇을 하나요?
+            # - Homography를 이용해 네 모서리 좌표를 변환합니다.
+            # - 변환 결과가 유한한 숫자인지 확인합니다.
+            # - 정상이라면 polygon에 네 점을 저장합니다.
+            #
+            # cv2.perspectiveTransform():
+            # Homography를 이용하여 좌표를 변환하는 함수
+            #
+            # np.isfinite():
+            # 결과에 NaN이나 무한대가 있는지 확인하는 함수
+            #
+            # polygon:
+            # 나중에 검사 이미지 위에 로고의 위치를
+            # 사각형으로 표시할 때 사용할 좌표입니다.
+            # --------------------------------------------------
+
             projected = (
                 cv2.perspectiveTransform(
                     corners,
@@ -1401,9 +1532,24 @@ def measure_target(
                 )
 
 
-    # ==================================================
-    # 측정 결과 반환
-    # ==================================================
+    # --------------------------------------------------
+    # 18. 이미지 한 장의 전체 측정 결과 반환
+    #
+    # 무엇을 하나요?
+    # - Template Matching 측정값을 반환합니다.
+    # - SIFT Good Match 개수를 반환합니다.
+    # - Homography 계산 성공 여부를 반환합니다.
+    # - Inlier 개수와 비율을 반환합니다.
+    # - 로고 영역 좌표와 원본 Target 이미지를 반환합니다.
+    #
+    # 왜 필요한가요?
+    # 이후 Calibration과 Test에서 동일한 측정 함수를
+    # 호출하여 검사값을 재사용하기 위해서입니다.
+    #
+    # 중요:
+    # 이 함수는 측정만 수행합니다.
+    # 아직 최종 OK / NG를 판정하지 않습니다.
+    # --------------------------------------------------
 
     return {
 
@@ -1449,6 +1595,275 @@ def measure_target(
         "target_image":
             target,
     }
+```
+
+### 의사코드
+
+```
+[1. 이미지 파일을 읽는 공통 함수]
+
+read_image() 함수를 만든다.
+
+이미지 경로를 전달받는다.
+Path 객체로 변환한다.
+OpenCV로 이미지를 읽는다.
+
+이미지를 읽지 못하면 오류를 발생시킨다.
+
+이미지를 정상적으로 읽으면 반환한다.
+
+          ↓
+
+[2. 기준 이미지(Reference)를 읽고 흑백으로 변환]
+
+prepare_reference() 함수를 만든다.
+
+광천김 기준 로고 이미지 경로를 전달받는다.
+read_image()를 호출한다.
+
+Reference 이미지를 읽는다.
+Grayscale로 변환한다.
+
+          ↓
+
+[3. 현재 OpenCV에서 SIFT 사용 가능 여부 확인]
+
+OpenCV에 SIFT_create 기능이 있는지 확인한다.
+
+사용할 수 없다면 오류를 발생시킨다.
+사용할 수 있다면 다음 단계로 진행한다.
+
+          ↓
+
+[4. SIFT 생성 및 Reference 특징점 추출]
+
+SIFT 객체를 생성한다.
+nfeatures를 1500으로 설정한다.
+
+Reference에서 Keypoint를 찾는다.
+각 Keypoint의 Descriptor를 생성한다.
+
+Descriptor가 없거나
+Keypoint가 4개 미만이면 실행을 중단한다.
+
+          ↓
+
+[5. Reference 측정 정보를 딕셔너리로 반환]
+
+Reference 원본 이미지를 저장한다.
+Grayscale 이미지를 저장한다.
+
+SIFT 객체를 저장한다.
+Keypoint와 Descriptor를 저장한다.
+
+Reference의 가로·세로 크기를 저장한다.
+
+이 정보를 reference_data로 반환한다.
+
+          ↓
+
+[6. Target 이미지 한 장을 읽고 흑백으로 변환]
+
+measure_target() 함수를 만든다.
+
+검사할 Target 이미지 경로를 전달받는다.
+Reference 정보를 함께 전달받는다.
+
+Target 이미지를 읽는다.
+Grayscale로 변환한다.
+
+          ↓
+
+[7. Reference에서 미리 계산한 정보 가져오기]
+
+reference_data에서 다음 정보를 가져온다.
+
+Reference Grayscale
+Reference Keypoint
+Reference Descriptor
+SIFT 객체
+
+Target과 비교할 준비를 한다.
+
+          ↓
+
+[8. Template Matching으로 로고 유사도 측정]
+
+Target 이미지에서 Reference와
+비슷한 영역을 검색한다.
+
+TM_CCOEFF_NORMED 방식으로 비교한다.
+
+Template Score를 계산한다.
+점수가 가장 높은 위치를 찾는다.
+
+Template Score와 위치를 저장한다.
+
+          ↓
+
+[9. Target의 SIFT Keypoint와 Descriptor 추출]
+
+Target에서 SIFT Keypoint를 찾는다.
+각 Keypoint의 Descriptor를 생성한다.
+
+Good Match를 저장할 빈 리스트를 준비한다.
+
+          ↓
+
+[10. BFMatcher로 Reference와 Target 특징점 비교]
+
+Target Descriptor가 있는지 확인한다.
+
+Descriptor가 없다면 Matching을 생략한다.
+
+Descriptor가 있다면 BFMatcher를 준비한다.
+비교 방법은 L2 Distance로 설정한다.
+
+Reference 특징점마다
+가장 가까운 Target 후보 2개를 찾는다.
+
+          ↓
+
+[11. Ratio Test로 Good Match 선별]
+
+각 Match 후보를 하나씩 확인한다.
+
+후보가 2개 미만이면 건너뛴다.
+
+가장 가까운 후보와
+두 번째 후보의 거리를 비교한다.
+
+첫 번째 거리 < 두 번째 거리 × 0.75
+
+조건을 만족하면 Good Match에 추가한다.
+
+          ↓
+
+[12. Homography 측정값 초기화]
+
+Homography Found를 0으로 설정한다.
+Inlier Count를 0으로 설정한다.
+Inlier Ratio를 0.0으로 설정한다.
+Polygon을 None으로 설정한다.
+
+          ↓
+
+[13. Homography 계산에 필요한 대응점 좌표 준비]
+
+Good Match가 4개 이상인지 확인한다.
+
+4개 미만이면
+Homography 계산을 생략한다.
+
+4개 이상이면:
+
+Reference의 Good Match 좌표를 추출한다.
+Target의 대응되는 Match 좌표를 추출한다.
+
+두 이미지의 대응점 배열을 준비한다.
+
+          ↓
+
+[14. RANSAC을 이용하여 Homography 계산]
+
+Reference와 Target의 대응점을 입력한다.
+
+RANSAC으로 Homography를 계산한다.
+재투영 오차 허용 기준은 5.0픽셀로 설정한다.
+
+Homography 행렬과 Inlier Mask를 얻는다.
+
+계산에 실패하면
+Homography Found는 0을 유지한다.
+
+계산에 성공하면
+Homography Found를 1로 설정한다.
+
+          ↓
+
+[15. Inlier 개수와 Inlier Ratio 계산]
+
+RANSAC의 Inlier Mask를 확인한다.
+
+Inlier로 인정된 대응점 개수를 센다.
+
+Inlier Ratio =
+Inlier Count / Good Match Count
+
+를 계산한다.
+
+          ↓
+
+[16. Reference 로고의 네 모서리 좌표 준비]
+
+Reference 이미지의 가로 크기를 가져온다.
+Reference 이미지의 세로 크기를 가져온다.
+
+왼쪽 위 좌표를 만든다.
+오른쪽 위 좌표를 만든다.
+오른쪽 아래 좌표를 만든다.
+왼쪽 아래 좌표를 만든다.
+
+네 모서리 좌표를 배열로 저장한다.
+
+          ↓
+
+[17. Reference 모서리를 Target 위치로 변환]
+
+Homography를 사용하여
+Reference의 네 모서리를 Target 좌표로 변환한다.
+
+변환 결과가 유한한 숫자인지 확인한다.
+
+모든 좌표가 유효하면
+Polygon에 네 모서리 좌표를 저장한다.
+
+          ↓
+
+[18. 이미지 한 장의 전체 측정 결과 반환]
+
+Target 이미지 경로를 반환한다.
+
+Template Score를 반환한다.
+Template Matching 위치를 반환한다.
+
+SIFT Good Match 개수를 반환한다.
+
+Homography Found를 반환한다.
+Homography Inlier 개수를 반환한다.
+Inlier Ratio를 반환한다.
+
+Polygon 좌표를 반환한다.
+Target 원본 이미지를 반환한다.
+
+          ↓
+
+[최종 결과]
+
+Target 이미지 한 장
+        +
+Reference 정보
+        ↓
+Template Matching
+        ↓
+SIFT Keypoint / Descriptor
+        ↓
+BFMatcher
+        ↓
+Ratio Test
+        ↓
+Good Match
+        ↓
+RANSAC + Homography
+        ↓
+Inlier Count / Inlier Ratio
+        ↓
+측정 결과 딕셔너리 반환
+
+          ↓
+
+이후 Calibration과 Test에서
+동일한 공통 측정 함수를 재사용한다.
 ```
 
 ---
@@ -1585,11 +2000,39 @@ src/33_day05_check_features.py
 ```python
 from pathlib import Path
 
+# --------------------------------------------------
+# 앞에서 작성한 공통 측정 함수 가져오기
+#
+# prepare_reference():
+# - 기준 로고의 SIFT 특징점을 준비하는 함수
+#
+# measure_target():
+# - 검사 이미지 한 장에서
+#   Template, SIFT, Homography 측정값을 구하는 함수
+#
+# 두 함수는 앞에서 작성한
+# day05_logo_features.py에 정의되어 있습니다.
+# --------------------------------------------------
+
 from day05_logo_features import (
     prepare_reference,
     measure_target,
 )
 
+
+# --------------------------------------------------
+# 검사에 사용할 이미지 경로 설정
+#
+# REFERENCE_PATH:
+# - 비교 기준인 광천김 로고 이미지
+#
+# TARGET_PATH:
+# - 공통 측정 함수가 정상적으로 동작하는지
+#   확인할 정상 이미지 한 장
+#
+# 이번에는 Calibration 12장을 모두 검사하지 않고
+# ok_01.jpg 한 장만 먼저 측정합니다.
+# --------------------------------------------------
 
 REFERENCE_PATH = Path(
     "samples/day04/reference/reference_label.jpg"
@@ -1601,7 +2044,29 @@ TARGET_PATH = Path(
 
 
 # --------------------------------------------------
-# 1. Reference 준비
+# 1. Reference 이미지의 특징점 준비
+#
+# 무엇을 하나요?
+# - prepare_reference() 함수를 호출합니다.
+# - 기준 로고 이미지를 읽습니다.
+# - Grayscale로 변환합니다.
+# - SIFT Keypoint와 Descriptor를 생성합니다.
+# - 측정에 필요한 Reference 정보를 반환받습니다.
+#
+# 왜 필요한가요?
+# 이후 Target 이미지와 비교할
+# 기준 로고의 특징점 정보가 필요하기 때문입니다.
+#
+# reference_data:
+# - Reference 원본 이미지
+# - Grayscale 이미지
+# - SIFT 객체
+# - Keypoint
+# - Descriptor
+# - 이미지 가로·세로 크기
+#
+# Reference Keypoints:
+# 기준 이미지에서 추출한 특징점 개수를 출력합니다.
 # --------------------------------------------------
 
 reference_data = prepare_reference(
@@ -1618,7 +2083,32 @@ print(
 
 
 # --------------------------------------------------
-# 2. 실제 Target 한 장 측정
+# 2. 실제 Target 이미지 한 장 측정
+#
+# 무엇을 하나요?
+# - measure_target() 함수를 호출합니다.
+# - 검사할 ok_01.jpg와 Reference 정보를 전달합니다.
+#
+# 함수 내부에서 수행하는 작업:
+#
+# ① Target 이미지를 읽습니다.
+# ② Template Matching으로 유사도를 측정합니다.
+# ③ SIFT Keypoint와 Descriptor를 추출합니다.
+# ④ BFMatcher로 특징점을 비교합니다.
+# ⑤ Ratio Test로 Good Match를 선별합니다.
+# ⑥ RANSAC으로 Homography를 계산합니다.
+# ⑦ Inlier Count와 Inlier Ratio를 계산합니다.
+#
+# 왜 필요한가요?
+# 앞에서 작성한 공통 측정 함수가
+# 실제 이미지에서도 정상적으로 실행되는지
+# 확인하기 위해서입니다.
+#
+# measurement:
+# 검사 이미지 한 장의 측정값이 저장된 딕셔너리
+#
+# 주의:
+# 이 단계에서는 아직 OK / NG를 판정하지 않습니다.
 # --------------------------------------------------
 
 measurement = measure_target(
@@ -1628,17 +2118,55 @@ measurement = measure_target(
 
 
 # --------------------------------------------------
-# 3. 결과 확인
+# 3. Target 이미지의 전체 측정 결과 확인
+#
+# 무엇을 하나요?
+# - 검사한 Target 이미지 이름을 출력합니다.
+# - Template Matching 점수를 출력합니다.
+# - SIFT Good Match 개수를 출력합니다.
+# - Homography 계산 성공 여부를 출력합니다.
+# - Homography Inlier 개수를 출력합니다.
+# - Inlier Ratio를 출력합니다.
+#
+# 왜 필요한가요?
+# 이후 Calibration 12장을 검사하기 전에
+# 공통 측정 함수가 정상적으로 값을 반환하는지
+# 한 장의 이미지로 확인하기 위해서입니다.
+#
+# 측정값 설명:
+#
+# Template Score:
+# 기준 로고와 가장 유사한 영역의 점수
+#
+# SIFT Good Match:
+# Ratio Test를 통과한 특징점 대응 개수
+#
+# Homography Found:
+# Homography 계산 성공 여부
+# 1 = 계산 성공, 0 = 계산 실패
+#
+# Homography Inlier:
+# RANSAC의 변환 관계에 잘 맞는 대응점 개수
+#
+# Inlier Ratio:
+# Inlier Count / Good Match Count
+#
+# round(값, 4):
+# 출력할 숫자를 소수점 넷째 자리까지 반올림합니다.
 # --------------------------------------------------
 
 print()
 print("=" * 60)
 
+
+# 검사한 Target 이미지 이름
 print(
     "Target:",
     TARGET_PATH.name
 )
 
+
+# Template Matching의 최대 유사도
 print(
     "Template Score:",
     round(
@@ -1647,6 +2175,8 @@ print(
     )
 )
 
+
+# Ratio Test를 통과한 SIFT Good Match 개수
 print(
     "SIFT Good Match:",
     measurement[
@@ -1654,6 +2184,8 @@ print(
     ]
 )
 
+
+# Homography 계산 성공 여부
 print(
     "Homography Found:",
     measurement[
@@ -1661,6 +2193,8 @@ print(
     ]
 )
 
+
+# RANSAC이 선택한 Inlier 개수
 print(
     "Homography Inlier:",
     measurement[
@@ -1668,6 +2202,8 @@ print(
     ]
 )
 
+
+# Good Match 중 Inlier가 차지하는 비율
 print(
     "Inlier Ratio:",
     round(
@@ -1676,6 +2212,7 @@ print(
     )
 )
 
+
 print("=" * 60)
 ```
 
@@ -1683,6 +2220,143 @@ print("=" * 60)
 
 ```
 python src/33_day05_check_features.py
+```
+
+### 의사코드
+
+```
+[실습 준비 — 공통 함수와 이미지 경로 설정]
+
+앞에서 작성한 day05_logo_features.py에서
+두 함수를 가져온다.
+
+prepare_reference()
+measure_target()
+
+광천김 Reference 이미지 경로를 정한다.
+
+samples/day04/reference/reference_label.jpg
+
+검사할 Target 이미지 경로를 정한다.
+
+samples/day05/resized/ok_01.jpg
+
+          ↓
+
+[1. Reference 이미지의 특징점 준비]
+
+prepare_reference() 함수를 호출한다.
+
+광천김 기준 로고 이미지를 읽는다.
+
+Reference를 Grayscale로 변환한다.
+
+SIFT 객체를 생성한다.
+
+Reference에서 Keypoint를 찾는다.
+
+각 Keypoint의 Descriptor를 만든다.
+
+Reference 이미지와 특징점 정보를
+reference_data 딕셔너리에 저장한다.
+
+Reference Keypoint 개수를 출력한다.
+
+          ↓
+
+[2. 실제 Target 이미지 한 장 측정]
+
+measure_target() 함수를 호출한다.
+
+Target 이미지 ok_01.jpg를 전달한다.
+
+앞에서 준비한 reference_data도 전달한다.
+
+          ↓
+
+Target 이미지를 읽는다.
+
+          ↓
+
+Template Matching을 실행한다.
+
+기준 로고와 비슷한 영역을 찾는다.
+
+Template Score를 계산한다.
+
+          ↓
+
+Target에서 SIFT 특징점을 추출한다.
+
+Keypoint와 Descriptor를 만든다.
+
+          ↓
+
+BFMatcher로 Reference와 Target의
+Descriptor를 비교한다.
+
+          ↓
+
+Ratio Test를 적용한다.
+
+비교적 확실한 Good Match만 남긴다.
+
+          ↓
+
+Good Match가 4개 이상이면
+RANSAC과 Homography를 계산한다.
+
+          ↓
+
+RANSAC의 Inlier 개수를 센다.
+
+Inlier Ratio를 계산한다.
+
+          ↓
+
+측정 결과를
+measurement 딕셔너리로 반환받는다.
+
+          ↓
+
+[3. Target 이미지의 전체 측정 결과 확인]
+
+measurement에 저장된 값을 읽는다.
+
+검사한 이미지 이름을 출력한다.
+
+Template Score를 출력한다.
+
+SIFT Good Match 개수를 출력한다.
+
+Homography 계산 성공 여부를 출력한다.
+
+Homography Inlier 개수를 출력한다.
+
+Inlier Ratio를 출력한다.
+
+          ↓
+
+[최종 결과]
+
+광천김 Reference
+        +
+Target 정상 이미지 ok_01.jpg
+        ↓
+공통 측정 함수 실행
+        ↓
+Template Score
+SIFT Good Match
+Homography Found
+Homography Inlier
+Inlier Ratio
+        ↓
+터미널에 측정값 출력
+        ↓
+공통 측정 함수의 정상 동작 확인
+        ↓
+다음 실습에서 Calibration 12장에
+동일한 측정 함수를 반복 적용
 ```
 
 ---
@@ -2158,6 +2832,15 @@ src/34_day05_measure_calibration.py
 from pathlib import Path
 import csv
 
+# 앞에서 작성한 공통 측정 함수 가져오기
+#
+# prepare_reference():
+# - 기준 로고의 SIFT 특징점을 준비합니다.
+#
+# measure_target():
+# - 이미지 한 장에서 Template Matching,
+#   SIFT, Homography 측정값을 계산합니다.
+
 from day05_logo_features import (
     prepare_reference,
     measure_target,
@@ -2165,7 +2848,25 @@ from day05_logo_features import (
 
 
 # --------------------------------------------------
-# 경로 설정
+# 1. Reference, Calibration 이미지 및 CSV 경로 설정
+#
+# 무엇을 하나요?
+# - 검사 기준인 광천김 Reference 경로를 지정합니다.
+# - Calibration 이미지 12장이 있는 폴더를 지정합니다.
+# - 측정값을 저장할 CSV 경로를 지정합니다.
+#
+# REFERENCE_PATH:
+# 비교 기준으로 사용할 정상 로고 이미지
+#
+# DATA_DIR:
+# OK 6장과 NG 6장이 저장된 폴더
+#
+# OUTPUT_CSV:
+# 12장의 측정 결과를 저장할 CSV 파일
+#
+# 왜 필요한가요?
+# 프로그램이 어떤 이미지를 읽고
+# 결과를 어디에 저장해야 하는지 알아야 하기 때문입니다.
 # --------------------------------------------------
 
 REFERENCE_PATH = Path(
@@ -2182,13 +2883,43 @@ OUTPUT_CSV = Path(
 
 
 # --------------------------------------------------
-# Calibration 이미지 목록을 만듭니다.
+# 2. Calibration 이미지 목록과 실제 상태(OK/NG) 준비
+#
+# 무엇을 하나요?
+# - find_calibration_images() 함수를 정의합니다.
+# - ok_로 시작하는 이미지들을 찾습니다.
+# - ng_로 시작하는 이미지들을 찾습니다.
+# - 각 이미지에 실제 정답인 OK 또는 NG를 연결합니다.
+#
+# 예:
+# ok_01.jpg → OK
+# ok_02.jpg → OK
+# ng_01.jpg → NG
+# ng_02.jpg → NG
+#
+# 왜 필요한가요?
+# 나중에 프로그램이 측정한 값과
+# 사람이 알고 있는 실제 정상/불량 상태를
+# 비교하여 검사 기준을 만들기 위해서입니다.
+#
+# 주의:
+# 지금은 파일명에 따라 실제 상태를 기록합니다.
+# 프로그램이 OK/NG를 예측하는 단계는 아닙니다.
 # --------------------------------------------------
 
 def find_calibration_images():
 
+    # 이미지 경로와 실제 정답을 저장할 리스트
     image_infos = []
 
+
+    # --------------------------------------------------
+    # 2-1. 정상(OK) 이미지 목록 만들기
+    #
+    # - ok_*.jpg 패턴의 이미지를 찾습니다.
+    # - sorted()로 파일명 순서대로 정렬합니다.
+    # - 이미지 경로와 "OK"를 함께 저장합니다.
+    # --------------------------------------------------
 
     # OK 6장
     for image_path in sorted(
@@ -2203,6 +2934,14 @@ def find_calibration_images():
         )
 
 
+    # --------------------------------------------------
+    # 2-2. 불량(NG) 이미지 목록 만들기
+    #
+    # - ng_*.jpg 패턴의 이미지를 찾습니다.
+    # - sorted()로 파일명 순서대로 정렬합니다.
+    # - 이미지 경로와 "NG"를 함께 저장합니다.
+    # --------------------------------------------------
+
     # NG 6장
     for image_path in sorted(
         DATA_DIR.glob("ng_*.jpg")
@@ -2216,11 +2955,32 @@ def find_calibration_images():
         )
 
 
+    # 준비한 이미지 경로와 정답 목록 반환
     return image_infos
 
 
 # --------------------------------------------------
-# 실행
+# 3. 결과 폴더 생성 및 Reference 특징점 준비
+#
+# 무엇을 하나요?
+# - main() 함수를 정의합니다.
+# - 결과 CSV를 저장할 reports 폴더를 준비합니다.
+# - prepare_reference() 함수를 호출합니다.
+# - Reference의 SIFT 특징점을 추출합니다.
+# - 기준 이미지의 특징점 개수를 출력합니다.
+#
+# 왜 필요한가요?
+# Calibration 이미지 12장 모두 같은 Reference를
+# 사용하므로 기준 특징점을 한 번만 계산하여
+# 반복해서 재사용하기 위해서입니다.
+#
+# reference_data에는:
+# - Reference 원본 이미지
+# - Grayscale 이미지
+# - SIFT 객체
+# - Keypoint / Descriptor
+# - 이미지 크기
+# 등의 정보가 저장됩니다.
 # --------------------------------------------------
 
 def main():
@@ -2231,15 +2991,13 @@ def main():
     )
 
 
-    # ==============================================
-    # 1. 기준 로고 준비
-    # ==============================================
-
+    # 기준 로고 준비
     reference_data = prepare_reference(
         REFERENCE_PATH
     )
 
 
+    # 기준 로고의 특징점 개수 출력
     print(
         "Reference Keypoints:",
         len(
@@ -2248,9 +3006,28 @@ def main():
     )
 
 
-    # ==============================================
-    # 2. Calibration 이미지 확인
-    # ==============================================
+    # --------------------------------------------------
+    # 4. Calibration 이미지 목록과 수량 확인
+    #
+    # 무엇을 하나요?
+    # - 2번에서 만든 함수를 호출합니다.
+    # - 이미지 경로와 실제 정답을 가져옵니다.
+    # - Calibration 이미지의 전체 개수를 확인합니다.
+    #
+    # 이번 수업에서 예상하는 데이터:
+    # OK 6장 + NG 6장 = 총 12장
+    #
+    # 왜 필요한가요?
+    # 측정하기 전에 필요한 데이터가
+    # 준비되어 있는지 확인하기 위해서입니다.
+    #
+    # 주의:
+    # 현재 코드는 12장이 아니어도 경고만 출력하고
+    # 프로그램을 계속 진행합니다.
+    #
+    # rows:
+    # 이미지별 측정값을 저장할 빈 리스트입니다.
+    # --------------------------------------------------
 
     image_infos = (
         find_calibration_images()
@@ -2274,17 +3051,71 @@ def main():
     rows = []
 
 
-    # ==============================================
-    # 3. 12장에 같은 측정을 반복
-    # ==============================================
+    # --------------------------------------------------
+    # 5. Calibration 이미지 12장에 같은 측정 반복
+    #
+    # 무엇을 하나요?
+    # - Calibration 이미지를 한 장씩 가져옵니다.
+    # - measure_target() 공통 측정 함수를 호출합니다.
+    # - 각 이미지의 측정값을 계산합니다.
+    # - 측정값과 실제 정답을 하나의 딕셔너리로 정리합니다.
+    #
+    # measure_target() 내부 처리:
+    #
+    # ① Target 이미지 읽기
+    # ② Template Matching
+    # ③ SIFT 특징점 추출
+    # ④ BFMatcher로 특징점 비교
+    # ⑤ Ratio Test
+    # ⑥ RANSAC + Homography
+    # ⑦ Inlier Count / Inlier Ratio 계산
+    #
+    # 왜 필요한가요?
+    # 모든 정상·불량 이미지에서 같은 측정값을
+    # 얻어야 나중에 공정하게 비교할 수 있기 때문입니다.
+    #
+    # 주의:
+    # 현재는 특징값을 측정하는 단계입니다.
+    # 아직 Threshold나 OK/NG 판정 Rule은 적용하지 않습니다.
+    # --------------------------------------------------
 
     for image_path, actual in image_infos:
 
+        # 이미지 한 장의 특징값 측정
         measurement = measure_target(
             image_path,
             reference_data
         )
 
+
+        # --------------------------------------------------
+        # 5-1. 이미지 한 장의 측정값을 딕셔너리로 정리
+        #
+        # file:
+        # 검사 이미지 이름
+        #
+        # actual:
+        # 파일명으로 구분한 실제 정답(OK/NG)
+        #
+        # template_score:
+        # 기준 로고와 가장 비슷한 영역의 유사도
+        #
+        # sift_good_matches:
+        # Ratio Test를 통과한 SIFT 특징점 대응 개수
+        #
+        # homography_found:
+        # Homography 계산 성공 여부
+        # 1 = 성공 / 0 = 실패
+        #
+        # homography_inliers:
+        # RANSAC의 변환 관계에 잘 맞는 대응점 개수
+        #
+        # inlier_ratio:
+        # Inlier Count / Good Match Count
+        #
+        # round(값, 6):
+        # 측정값을 소수점 여섯째 자리까지 반올림
+        # --------------------------------------------------
 
         row = {
 
@@ -2327,6 +3158,17 @@ def main():
         }
 
 
+        # --------------------------------------------------
+        # 5-2. 측정 결과를 리스트에 추가하고 출력
+        #
+        # 무엇을 하나요?
+        # - 이미지 한 장의 측정 결과를 rows에 추가합니다.
+        # - 현재 이미지의 결과를 터미널에 출력합니다.
+        #
+        # 반복문이 끝나면 rows에는
+        # 모든 Calibration 이미지의 측정값이 저장됩니다.
+        # --------------------------------------------------
+
         rows.append(
             row
         )
@@ -2337,9 +3179,30 @@ def main():
         )
 
 
-    # ==============================================
-    # 4. CSV 저장
-    # ==============================================
+    # --------------------------------------------------
+    # 6. Calibration 전체 측정값을 CSV 파일로 저장
+    #
+    # 무엇을 하나요?
+    # - CSV의 컬럼명을 정의합니다.
+    # - CSV 파일을 생성합니다.
+    # - 각 이미지의 측정값을 한 행씩 저장합니다.
+    #
+    # 저장할 파일:
+    # reports/day05_calibration_measurements.csv
+    #
+    # utf-8-sig:
+    # Excel 등에서 한글이 깨지는 문제를 줄이기 위한 인코딩
+    #
+    # writer.writeheader():
+    # CSV 첫 번째 행에 컬럼명 작성
+    #
+    # writer.writerows(rows):
+    # 모든 Calibration 측정값 저장
+    #
+    # 왜 필요한가요?
+    # 다음 실습에서 정상과 불량의 측정값을 비교하고
+    # Threshold 후보를 찾기 위해서입니다.
+    # --------------------------------------------------
 
     fieldnames = [
 
@@ -2377,9 +3240,21 @@ def main():
         )
 
 
-    # ==============================================
-    # 5. 완료 확인
-    # ==============================================
+    # --------------------------------------------------
+    # 7. Calibration 측정 완료 및 저장 결과 확인
+    #
+    # 무엇을 하나요?
+    # - Calibration 측정이 끝났음을 출력합니다.
+    # - 측정한 이미지의 전체 개수를 출력합니다.
+    # - 결과 CSV 파일의 저장 경로를 출력합니다.
+    #
+    # 왜 필요한가요?
+    # 프로그램이 전체 이미지를 처리하고
+    # 결과를 어디에 저장했는지 확인하기 위해서입니다.
+    #
+    # 이 단계에서 만드는 것은 측정 결과 CSV이며,
+    # 최종 검사 기준은 다음 실습에서 결정합니다.
+    # --------------------------------------------------
 
     print()
     print("=" * 70)
@@ -2401,15 +3276,261 @@ def main():
     print("=" * 70)
 
 
+# --------------------------------------------------
+# 8. Python 파일을 직접 실행할 때 main() 호출
+#
+# 무엇을 하나요?
+# - 이 파일을 직접 실행한 경우 main()을 호출합니다.
+#
+# __name__ == "__main__":
+# 현재 Python 파일을 직접 실행하고 있는지 확인합니다.
+#
+# 왜 필요한가요?
+# 다른 파일에서 이 코드를 import할 때
+# Calibration 측정 작업이 자동 실행되지 않도록
+# 구분하기 위해서입니다.
+#
+# 실행 명령어:
+# python src/34_day05_measure_calibration.py
+# --------------------------------------------------
+
 if __name__ == "__main__":
     main()
 ```
+### 의사코드
 
----
+```
+[1. Reference, Calibration 이미지 및 CSV 경로 설정]
 
-### 코드 실행
+광천김 Reference 이미지 경로를 정한다.
 
-프로젝트 루트에서 실행합니다.
+samples/day04/reference/reference_label.jpg
+
+Calibration 이미지 폴더를 지정한다.
+
+samples/day05/resized/
+
+결과 CSV 저장 경로를 정한다.
+
+reports/day05_calibration_measurements.csv
+
+          ↓
+
+[2. Calibration 이미지 목록과 실제 상태 준비]
+
+find_calibration_images() 함수를 만든다.
+
+이미지 정보를 저장할 빈 리스트를 만든다.
+
+          ↓
+
+ok_로 시작하는 JPG 이미지를 찾는다.
+
+각 이미지의 경로와
+실제 정답 "OK"를 함께 저장한다.
+
+          ↓
+
+ng_로 시작하는 JPG 이미지를 찾는다.
+
+각 이미지의 경로와
+실제 정답 "NG"를 함께 저장한다.
+
+          ↓
+
+이미지 경로와 실제 정답 목록을 반환한다.
+
+          ↓
+
+[3. 결과 폴더 생성 및 Reference 특징점 준비]
+
+main() 함수를 만든다.
+
+결과 CSV를 저장할 reports 폴더를 준비한다.
+
+prepare_reference() 함수를 호출한다.
+
+Reference 이미지를 읽는다.
+
+Reference를 Grayscale로 변환한다.
+
+SIFT 특징점과 Descriptor를 추출한다.
+
+Reference 정보를 reference_data에 저장한다.
+
+Reference Keypoint 개수를 출력한다.
+
+          ↓
+
+[4. Calibration 이미지 목록과 수량 확인]
+
+find_calibration_images() 함수를 호출한다.
+
+준비된 Calibration 이미지 목록을 가져온다.
+
+전체 이미지 개수를 출력한다.
+
+          ↓
+
+총 12장인지 확인한다.
+
+12장이 아니라면 경고를 출력한다.
+
+현재 코드는 경고 후에도 계속 진행한다.
+
+          ↓
+
+측정값을 저장할 rows 리스트를 만든다.
+
+          ↓
+
+[5. Calibration 이미지 12장에 같은 측정 반복]
+
+첫 번째 Calibration 이미지를 선택한다.
+
+이미지 경로와 실제 정답을 가져온다.
+
+          ↓
+
+measure_target() 함수를 호출한다.
+
+Target 이미지와 reference_data를 전달한다.
+
+          ↓
+
+Template Matching을 실행한다.
+
+Template Score를 측정한다.
+
+          ↓
+
+Target 이미지에서 SIFT 특징점을 추출한다.
+
+          ↓
+
+BFMatcher로 특징점 후보를 비교한다.
+
+          ↓
+
+Ratio Test로 Good Match를 선별한다.
+
+          ↓
+
+Good Match가 충분하면
+RANSAC + Homography를 계산한다.
+
+          ↓
+
+Homography 계산 성공 여부를 확인한다.
+
+Inlier Count를 측정한다.
+
+Inlier Ratio를 계산한다.
+
+          ↓
+
+[5-1. 이미지별 측정값 정리]
+
+현재 이미지 이름을 기록한다.
+
+실제 상태 OK 또는 NG를 기록한다.
+
+Template Score를 기록한다.
+
+SIFT Good Match 개수를 기록한다.
+
+Homography Found를 기록한다.
+
+Homography Inlier 개수를 기록한다.
+
+Inlier Ratio를 기록한다.
+
+          ↓
+
+[5-2. 측정 결과 저장]
+
+현재 이미지의 측정값을
+rows 리스트에 추가한다.
+
+측정 결과를 터미널에 출력한다.
+
+          ↓
+
+아직 측정할 이미지가 남아 있다면
+5번으로 돌아가 다음 이미지를 측정한다.
+
+모든 이미지 측정이 끝나면
+6번으로 이동한다.
+
+          ↓
+
+[6. Calibration 전체 측정값을 CSV 파일로 저장]
+
+CSV에 저장할 컬럼명을 준비한다.
+
+file
+actual
+template_score
+sift_good_matches
+homography_found
+homography_inliers
+inlier_ratio
+
+          ↓
+
+day05_calibration_measurements.csv 파일을 연다.
+
+첫 번째 행에 컬럼명을 작성한다.
+
+rows에 저장된 측정값을 한 행씩 작성한다.
+
+CSV 파일을 저장한다.
+
+          ↓
+
+[7. Calibration 측정 완료 및 저장 결과 확인]
+
+Calibration 측정 완료 메시지를 출력한다.
+
+측정한 이미지의 전체 개수를 출력한다.
+
+CSV 저장 경로를 출력한다.
+
+          ↓
+
+[8. 프로그램 실행]
+
+Python 파일을 직접 실행하면
+main() 함수를 호출한다.
+
+          ↓
+
+[최종 결과]
+
+광천김 Reference 1장
+        +
+Calibration 12장
+OK 6장 + NG 6장
+        ↓
+동일한 공통 측정 함수 사용
+        ↓
+Template Score
+SIFT Good Match
+Homography Found
+Homography Inlier
+Inlier Ratio
+        ↓
+이미지별 측정 결과 정리
+        ↓
+day05_calibration_measurements.csv 저장
+        ↓
+다음 실습
+OK / NG 측정값 비교
+        ↓
+Threshold 후보 탐색
+```
+
+코드 실행
 
 ```bash
 python src/34_day05_measure_calibration.py
@@ -2446,45 +3567,6 @@ ng_06.jpg 측정
 
 12장의 측정값을
 CSV에 한 줄씩 저장
-```
-
-### 의사코드
-
-```
-1. 광천김 기준 로고 이미지를 읽는다.
-
-2. 기준 로고에서
-   SIFT 특징점과 Descriptor를 한 번 만든다.
-
-3. samples/day05/resized 폴더에서
-   ok_로 시작하는 이미지 6장을 찾는다.
-
-4. 이 이미지들은 실제 상태를 OK라고 기록한다.
-
-5. ng_로 시작하는 이미지 6장을 찾는다.
-
-6. 이 이미지들은 실제 상태를 NG라고 기록한다.
-
-7. 첫 번째 이미지를 공통 측정 함수에 넣는다.
-
-8. Template Score를 측정한다.
-
-9. SIFT Good Match 수를 측정한다.
-
-10. RANSAC + Homography를 계산한다.
-
-11. Homography가 만들어졌는지 확인한다.
-
-12. Inlier 수를 계산한다.
-
-13. Inlier Ratio를 계산한다.
-
-14. 측정값을 한 줄의 데이터로 만든다.
-
-15. 나머지 Calibration 이미지에도
-    똑같은 과정을 반복한다.
-
-16. 총 12장의 결과를 CSV에 저장한다.
 ```
 
 Calibration 측정 결과
@@ -2559,6 +3641,33 @@ CSV에는 다음 항목이 들어갑니다.
 | `ng_04.jpg` | NG    |   0.5362 |       161 |    139 |       0.8634 |
 | `ng_05.jpg` | NG    |   0.5256 |       107 |     94 |       0.8785 |
 | `ng_06.jpg` | NG    |   0.4616 |       109 |     91 |       0.8349 |
+
+##### 세 가지 측정값의 차이
+
+|측정값|높을 때|낮을 때|
+|---|---|---|
+|SIFT Good Match|비슷하게 연결된 특징점이 많음|연결된 특징점이 적음|
+|Inlier|위치 관계까지 일치하는 특징점이 많음|일관된 위치 관계를 가진 특징점이 적음|
+|Inlier Ratio|연결된 특징점 중 일관된 대응점의 비율이 높음|일관된 대응점의 비율이 낮음|
+
+쉽게 이해하면 다음과 같습니다.
+
+- SIFT Good Match: 얼마나 많은 특징점이 연결되었는가?
+    
+- Inlier: 그중 위치 관계까지 맞는 특징점은 몇 개인가?
+    
+- Inlier Ratio: 연결된 특징점 중 몇 %가 위치 관계에 일치하는가?
+
+여기서 주목할 부분은 다음 두 가지입니다.
+
+① `ok_06`은 정상인데 수치가 낮습니다.
+② `ng_01`은 불량인데 Inlier Ratio가 0.9524로 매우 높습니다.
+
+즉, Inlier Ratio가 95%라고 해서 로고의 95%가 정상이라는 뜻은 아닙니다. 연결된 특징점 가운데 약 95%가 계산된 위치 관계에 일치한다는 의미입니다.
+
+아래에서 좀더 상세히 분석해 보겠습니다.
+
+
 ```
 ok_01.jpg
 → 사람이 알고 있는 실제 정답 = OK
@@ -2635,7 +3744,8 @@ NG 범위 : 0.4429 ~ 0.5362
 
 즉 이 겹치는 구간에서는 Template Score만 보고는 이 이미지가 OK인지 NG인지 확실히 구분하기 어렵습니다.
 
-따라서 Template Score 하나만으로 기준을 만들기보다, SIFT Good Match나 Inlier Ratio 같은 다른 측정값도 함께 비교해야 합니다.
+따라서 Template Score 하나만으로 기준을 만들기보다, SIFT Good Match나 Inlier Ratio 같은 
+다른 측정값도 함께 비교해야 합니다.
 
 ---
 
@@ -2706,7 +3816,6 @@ NG
 ```
 
 참고] RANSAC(랜색): 여러 Match 중에서 잘못 연결된 점을 제외하고, 서로 일관되게 맞는 점들만 골라내는 방법.
-
 
 평균은:
 
@@ -3060,6 +4169,8 @@ OK와 NG 결과 비교
 
 를 실제 데이터로 확인합니다.
 
+![[Pasted image 20261028170927.png]]
+
 ---
 
 # 18. 이제 Rule 후보에 사용할 값을 정합니다
@@ -3255,30 +4366,6 @@ OK
 
 ---
 
-## 19.2 전체 과정을 한 번에 보면
-
-![[Pasted image 20260831202603.png]]
-
-```
-Calibration 측정값 CSV
-        ↓
-SIFT Threshold 후보 만들기
-        +
-Inlier Ratio Threshold 후보 만들기
-        ↓
-여러 조합 만들기
-        ↓
-Calibration 12장에 적용
-        ↓
-실제 OK / NG와 비교
-        ↓
-TP / TN / FP / FN 계산
-        ↓
-오류가 적은 후보 순서로 정렬
-        ↓
-좋은 Rule 후보 확인
-```
-
 이 작업을 프로그램으로 수행하는 것이 다음 코드입니다.
 
 ```
@@ -3308,8 +4395,6 @@ sift_inlier_distribution.png
 ```
 
 > **이번 실습의 핵심은 좋은 Threshold 숫자를 외우는 것이 아니라, 여러 후보를 실제 데이터에 적용하여 오류가 적은 기준을 찾는 방법을 이해하는 것입니다.**
-
-
 
 
 ![[Pasted image 20260831153638.png]]
@@ -3354,13 +4439,6 @@ sift_inlier_distribution.png
 
 즉 `35_day05_analyze_calibration.py` 이코드는 측정한 숫자를 분석해서 Rule 후보를 찾는 코드를 작성하는 겁니다.
 
-
-파일생성:
-
-```text
-src/35_day05_analyze_calibration.py
-```
-
 이번 프로그램의 입력과 출력은 다음과 같습니다.
 
 ```
@@ -3401,6 +4479,12 @@ Matplotlib
 → OK와 NG의 측정값 분포를 그래프로 표현
 ```
 
+파일생성:
+
+```text
+src/35_day05_analyze_calibration.py
+```
+
 다음 코드를 작성합니다.
 
 ```python
@@ -3412,7 +4496,27 @@ import matplotlib.pyplot as plt
 
 
 # --------------------------------------------------
-# 파일 경로
+# 1. Calibration 입력 CSV와 결과 저장 경로 설정
+#
+# 무엇을 하나요?
+# - 앞에서 측정한 Calibration CSV 경로를 지정합니다.
+# - Threshold 후보별 결과를 저장할 CSV 경로를 정합니다.
+# - OK/NG 측정값 분포를 저장할 그래프 경로를 정합니다.
+#
+# CSV_PATH:
+# Calibration 12장의 실제 측정값이 저장된 파일
+#
+# CANDIDATE_CSV:
+# 여러 Threshold 조합의 성능을 저장할 파일
+#
+# PLOT_PATH:
+# SIFT Good Match와 Inlier Ratio의
+# OK/NG 분포를 시각화할 그래프 파일
+#
+# 왜 필요한가요?
+# 측정된 데이터를 읽고,
+# 분석 결과를 다시 확인할 수 있도록
+# CSV와 이미지 파일로 저장하기 위해서입니다.
 # --------------------------------------------------
 
 CSV_PATH = Path(
@@ -3429,7 +4533,38 @@ PLOT_PATH = Path(
 
 
 # --------------------------------------------------
-# 1. Threshold 후보 만들기
+# 2. Threshold 후보값을 생성하는 함수
+#
+# 무엇을 하나요?
+# - CSV의 측정값에서 최소값과 최대값을 찾습니다.
+# - 최소값과 최대값 사이의 후보값을 생성합니다.
+# - 기본적으로 15개의 후보값을 만듭니다.
+#
+# Threshold란?
+# 측정값이 정상 기준을 만족하는지 판단할 경계값입니다.
+#
+# 예:
+# SIFT Good Match >= 129
+# Inlier Ratio >= 0.8664
+#
+# series:
+# 후보를 만들 측정값 데이터
+#
+# count=15:
+# 생성할 후보값의 기본 개수
+#
+# integer=False:
+# 소수점 값을 사용할지 결정하는 설정
+#
+# integer=True:
+# SIFT Good Match처럼 정수 기준값 생성
+#
+# integer=False:
+# Inlier Ratio처럼 소수 기준값 생성
+#
+# 왜 필요한가요?
+# Threshold를 감으로 하나만 정하는 대신
+# 실제 측정값 범위에서 여러 기준을 시험하기 위해서입니다.
 # --------------------------------------------------
 
 def make_candidates(
@@ -3438,15 +4573,41 @@ def make_candidates(
     integer=False,
 ):
 
+    # --------------------------------------------------
+    # 2-1. 측정값을 숫자로 변환하고 빈 값 제거
+    #
+    # pd.to_numeric():
+    # 데이터를 숫자 형태로 변환합니다.
+    #
+    # errors="coerce":
+    # 숫자로 변환할 수 없는 값은 NaN으로 처리합니다.
+    #
+    # dropna():
+    # NaN 값을 제거합니다.
+    # --------------------------------------------------
+
     values = pd.to_numeric(
         series,
         errors="coerce",
     ).dropna()
 
 
+    # 사용할 측정값이 없다면 빈 리스트 반환
     if values.empty:
         return []
 
+
+    # --------------------------------------------------
+    # 2-2. 측정값의 최소값과 최대값 찾기
+    #
+    # low:
+    # 가장 작은 측정값
+    #
+    # high:
+    # 가장 큰 측정값
+    #
+    # 이 범위에서 Threshold 후보를 생성합니다.
+    # --------------------------------------------------
 
     low = float(
         values.min()
@@ -3457,7 +4618,15 @@ def make_candidates(
     )
 
 
-    # 모든 값이 같으면 후보도 하나만 사용
+    # --------------------------------------------------
+    # 2-3. 모든 측정값이 같은 경우 처리
+    #
+    # 최소값과 최대값이 같으면
+    # 서로 다른 후보를 만들 수 없습니다.
+    #
+    # 따라서 현재 값 하나만 후보로 반환합니다.
+    # --------------------------------------------------
+
     if low == high:
 
         if integer:
@@ -3466,14 +4635,39 @@ def make_candidates(
         return [low]
 
 
-    # 최소값부터 최대값까지
-    # 15개의 후보를 균등하게 생성
+    # --------------------------------------------------
+    # 2-4. 최소값부터 최대값까지 후보 생성
+    #
+    # np.linspace():
+    # 시작값과 끝값 사이를 균등하게 나누어
+    # 지정한 개수의 숫자를 생성하는 함수입니다.
+    #
+    # 예:
+    # 최소값 100, 최대값 200, count=5
+    #
+    # 후보:
+    # 100, 125, 150, 175, 200
+    #
+    # 이번에는 기본적으로 15개를 생성합니다.
+    # --------------------------------------------------
+
     candidates = np.linspace(
         low,
         high,
         count,
     )
 
+
+    # --------------------------------------------------
+    # 2-5. 정수 Threshold 후보 정리
+    #
+    # integer=True이면:
+    # - 각 후보를 반올림하여 정수로 변환합니다.
+    # - 중복값을 제거합니다.
+    # - 작은 값부터 정렬합니다.
+    #
+    # SIFT Good Match 개수에 사용합니다.
+    # --------------------------------------------------
 
     if integer:
 
@@ -3484,6 +4678,20 @@ def make_candidates(
             )
         )
 
+
+    # --------------------------------------------------
+    # 2-6. 소수 Threshold 후보 정리
+    #
+    # integer=False이면:
+    # - 소수점 넷째 자리까지 반올림합니다.
+    # - 중복값을 제거합니다.
+    # - 작은 값부터 정렬합니다.
+    #
+    # Inlier Ratio 기준값에 사용합니다.
+    #
+    # 주의:
+    # 중복 제거로 최종 후보 수가 15개보다 적을 수도 있습니다.
+    # --------------------------------------------------
 
     return sorted(
         set(
@@ -3497,9 +4705,35 @@ def make_candidates(
 
 
 # --------------------------------------------------
-# 2. 실제 정답과 임시 판정 비교
+# 3. 실제 정답과 프로그램 판정을 비교하는 함수
 #
-# 제조검사에서는 NG를 Positive로 정의합니다.
+# 무엇을 하나요?
+# - Calibration 이미지의 실제 정답과
+#   프로그램이 임시 Rule로 판정한 값을 비교합니다.
+# - 결과를 TP, TN, FP, FN으로 구분합니다.
+#
+# 이번 제조검사에서는 NG를 Positive로 정의합니다.
+#
+# TP:
+# 실제 NG → 프로그램 NG
+# 불량을 올바르게 검출
+#
+# TN:
+# 실제 OK → 프로그램 OK
+# 정상을 올바르게 통과
+#
+# FP:
+# 실제 OK → 프로그램 NG
+# 정상을 불량으로 잘못 판단
+#
+# FN:
+# 실제 NG → 프로그램 OK
+# 불량을 정상으로 잘못 통과
+#
+# 왜 필요한가요?
+# Threshold 후보를 비교할 때
+# 단순히 맞힌 개수뿐 아니라
+# 어떤 종류의 오류가 발생했는지 확인하기 위해서입니다.
 # --------------------------------------------------
 
 def classify_error(
@@ -3507,7 +4741,7 @@ def classify_error(
     predicted,
 ):
 
-    # 실제 NG → NG로 검출
+    # 실제 NG를 NG로 올바르게 검출
     if (
         actual == "NG"
         and predicted == "NG"
@@ -3515,7 +4749,7 @@ def classify_error(
         return "TP"
 
 
-    # 실제 OK → OK로 통과
+    # 실제 OK를 OK로 올바르게 판정
     if (
         actual == "OK"
         and predicted == "OK"
@@ -3523,7 +4757,7 @@ def classify_error(
         return "TN"
 
 
-    # 실제 OK → NG로 잘못 판정
+    # 실제 OK를 NG로 잘못 판정
     if (
         actual == "OK"
         and predicted == "NG"
@@ -3531,7 +4765,7 @@ def classify_error(
         return "FP"
 
 
-    # 실제 NG → OK로 잘못 통과
+    # 실제 NG를 OK로 잘못 통과
     if (
         actual == "NG"
         and predicted == "OK"
@@ -3539,18 +4773,34 @@ def classify_error(
         return "FN"
 
 
+    # 예상하지 못한 값이 들어온 경우
     return "UNKNOWN"
 
 
 # --------------------------------------------------
-# 실행
+# 4. Calibration CSV를 읽고 데이터 수량 확인
+#
+# 무엇을 하나요?
+# - main() 함수를 정의합니다.
+# - 앞에서 만든 CSV가 존재하는지 확인합니다.
+# - Pandas로 CSV를 읽습니다.
+# - 전체 이미지 개수와 실제 OK/NG 개수를 확인합니다.
+#
+# 이번 수업에서 예상하는 데이터:
+# OK 6장 + NG 6장 = 총 12장
+#
+# pd.read_csv():
+# CSV 파일을 DataFrame 형태로 읽는 함수
+#
+# value_counts():
+# 각 값이 몇 번 나타나는지 세는 함수
+#
+# 왜 필요한가요?
+# Threshold를 분석하기 전에
+# 사용할 Calibration 데이터의 구성을 확인하기 위해서입니다.
 # --------------------------------------------------
 
 def main():
-
-    # ==============================================
-    # 1. Calibration CSV 읽기
-    # ==============================================
 
     if not CSV_PATH.exists():
 
@@ -3579,9 +4829,43 @@ def main():
     )
 
 
-    # ==============================================
-    # 2. OK / NG 기본 통계 확인
-    # ==============================================
+    # --------------------------------------------------
+    # 5. OK와 NG의 측정값 기본 통계 확인
+    #
+    # 무엇을 하나요?
+    # - 분석할 숫자 컬럼 4개를 선택합니다.
+    # - 실제 OK/NG를 구분하여 통계를 계산합니다.
+    #
+    # 측정 항목:
+    # template_score:
+    # Template Matching 유사도
+    #
+    # sift_good_matches:
+    # SIFT Good Match 개수
+    #
+    # homography_inliers:
+    # RANSAC Inlier 개수
+    #
+    # inlier_ratio:
+    # Good Match 중 Inlier의 비율
+    #
+    # min:
+    # 가장 작은 값
+    #
+    # mean:
+    # 평균값
+    #
+    # max:
+    # 가장 큰 값
+    #
+    # 왜 필요한가요?
+    # 정상과 불량의 측정값이 어느 정도 다르고
+    # 서로 겹치는 범위가 있는지 확인하기 위해서입니다.
+    #
+    # 주의:
+    # 여기서는 네 가지 측정값의 통계를 확인하지만,
+    # 이후 Rule 후보 생성에는 SIFT와 Inlier Ratio를 사용합니다.
+    # --------------------------------------------------
 
     numeric_columns = [
         "template_score",
@@ -3617,9 +4901,28 @@ def main():
     )
 
 
-    # ==============================================
-    # 3. Threshold 후보 만들기
-    # ==============================================
+    # --------------------------------------------------
+    # 6. SIFT와 Inlier Ratio의 Threshold 후보 생성
+    #
+    # 무엇을 하나요?
+    # - 2번에서 만든 make_candidates()를 호출합니다.
+    # - SIFT Good Match의 Threshold 후보를 생성합니다.
+    # - Inlier Ratio의 Threshold 후보를 생성합니다.
+    #
+    # SIFT:
+    # 특징점 개수이므로 정수 후보를 사용합니다.
+    #
+    # Inlier Ratio:
+    # 비율이므로 소수 후보를 사용합니다.
+    #
+    # 예:
+    # SIFT >= 129
+    # Inlier Ratio >= 0.8664
+    #
+    # 왜 필요한가요?
+    # 여러 기준값을 조합하여
+    # 실제 OK와 NG를 잘 구분하는 Rule을 찾기 위해서입니다.
+    # --------------------------------------------------
 
     sift_candidates = make_candidates(
         df["sift_good_matches"],
@@ -3657,9 +4960,36 @@ def main():
     )
 
 
-    # ==============================================
-    # 4. 모든 후보 조합 시험
-    # ==============================================
+    # --------------------------------------------------
+    # 7. SIFT와 Inlier Ratio의 모든 Threshold 조합 시험
+    #
+    # 무엇을 하나요?
+    # - SIFT 후보 하나를 선택합니다.
+    # - Inlier Ratio 후보 하나를 선택합니다.
+    # - 두 값을 조합하여 임시 Rule을 만듭니다.
+    # - 현재 Rule을 Calibration 전체 이미지에 적용합니다.
+    #
+    # 임시 Rule:
+    #
+    # Homography 계산 성공
+    #        AND
+    # SIFT Good Match >= 후보값
+    #        AND
+    # Inlier Ratio >= 후보값
+    #
+    # 모두 만족하면 OK
+    # 하나라도 만족하지 못하면 NG
+    #
+    # 왜 필요한가요?
+    # 여러 Threshold 조합 중
+    # 어떤 조합이 실제 정상과 불량을
+    # 가장 적게 잘못 판정하는지 확인하기 위해서입니다.
+    #
+    # 후보가 각각 15개라면:
+    # 15 × 15 = 225개 조합을 시험합니다.
+    #
+    # 단, 중복 후보가 제거되면 실제 조합 수는 줄어듭니다.
+    # --------------------------------------------------
 
     rows = []
 
@@ -3668,14 +4998,26 @@ def main():
 
         for inlier_min in inlier_candidates:
 
+            # 현재 후보 Rule의 평가값 초기화
             tp = 0
             tn = 0
             fp = 0
             fn = 0
 
 
-            # Calibration 12장에
-            # 현재 후보 Rule을 적용
+            # --------------------------------------------------
+            # 7-1. Calibration 이미지마다 임시 Rule 적용
+            #
+            # 무엇을 하나요?
+            # - CSV의 각 이미지 측정값을 하나씩 확인합니다.
+            # - 현재 Threshold 조합을 적용합니다.
+            # - 조건을 모두 만족하면 OK로 판정합니다.
+            # - 하나라도 실패하면 NG로 판정합니다.
+            #
+            # 여기서는 이미 저장한 측정값을 사용합니다.
+            # 원본 이미지를 다시 읽거나 SIFT를 재실행하지 않습니다.
+            # --------------------------------------------------
+
             for _, row in df.iterrows():
 
                 predicted = (
@@ -3702,6 +5044,18 @@ def main():
                 )
 
 
+                # --------------------------------------------------
+                # 7-2. 실제 정답과 임시 판정을 비교
+                #
+                # 무엇을 하나요?
+                # - classify_error() 함수를 호출합니다.
+                # - 현재 이미지의 결과를 TP/TN/FP/FN으로 구분합니다.
+                # - 해당 오류 유형의 개수를 1 증가시킵니다.
+                #
+                # 특히 FN은 실제 불량을 정상으로 통과시키는
+                # 오류이므로 이번 제조검사에서 중요하게 확인합니다.
+                # --------------------------------------------------
+
                 error = classify_error(
                     row["actual"],
                     predicted,
@@ -3721,9 +5075,26 @@ def main():
                     fn += 1
 
 
-            # --------------------------------------
-            # 정확도 계산
-            # --------------------------------------
+            # --------------------------------------------------
+            # 8. 현재 Threshold 조합의 Accuracy와 오류 기록
+            #
+            # 무엇을 하나요?
+            # - TP/TN/FP/FN을 합하여 평가 이미지 수를 계산합니다.
+            # - 올바르게 판정한 비율인 Accuracy를 계산합니다.
+            # - 현재 Threshold 후보의 평가 결과를 저장합니다.
+            #
+            # Accuracy:
+            # (TP + TN) / (TP + TN + FP + FN)
+            #
+            # total_error:
+            # FP + FN
+            #
+            # 예:
+            # 12장 중 11장을 맞혔다면
+            # Accuracy = 11 / 12 ≈ 0.9167
+            #
+            # rows에는 모든 Threshold 조합의 결과가 저장됩니다.
+            # --------------------------------------------------
 
             total = (
                 tp
@@ -3740,7 +5111,6 @@ def main():
             )
 
 
-            # 현재 후보 결과 저장
             rows.append(
                 {
                     "sift_good_matches_min":
@@ -3773,9 +5143,38 @@ def main():
             )
 
 
-    # ==============================================
-    # 5. 후보 Rule을 좋은 순서로 정렬
-    # ==============================================
+    # --------------------------------------------------
+    # 9. Threshold 후보를 오류가 적은 순서로 정렬
+    #
+    # 무엇을 하나요?
+    # - 후보별 평가 결과를 DataFrame으로 변환합니다.
+    # - 정해진 우선순위에 따라 후보를 정렬합니다.
+    #
+    # 정렬 우선순위:
+    #
+    # ① fn
+    #    불량을 정상으로 놓친 개수가 적은 후보
+    #
+    # ② total_error
+    #    전체 오류(FP + FN)가 적은 후보
+    #
+    # ③ fp
+    #    정상을 불량으로 잘못 판정한 개수가 적은 후보
+    #
+    # ④ sift_good_matches_min
+    #    앞 조건까지 같으면 SIFT 기준값이 작은 후보
+    #
+    # ⑤ inlier_ratio_min
+    #    앞 조건까지 같으면 Inlier Ratio 기준값이 작은 후보
+    #
+    # 왜 필요한가요?
+    # 제조검사에서는 불량을 정상으로 통과시키는 FN을
+    # 특히 중요하게 보기 때문입니다.
+    #
+    # 주의:
+    # 현재 정렬 방식은 Accuracy 최대값보다
+    # FN 최소화를 먼저 우선합니다.
+    # --------------------------------------------------
 
     result_df = pd.DataFrame(
         rows
@@ -3803,9 +5202,29 @@ def main():
     )
 
 
-    # ==============================================
-    # 6. 후보 Rule CSV 저장
-    # ==============================================
+    # --------------------------------------------------
+    # 10. Threshold 후보 평가 결과를 CSV로 저장
+    #
+    # 무엇을 하나요?
+    # - 결과를 저장할 폴더를 생성합니다.
+    # - 정렬된 모든 후보 Rule의 성능을 CSV로 저장합니다.
+    # - 상위 15개 후보를 터미널에 출력합니다.
+    #
+    # 저장 파일:
+    # reports/day05_rule_candidates.csv
+    #
+    # CSV에는 다음 값이 포함됩니다.
+    #
+    # SIFT Threshold
+    # Inlier Ratio Threshold
+    # Accuracy
+    # TP / TN / FP / FN
+    # Total Error
+    #
+    # 왜 필요한가요?
+    # 여러 후보 Rule의 평가 결과를 나중에 다시
+    # 확인하고 비교하기 위해서입니다.
+    # --------------------------------------------------
 
     CANDIDATE_CSV.parent.mkdir(
         parents=True,
@@ -3844,9 +5263,32 @@ def main():
     )
 
 
-    # ==============================================
-    # 7. 가장 위의 후보 가져오기
-    # ==============================================
+    # --------------------------------------------------
+    # 11. 정렬된 결과에서 첫 번째 Rule 후보 선택
+    #
+    # 무엇을 하나요?
+    # - 정렬된 후보 중 첫 번째 행을 가져옵니다.
+    # - 해당 후보의 SIFT Threshold를 확인합니다.
+    # - Inlier Ratio Threshold를 확인합니다.
+    # - Accuracy, FP, FN을 출력합니다.
+    #
+    # best:
+    # 현재 정렬 기준에서 가장 위에 있는 후보
+    #
+    # best_sift:
+    # 선택된 SIFT Good Match 기준값
+    #
+    # best_inlier:
+    # 선택된 Inlier Ratio 기준값
+    #
+    # 왜 필요한가요?
+    # 다음 실습에서 실제 사용할 Baseline Rule을
+    # 결정할 때 검토할 후보를 확인하기 위해서입니다.
+    #
+    # 주의:
+    # 이 후보는 Calibration 데이터에서 선택한 것입니다.
+    # 새로운 Test 데이터에서의 성능까지 보장하지는 않습니다.
+    # --------------------------------------------------
 
     best = result_df.iloc[0]
 
@@ -3892,9 +5334,40 @@ def main():
     )
 
 
-    # ==============================================
-    # 8. 분포 그래프 만들기
-    # ==============================================
+    # --------------------------------------------------
+    # 12. SIFT와 Inlier Ratio의 OK/NG 분포 그래프 생성
+    #
+    # 무엇을 하나요?
+    # - Calibration 이미지의 측정값을 X-Y 그래프로 표시합니다.
+    # - 실제 OK와 NG를 서로 다른 모양으로 표시합니다.
+    # - 선택된 Threshold를 세로선과 가로선으로 표시합니다.
+    #
+    # X축:
+    # SIFT Good Match
+    #
+    # Y축:
+    # Homography Inlier Ratio
+    #
+    # 원형(o):
+    # 실제 OK 이미지
+    #
+    # X 모양(x):
+    # 실제 NG 이미지
+    #
+    # 세로 점선:
+    # SIFT Threshold
+    #
+    # 가로 점선:
+    # Inlier Ratio Threshold
+    #
+    # 왜 필요한가요?
+    # 정상과 불량의 측정값이
+    # Threshold를 기준으로 어떻게 분포하는지
+    # 눈으로 확인하기 위해서입니다.
+    #
+    # 현재 Rule에서는 두 기준을 모두 만족하는
+    # 오른쪽 위 영역이 OK 판정 영역입니다.
+    # --------------------------------------------------
 
     PLOT_PATH.parent.mkdir(
         parents=True,
@@ -3902,12 +5375,28 @@ def main():
     )
 
 
+    # 그래프 크기 설정
     plt.figure(
         figsize=(9, 6)
     )
 
 
-    # OK와 NG를 다른 모양으로 표시
+    # --------------------------------------------------
+    # 12-1. 실제 OK와 NG 측정값을 점으로 표시
+    #
+    # 무엇을 하나요?
+    # - 실제 정답을 기준으로 OK와 NG를 분리합니다.
+    # - SIFT 값을 X축에 표시합니다.
+    # - Inlier Ratio를 Y축에 표시합니다.
+    # - 각 점에 이미지 파일명을 표시합니다.
+    #
+    # plt.scatter():
+    # 데이터의 위치를 점으로 표시하는 함수
+    #
+    # plt.annotate():
+    # 점 옆에 설명이나 파일명을 표시하는 함수
+    # --------------------------------------------------
+
     for actual, marker in [
         ("OK", "o"),
         ("NG", "x"),
@@ -3926,7 +5415,7 @@ def main():
         )
 
 
-        # 각 점에 파일명 표시
+        # 각 점에 이미지 파일명 표시
         for _, row in subset.iterrows():
 
             plt.annotate(
@@ -3941,7 +5430,18 @@ def main():
             )
 
 
-    # 선택된 후보 Threshold 표시
+    # --------------------------------------------------
+    # 12-2. 선택된 SIFT Threshold를 세로선으로 표시
+    #
+    # plt.axvline():
+    # X축의 특정 위치에 세로선을 그립니다.
+    #
+    # 예:
+    # SIFT >= 129
+    #
+    # 129 이상인 점은 선의 오른쪽에 위치합니다.
+    # --------------------------------------------------
+
     plt.axvline(
         best_sift,
         linestyle="--",
@@ -3951,6 +5451,18 @@ def main():
     )
 
 
+    # --------------------------------------------------
+    # 12-3. 선택된 Inlier Ratio Threshold를 가로선으로 표시
+    #
+    # plt.axhline():
+    # Y축의 특정 위치에 가로선을 그립니다.
+    #
+    # 예:
+    # Inlier Ratio >= 0.8664
+    #
+    # 0.8664 이상인 점은 선의 위쪽에 위치합니다.
+    # --------------------------------------------------
+
     plt.axhline(
         best_inlier,
         linestyle="--",
@@ -3959,6 +5471,26 @@ def main():
         ),
     )
 
+
+    # --------------------------------------------------
+    # 12-4. 그래프 제목과 축 이름 설정
+    #
+    # xlabel:
+    # X축 이름
+    #
+    # ylabel:
+    # Y축 이름
+    #
+    # title:
+    # 그래프 제목
+    #
+    # legend:
+    # OK, NG, Threshold 선의 범례 표시
+    #
+    # grid:
+    # 측정값의 위치를 쉽게 확인할 수 있도록
+    # 보조 격자선을 표시합니다.
+    # --------------------------------------------------
 
     plt.xlabel(
         "SIFT Good Matches"
@@ -3980,6 +5512,25 @@ def main():
     )
 
 
+    # --------------------------------------------------
+    # 12-5. 분포 그래프를 PNG 파일로 저장
+    #
+    # plt.savefig():
+    # 현재 그래프를 이미지 파일로 저장합니다.
+    #
+    # dpi=150:
+    # 출력 이미지 해상도 설정
+    #
+    # bbox_inches="tight":
+    # 그래프 주변의 불필요한 여백을 줄입니다.
+    #
+    # plt.close():
+    # 그래프 작업이 끝난 후 리소스를 정리합니다.
+    #
+    # 저장 파일:
+    # sift_inlier_distribution.png
+    # --------------------------------------------------
+
     plt.savefig(
         PLOT_PATH,
         dpi=150,
@@ -3998,24 +5549,24 @@ def main():
     )
 
 
+# --------------------------------------------------
+# 13. Python 파일을 직접 실행할 때 main() 호출
+#
+# 무엇을 하나요?
+# - 현재 파일을 직접 실행했는지 확인합니다.
+# - 직접 실행했다면 main() 함수를 호출합니다.
+#
+# 왜 필요한가요?
+# 다른 Python 파일에서 이 코드를 import할 때
+# Calibration 분석이 자동 실행되지 않도록 하기 위해서입니다.
+#
+# 실행 명령어:
+# python src/35_day05_analyze_calibration.py
+# --------------------------------------------------
+
 if __name__ == "__main__":
     main()
 ```
-
-실행합니다.
-
-```bash
-python src/35_day05_analyze_calibration.py
-```
-
-결과는 다음 두 파일입니다.
-
-```text
-reports/day05_rule_candidates.csv
-outputs/day05/calibration/sift_inlier_distribution.png
-```
-
-## 19.4 이 코드에서 실제로 하는 일을 먼저 봅니다
 
 코드가 길어 보이지만 실제로 하는 일은 그림에서 본 순서와 같습니다.
 
@@ -4040,60 +5591,459 @@ outputs/day05/calibration/sift_inlier_distribution.png
         ↓
 ⑨ CSV와 그래프로 저장
 ```
-
 ### 의사코드
 
 ```text
-1. 앞에서 만든 Calibration CSV를 읽는다.
+[1. Calibration 입력 CSV와 결과 저장 경로 설정]
 
-2. CSV에서 OK 6장과 NG 6장의
-   측정값을 확인한다.
+Calibration 측정 결과 CSV 경로를 정한다.
 
-3. SIFT Good Match의
-   최소값과 최대값 사이에서
-   Threshold 후보를 여러 개 만든다.
+reports/day05_calibration_measurements.csv
 
-4. Inlier Ratio도
-   최소값과 최대값 사이에서
-   Threshold 후보를 여러 개 만든다.
+Threshold 후보 결과 CSV 경로를 정한다.
 
-5. SIFT 후보 하나와
-   Inlier Ratio 후보 하나를 선택한다.
+reports/day05_rule_candidates.csv
 
-6. 두 값을 이용하여
-   임시 Rule을 만든다.
+OK/NG 분포 그래프 저장 경로를 정한다.
 
-   Homography 성공
-   AND
-   SIFT >= 후보값
-   AND
-   Inlier Ratio >= 후보값
+outputs/day05/calibration/
+sift_inlier_distribution.png
 
-   → 모두 만족하면 OK
-   → 아니면 NG
+          ↓
 
-7. 이 Rule을 Calibration 12장에 적용한다.
+[2. Threshold 후보값을 생성하는 함수]
 
-8. 프로그램의 임시 판정과
-   실제 OK / NG를 비교한다.
+make_candidates() 함수를 정의한다.
 
-9. 몇 장을 맞혔는지 계산한다.
+후보를 만들 측정값을 전달받는다.
 
-10. 정상인데 NG라고 한 경우와
-    불량인데 OK라고 한 경우도 계산한다.
+측정값을 숫자로 변환한다.
+숫자가 아닌 값과 빈 값을 제거한다.
 
-11. 다른 Threshold 조합으로 바꾸어
-    같은 작업을 다시 반복한다.
+          ↓
 
-12. 모든 후보의 결과를 비교한다.
+남은 측정값이 없다면
+빈 리스트를 반환한다.
 
-13. 불량을 OK로 통과시킨 경우가 적고
-    전체 오류도 적은 후보를 위쪽에 배치한다.
+          ↓
 
-14. 후보 결과를 CSV로 저장한다.
+측정값의 최소값과 최대값을 찾는다.
 
-15. SIFT와 Inlier Ratio의 위치를
-    그래프로 저장한다.
+최소값과 최대값이 같으면
+현재 값 하나만 후보로 사용한다.
+
+          ↓
+
+최소값과 최대값이 다르면
+np.linspace()로 후보값 15개를 생성한다.
+
+          ↓
+
+SIFT처럼 정수 기준이면
+후보를 정수로 반올림한다.
+
+Inlier Ratio처럼 소수 기준이면
+소수점 넷째 자리까지 반올림한다.
+
+          ↓
+
+중복값을 제거한다.
+작은 값부터 정렬한다.
+
+Threshold 후보 리스트를 반환한다.
+
+          ↓
+
+[3. 실제 정답과 프로그램 판정을 비교하는 함수]
+
+classify_error() 함수를 정의한다.
+
+실제 정답 actual을 전달받는다.
+프로그램의 예측 predicted를 전달받는다.
+
+          ↓
+
+실제 NG이고 예측 NG이면
+TP를 반환한다.
+
+실제 OK이고 예측 OK이면
+TN을 반환한다.
+
+실제 OK인데 예측 NG이면
+FP를 반환한다.
+
+실제 NG인데 예측 OK이면
+FN을 반환한다.
+
+어느 조건에도 해당하지 않으면
+UNKNOWN을 반환한다.
+
+          ↓
+
+[4. Calibration CSV를 읽고 데이터 수량 확인]
+
+main() 함수에서 분석을 시작한다.
+
+Calibration 측정 결과 CSV가 있는지 확인한다.
+
+파일이 없으면 오류를 발생시킨다.
+
+파일이 있다면 Pandas로 CSV를 읽는다.
+
+          ↓
+
+전체 Calibration 이미지 개수를 출력한다.
+
+실제 OK 이미지 개수를 확인한다.
+실제 NG 이미지 개수를 확인한다.
+
+          ↓
+
+[5. OK와 NG의 측정값 기본 통계 확인]
+
+분석할 측정값 4개를 선택한다.
+
+Template Score
+SIFT Good Match
+Homography Inlier
+Inlier Ratio
+
+          ↓
+
+실제 정답을 기준으로
+OK 그룹과 NG 그룹을 나눈다.
+
+          ↓
+
+각 그룹의 측정값에서
+최소값을 계산한다.
+평균값을 계산한다.
+최대값을 계산한다.
+
+          ↓
+
+OK와 NG의 통계 결과를 출력한다.
+
+          ↓
+
+[6. SIFT와 Inlier Ratio의 Threshold 후보 생성]
+
+make_candidates() 함수를 호출한다.
+
+SIFT Good Match의
+최소값과 최대값 사이에서
+정수 Threshold 후보를 만든다.
+
+          ↓
+
+Inlier Ratio의
+최소값과 최대값 사이에서
+소수 Threshold 후보를 만든다.
+
+          ↓
+
+각 후보 리스트를 출력한다.
+
+          ↓
+
+[7. SIFT와 Inlier Ratio의 모든 Threshold 조합 시험]
+
+평가 결과를 저장할 rows 리스트를 만든다.
+
+SIFT Threshold 후보 하나를 선택한다.
+Inlier Ratio Threshold 후보 하나를 선택한다.
+
+          ↓
+
+두 Threshold를 조합하여
+임시 검사 Rule을 만든다.
+
+          ↓
+
+TP, TN, FP, FN을 0으로 초기화한다.
+
+          ↓
+
+[7-1. Calibration 이미지마다 임시 Rule 적용]
+
+Calibration 이미지 12장을 하나씩 확인한다.
+
+각 이미지의 저장된 측정값을 읽는다.
+
+          ↓
+
+Homography Found == 1
+
+        AND
+
+SIFT Good Match >= 현재 SIFT 후보값
+
+        AND
+
+Inlier Ratio >= 현재 Inlier 후보값
+
+          ↓
+
+세 조건을 모두 만족하면
+Predicted = OK
+
+하나라도 만족하지 않으면
+Predicted = NG
+
+          ↓
+
+[7-2. 실제 정답과 임시 판정 비교]
+
+classify_error() 함수를 호출한다.
+
+실제 정답과 예측 결과를 비교한다.
+
+          ↓
+
+TP이면 TP 개수를 1 증가시킨다.
+TN이면 TN 개수를 1 증가시킨다.
+FP이면 FP 개수를 1 증가시킨다.
+FN이면 FN 개수를 1 증가시킨다.
+
+          ↓
+
+아직 평가할 Calibration 이미지가 남아 있으면
+7-1번으로 돌아가 같은 Rule을 적용한다.
+
+전체 이미지의 평가가 끝나면
+8번으로 이동한다.
+
+          ↓
+
+[8. 현재 Threshold 조합의 Accuracy와 오류 기록]
+
+TP, TN, FP, FN을 모두 더한다.
+
+전체 평가 이미지 개수를 계산한다.
+
+          ↓
+
+Accuracy =
+(TP + TN) / 전체 이미지 개수
+
+          ↓
+
+Total Error =
+FP + FN
+
+          ↓
+
+현재 SIFT Threshold를 기록한다.
+현재 Inlier Ratio Threshold를 기록한다.
+
+Accuracy를 기록한다.
+TP / TN / FP / FN을 기록한다.
+Total Error를 기록한다.
+
+          ↓
+
+현재 후보 Rule의 결과를
+rows 리스트에 추가한다.
+
+          ↓
+
+시험하지 않은 Threshold 조합이 있다면
+7번으로 돌아가 다음 조합을 시험한다.
+
+모든 조합을 시험했다면
+9번으로 이동한다.
+
+          ↓
+
+[9. Threshold 후보를 오류가 적은 순서로 정렬]
+
+모든 후보의 평가 결과를
+Pandas DataFrame으로 변환한다.
+
+          ↓
+
+다음 우선순위로 정렬한다.
+
+1순위: FN이 적은 후보
+2순위: 전체 오류가 적은 후보
+3순위: FP가 적은 후보
+4순위: SIFT 기준이 작은 후보
+5순위: Inlier Ratio 기준이 작은 후보
+
+          ↓
+
+정렬된 후보 결과를 준비한다.
+
+          ↓
+
+[10. Threshold 후보 평가 결과를 CSV로 저장]
+
+결과 저장 폴더를 준비한다.
+
+정렬된 전체 후보 Rule 결과를
+day05_rule_candidates.csv로 저장한다.
+
+          ↓
+
+후보 Rule 중 상위 15개를 선택한다.
+
+각 후보의 다음 값을 출력한다.
+
+SIFT Threshold
+Inlier Ratio Threshold
+Accuracy
+TP / TN / FP / FN
+Total Error
+
+          ↓
+
+CSV 저장 경로를 출력한다.
+
+          ↓
+
+[11. 정렬된 결과에서 첫 번째 Rule 후보 선택]
+
+정렬된 후보 결과의 첫 번째 행을 읽는다.
+
+          ↓
+
+SIFT Threshold를 가져온다.
+Inlier Ratio Threshold를 가져온다.
+
+          ↓
+
+선택한 후보의 Accuracy를 출력한다.
+FP 개수를 출력한다.
+FN 개수를 출력한다.
+
+          ↓
+
+현재 Calibration에서 우선 검토할
+Rule 후보를 확인한다.
+
+          ↓
+
+[12. SIFT와 Inlier Ratio의 OK/NG 분포 그래프 생성]
+
+분포 그래프 저장 폴더를 준비한다.
+
+9 × 6 크기의 그래프를 만든다.
+
+          ↓
+
+[12-1. 실제 OK와 NG 측정값을 점으로 표시]
+
+실제 OK 데이터와 NG 데이터를 분리한다.
+
+X축에는 SIFT Good Match를 사용한다.
+Y축에는 Inlier Ratio를 사용한다.
+
+OK 이미지는 원형 점으로 표시한다.
+NG 이미지는 X 모양으로 표시한다.
+
+각 점 옆에 이미지 파일명을 표시한다.
+
+          ↓
+
+[12-2. SIFT Threshold를 세로선으로 표시]
+
+선택된 SIFT 기준값을 가져온다.
+
+해당 위치에 세로 점선을 그린다.
+
+          ↓
+
+[12-3. Inlier Ratio Threshold를 가로선으로 표시]
+
+선택된 Inlier Ratio 기준값을 가져온다.
+
+해당 위치에 가로 점선을 그린다.
+
+          ↓
+
+[12-4. 그래프 제목과 축 이름 설정]
+
+X축 이름을 작성한다.
+Y축 이름을 작성한다.
+
+그래프 제목을 작성한다.
+OK/NG 및 Threshold 범례를 표시한다.
+
+보조 격자선을 표시한다.
+
+          ↓
+
+[12-5. 분포 그래프를 PNG로 저장]
+
+완성한 그래프를
+sift_inlier_distribution.png로 저장한다.
+
+그래프 리소스를 정리한다.
+저장 경로를 출력한다.
+
+          ↓
+
+[13. 프로그램 실행]
+
+Python 파일을 직접 실행하면
+main() 함수를 호출한다.
+
+          ↓
+
+[최종 결과]
+
+Calibration 측정 결과 CSV
+OK 6장 + NG 6장
+        ↓
+OK / NG 측정값 통계 확인
+        ↓
+SIFT Threshold 후보 생성
+        +
+Inlier Ratio Threshold 후보 생성
+        ↓
+여러 Threshold 조합 만들기
+        ↓
+Calibration 12장에 각 Rule 적용
+        ↓
+실제 정답과 비교
+        ↓
+TP / TN / FP / FN 계산
+        ↓
+Accuracy / Total Error 계산
+        ↓
+오류가 적은 후보 순서로 정렬
+        ↓
+첫 번째 Rule 후보 확인
+        ↓
+┌──────────────────────────────┐
+│ 결과 1                        │
+│ day05_rule_candidates.csv    │
+│ Threshold 후보별 평가 결과     │
+└──────────────────────────────┘
+        +
+┌──────────────────────────────┐
+│ 결과 2                        │
+│ sift_inlier_distribution.png │
+│ OK/NG 측정값 분포 그래프        │
+└──────────────────────────────┘
+        ↓
+다음 실습에서 사용할
+Baseline Rule 결정
+        ↓
+JSON 저장 및 Rule Freeze
+```
+
+실행합니다.
+
+```bash
+python src/35_day05_analyze_calibration.py
+```
+
+결과는 다음 두 파일입니다.
+
+```text
+reports/day05_rule_candidates.csv
+outputs/day05/calibration/sift_inlier_distribution.png
 ```
 
 ---
@@ -4215,6 +6165,7 @@ FN = 0
 즉 이번 분석에서는 **Calibration 데이터를 이용하여 OK와 NG를 비교적 잘 구분하는 Baseline Rule 후보를 찾은 것**입니다.
 
 > 아직 최종 Rule로 확정한 것은 아닙니다. 다음 단계에서 이 후보의 결과를 확인한 뒤, 실제 Test에 사용할 Baseline Rule로 결정하고 동결합니다.
+> 
 ---
 
 # 20. 그래프에서 기준이 어떻게 나뉘는지 확인합니다
@@ -4226,6 +6177,8 @@ outputs/day05/calibration/sift_inlier_distribution.png
 ```
 
 ![[Pasted image 20260831163846.png]]
+
+![[Pasted image 20261029075227.png]]
 
 그래프는 Calibration 12장의 위치를 한눈에 보여줍니다.
 
@@ -4242,6 +6195,60 @@ Y축
 ×
 → 실제 NG
 ```
+
+---
+## 전체 과정을 한 번에 보면
+
+![[Pasted image 20260831202603.png]]
+
+![[Pasted image 20261029081318.png]]
+
+![[Pasted image 20261029081528.png]]
+
+35번 코드에 다음과 같이 작성되어 있습니다.
+
+```python
+sift_candidates = make_candidates(
+    df["sift_good_matches"],
+    count=15,
+    integer=True,
+)
+
+inlier_candidates = make_candidates(
+    df["inlier_ratio"],
+    count=15,
+    integer=False,
+)
+```
+
+`count=15`는 각 측정값마다 기준 후보를 15개씩 만들라는 뜻입니다.
+
+현재 우리의 실험에서는 12장의 이미지를 통해 후보를 결정하고 있지만 
+실무에서는 이미지 장수보다 측정값이 얼마나 다양하게 분포하는지와 기준값을 얼마나 정밀하게 탐색할 필요가 있는지가 더 중요합니다.
+
+수천 장의 데이터라면 처음에는 Threshold 후보를 15~30개 정도로 설정하여 탐색하고, 결과가 만족스럽지 않으면 후보를 더 촘촘하게 탐색하는 방법을 사용할 수 있습니다.
+
+```
+Calibration 측정값 CSV
+        ↓
+SIFT Threshold 후보 만들기
+        +
+Inlier Ratio Threshold 후보 만들기
+        ↓
+여러 조합 만들기
+        ↓
+Calibration 12장에 적용
+        ↓
+실제 OK / NG와 비교
+        ↓
+TP / TN / FP / FN 계산
+        ↓
+오류가 적은 후보 순서로 정렬
+        ↓
+좋은 Rule 후보 확인
+```
+
+---
 
 두 개의 점선은 현재 선택된 기준 후보입니다.
 
@@ -4733,43 +6740,69 @@ Baseline Rule 선택 완료
 
 ---
 
-# 24. `36_day05_freeze_rule.py` — Baseline Rule을 JSON으로 저장하고 동결합니다
+# 24. `36_day05_freeze_rule.py` — 결정한 검사 기준을 JSON으로 저장합니다
 
-앞에서 사용할 Baseline Rule을 결정했습니다.
+앞의 35번 실습에서는 Calibration 이미지 12장을 이용하여 여러 Threshold 후보를 비교했습니다.
 
-이제 다음 코드로 그 기준을:
+그 결과 다음 기준을 Baseline Rule로 선택했습니다.
+
+|검사 항목|결정한 기준|의미|
+|---|---|---|
+|Homography Found|1 (성공)|로고의 위치 관계 계산에 성공해야 함|
+|SIFT Good Match|129개 이상|비슷하게 연결된 특징점이 129개 이상이어야 함|
+|Inlier Ratio|0.8664 이상|연결된 특징점 중 약 86.64% 이상이 위치 관계에 일치해야 함|
+
+**세 조건을 모두 만족하면 OK, 하나라도 만족하지 못하면 NG**로 판정하기로 결정했습니다.
+
+## 24.1 이번 코드는 무엇을 하나요?
+
+지금까지는 검사 기준을 찾고 비교하는 과정이었습니다.
+
+이제 결정한 기준을 나중에 다른 Python 프로그램에서도 사용할 수 있도록 **JSON 파일에 저장하고 고정(Freeze)**하겠습니다.
 
 ```
-configs/day05_logo_rules.json
-```
-
-에 저장합니다.
-
-```
-Baseline Rule 결정
-        ↓
+35번 코드
+Calibration으로 Rule 후보 비교
+             ↓
+최종 Baseline Rule 결정
+SIFT ≥ 129
+Inlier Ratio ≥ 0.8664
+Homography 계산 성공
+             ↓
 36_day05_freeze_rule.py
-        ↓
-JSON 저장
-        ↓
+             ↓
+JSON 파일로 저장
+configs/day05_logo_rules.json
+             ↓
+Rule 버전 기록
 day05-logo-v1.0
-        ↓
+             ↓
 Rule Freeze 완료
 ```
 
-파일을 만듭니다.
+여기서 **Freeze(동결)**란 결정한 검사 기준을 이후 Test 과정에서 임의로 변경하지 않고 그대로 사용한다는 뜻입니다.
+
+`day05-logo-v1.0`은 이번에 결정한 검사 기준의 버전 이름입니다. 나중에 기준을 변경한다면 기존 버전과 구분할 수 있습니다.
+
+## 24.2 JSON 파일로 저장하는 이유는 무엇인가요?
+
+검사 기준을 Python 코드마다 다시 작성하면 숫자를 잘못 입력하거나 서로 다른 기준을 사용하는 문제가 생길 수 있습니다.
+
+따라서 검사 기준을 별도의 JSON 파일에 저장하면 이후 37번 Test 코드에서 **동일한 기준을 불러와 사용할 수 있습니다.**
+
+이번 36번 코드에서는 이미 선택한 기준값을 직접 지정하여 JSON으로 저장합니다. Threshold를 다시 탐색하지 않습니다.
+
+또한 **36번은 이미지 검사나 성능 평가를 하는 코드가 아닙니다.** 실제로 새로운 Test 이미지 6장을 검사하는 것은 37번, 검사 성능을 평가하는 것은 38번에서 진행합니다.
+
+## 24.3 Python 파일을 만들겠습니다
+
+프로젝트의 `src` 폴더에 다음 파일을 생성합니다.
 
 ```
 src/36_day05_freeze_rule.py
 ```
 
-다음 코드를 작성합니다.
-
-```
-src/36_day05_freeze_rule.py
-```
-
-다음 코드를 작성합니다.
+이제 아래 Python 코드를 작성하여 결정한 Baseline Rule을 JSON 파일로 저장하겠습니다.
 
 ```python
 from pathlib import Path
@@ -4777,7 +6810,22 @@ import json
 
 
 # --------------------------------------------------
-# 저장할 JSON 파일
+# 1. Baseline Rule을 저장할 JSON 파일 경로 설정
+#
+# 무엇을 하나요?
+# - Calibration에서 결정한 검사 기준을
+#   저장할 JSON 파일의 위치를 지정합니다.
+#
+# 저장할 파일:
+# configs/day05_logo_rules.json
+#
+# JSON이란?
+# 데이터를 Key와 Value 형태로 저장하는 파일 형식입니다.
+#
+# 왜 필요한가요?
+# 검사 기준값을 Python 코드와 분리하여
+# 다음 Test 프로그램에서도 동일한 기준을
+# 읽어 사용할 수 있도록 하기 위해서입니다.
 # --------------------------------------------------
 
 OUTPUT_PATH = Path(
@@ -4786,7 +6834,29 @@ OUTPUT_PATH = Path(
 
 
 # --------------------------------------------------
-# Calibration 분석에서 선택한 Threshold
+# 2. Calibration 분석에서 선택한 Threshold 준비
+#
+# 무엇을 하나요?
+# - 앞에서 분석한 Calibration 결과를 바탕으로
+#   사용할 두 가지 Threshold를 지정합니다.
+#
+# SIFT_GOOD_MATCHES_MIN = 129
+# → SIFT Good Match가 129개 이상이어야 합니다.
+#
+# INLIER_RATIO_MIN = 0.8664
+# → Inlier Ratio가 0.8664 이상이어야 합니다.
+#
+# 왜 필요한가요?
+# 실제 검사에서 어느 정도의 측정값을
+# 정상(OK) 기준으로 사용할지 정하기 위해서입니다.
+#
+# 주의:
+# 이 값은 모든 로고에 적용되는 정답이 아닙니다.
+# 이번 광천김 Calibration 데이터를 이용하여
+# 선택한 Baseline Threshold입니다.
+#
+# 이 코드는 Threshold를 다시 계산하지 않고
+# 앞에서 선택한 값을 그대로 사용합니다.
 # --------------------------------------------------
 
 SIFT_GOOD_MATCHES_MIN = 129
@@ -4795,30 +6865,127 @@ INLIER_RATIO_MIN = 0.8664
 
 
 # --------------------------------------------------
-# Rule 저장
+# 3. Baseline Rule 정보를 딕셔너리로 구성
+#
+# 무엇을 하나요?
+# - main() 함수를 정의합니다.
+# - 검사 기준에 필요한 정보를 하나로 정리합니다.
+# - Python 딕셔너리 형태로 rules를 만듭니다.
+#
+# 저장할 주요 정보:
+#
+# ① Baseline Rule 버전
+# ② 검사 대상
+# ③ Positive Class
+# ④ Reference 이미지 경로
+# ⑤ 실제 OK/NG 판정 조건
+# ⑥ Calibration 평가 결과
+#
+# 왜 필요한가요?
+# 이후 Test 프로그램이 어떤 기준으로
+# 검사해야 하는지 알 수 있도록
+# 관련 정보를 함께 저장하기 위해서입니다.
 # --------------------------------------------------
 
 def main():
 
     rules = {
 
-        # Rule 버전
+        # ----------------------------------------------
+        # 3-1. Rule 버전 기록
+        #
+        # baseline_version:
+        # 현재 Baseline Rule의 버전 이름입니다.
+        #
+        # day05-logo-v1.0:
+        # 5일차에 처음 확정한 로고 검사 기준이라는 뜻입니다.
+        #
+        # 버전명을 기록하면 이후 개선된 Rule과
+        # 기존 Rule을 구분할 수 있습니다.
+        # ----------------------------------------------
+
         "baseline_version": "day05-logo-v1.0",
 
-        # 무엇을 검사하는가?
+
+        # ----------------------------------------------
+        # 3-2. 검사 대상 기록
+        #
+        # inspection_target:
+        # 어떤 제품의 무엇을 검사하는지 기록합니다.
+        #
+        # 이번 실습:
+        # 광천김 포장지의 로고가 기준 로고와
+        # 충분히 일치하는지 검사합니다.
+        # ----------------------------------------------
+
         "inspection_target":
             "광천김 로고 존재 및 정합 검사",
 
-        # 이번 수업에서는 NG를 Positive로 정의
+
+        # ----------------------------------------------
+        # 3-3. Positive Class 정의
+        #
+        # positive_class = NG
+        #
+        # 제조검사에서는 불량을 찾아내는 것이 중요하므로
+        # 이번 실습에서는 NG를 Positive로 정의합니다.
+        #
+        # 이 설정은 이후 성능 평가에서
+        # TP / TN / FP / FN을 해석할 때 사용합니다.
+        #
+        # 예:
+        # TP = 실제 NG를 NG로 올바르게 검출
+        # FN = 실제 NG를 OK로 잘못 통과
+        # ----------------------------------------------
+
         "positive_class": "NG",
 
-        # 비교에 사용하는 기준 로고
+
+        # ----------------------------------------------
+        # 3-4. 검사에 사용할 Reference 이미지 경로
+        #
+        # 무엇을 하나요?
+        # - 비교 기준이 되는 광천김 로고 경로를 저장합니다.
+        #
+        # 왜 필요한가요?
+        # 이후 Test 프로그램이 같은 Reference를
+        # 사용하도록 하기 위해서입니다.
+        # ----------------------------------------------
+
         "reference": {
             "reference_label":
                 "samples/day04/reference/reference_label.jpg"
         },
 
-        # 실제 OK / NG 판정에 사용할 조건
+
+        # ----------------------------------------------
+        # 3-5. 실제 OK / NG 판정에 사용할 복합 Rule 저장
+        #
+        # 무엇을 하나요?
+        # - Homography 성공 여부를 검사 조건으로 정합니다.
+        # - SIFT Good Match의 최소 기준을 정합니다.
+        # - Inlier Ratio의 최소 기준을 정합니다.
+        #
+        # 판정 조건:
+        #
+        # Homography 계산 성공
+        #          AND
+        # SIFT Good Match >= 129
+        #          AND
+        # Inlier Ratio >= 0.8664
+        #
+        # 세 조건을 모두 만족하면 OK
+        # 하나라도 만족하지 않으면 NG
+        #
+        # 왜 복합 Rule을 사용하나요?
+        # SIFT Match 개수나 Inlier Ratio 한 가지만으로는
+        # 정상과 불량을 충분히 구분하기 어려웠기 때문입니다.
+        #
+        # 주의:
+        # 이 코드는 Rule을 저장하는 역할만 합니다.
+        # 실제 판정은 다음 Test 프로그램에서 수행합니다.
+        # ----------------------------------------------
+
         "required_rules": {
 
             "homography_found":
@@ -4831,7 +6998,34 @@ def main():
                 INLIER_RATIO_MIN,
         },
 
-        # Calibration에서 확인한 결과
+
+        # ----------------------------------------------
+        # 3-6. Calibration에서 얻은 평가 결과 기록
+        #
+        # 무엇을 하나요?
+        # - 앞에서 선택한 Rule 후보의 성능을 저장합니다.
+        #
+        # accuracy = 0.9167
+        # → Calibration 12장 중 11장 정답
+        # → 약 91.67%
+        #
+        # fp = 1
+        # → 실제 OK 1장을 NG로 잘못 판정
+        #
+        # fn = 0
+        # → Calibration에서 NG를 OK로
+        #   잘못 통과시킨 경우 없음
+        #
+        # 왜 필요한가요?
+        # 이 Rule이 어떤 Calibration 결과를
+        # 바탕으로 결정되었는지 기록하기 위해서입니다.
+        #
+        # 주의:
+        # 이 값들은 앞선 분석에서 얻은 결과를
+        # 직접 기록한 것입니다.
+        # 현재 코드에서 다시 계산하지 않습니다.
+        # ----------------------------------------------
+
         "calibration_result": {
 
             "accuracy":
@@ -4844,13 +7038,35 @@ def main():
                 0,
         },
 
+
+        # ----------------------------------------------
+        # 3-7. Rule에 대한 설명 기록
+        #
+        # 현재 Rule이 어떤 목적으로 만들어졌는지
+        # 사람이 이해할 수 있도록 설명을 남깁니다.
+        # ----------------------------------------------
+
         "note":
             "Calibration 결과로 결정한 Day05 Baseline Rule"
     }
 
 
     # --------------------------------------------------
-    # configs 폴더가 없으면 생성
+    # 4. JSON 파일을 저장할 폴더 생성
+    #
+    # 무엇을 하나요?
+    # - OUTPUT_PATH의 상위 폴더를 확인합니다.
+    # - configs 폴더가 없으면 새로 만듭니다.
+    #
+    # parents=True:
+    # 필요한 상위 폴더까지 함께 생성합니다.
+    #
+    # exist_ok=True:
+    # 폴더가 이미 있어도 오류를 발생시키지 않습니다.
+    #
+    # 왜 필요한가요?
+    # JSON을 저장할 폴더가 존재하지 않으면
+    # 파일 저장 과정에서 오류가 발생할 수 있기 때문입니다.
     # --------------------------------------------------
 
     OUTPUT_PATH.parent.mkdir(
@@ -4860,7 +7076,34 @@ def main():
 
 
     # --------------------------------------------------
-    # JSON 저장
+    # 5. Baseline Rule을 JSON 파일로 저장
+    #
+    # 무엇을 하나요?
+    # - 앞에서 만든 rules 딕셔너리를 JSON으로 저장합니다.
+    #
+    # OUTPUT_PATH.open("w"):
+    # JSON 파일을 쓰기 모드로 엽니다.
+    #
+    # json.dump():
+    # Python 딕셔너리를 JSON 파일로 저장합니다.
+    #
+    # ensure_ascii=False:
+    # 한글을 읽을 수 있는 형태로 저장합니다.
+    #
+    # indent=2:
+    # 들여쓰기를 적용하여 읽기 쉽게 저장합니다.
+    #
+    # 저장 파일:
+    # configs/day05_logo_rules.json
+    #
+    # 왜 필요한가요?
+    # 이후 Test 프로그램이 동일한 Baseline Rule을
+    # 불러와 검사에 사용하도록 하기 위해서입니다.
+    #
+    # 주의:
+    # "w" 모드이므로 파일이 이미 있으면 덮어씁니다.
+    # Rule Freeze는 기준을 고정해 사용한다는 운영 원칙이며,
+    # 파일 자체가 수정 불가능해지는 것은 아닙니다.
     # --------------------------------------------------
 
     with OUTPUT_PATH.open(
@@ -4877,7 +7120,27 @@ def main():
 
 
     # --------------------------------------------------
-    # 결과 확인
+    # 6. Rule 저장 완료 메시지와 JSON 내용 출력
+    #
+    # 무엇을 하나요?
+    # - Baseline Rule 저장 완료 메시지를 출력합니다.
+    # - JSON 저장 위치를 출력합니다.
+    # - 실제 저장한 Rule 정보를 터미널에 표시합니다.
+    #
+    # json.dumps():
+    # Python 딕셔너리를 JSON 문자열로 변환합니다.
+    #
+    # json.dump()와 json.dumps() 차이:
+    #
+    # json.dump():
+    # → JSON 내용을 파일에 저장
+    #
+    # json.dumps():
+    # → JSON 문자열을 생성
+    #
+    # 왜 필요한가요?
+    # 학생들이 저장한 기준값과 버전이
+    # 올바른지 직접 확인하기 위해서입니다.
     # --------------------------------------------------
 
     print("=" * 70)
@@ -4904,15 +7167,245 @@ def main():
     )
 
 
+# --------------------------------------------------
+# 7. Python 파일을 직접 실행하면 main() 호출
+#
+# 무엇을 하나요?
+# - 현재 파일이 직접 실행되었는지 확인합니다.
+# - 직접 실행한 경우 main()을 호출합니다.
+#
+# 왜 필요한가요?
+# 다른 Python 파일에서 이 코드를 import할 때
+# JSON 저장 작업이 자동으로 실행되지 않도록
+# 구분하기 위해서입니다.
+#
+# 실행 명령어:
+# python src/36_day05_freeze_rule.py
+# --------------------------------------------------
+
 if __name__ == "__main__":
     main()
 ```
+### 의사코드
 
----
+```
+[1. Baseline Rule을 저장할 JSON 파일 경로 설정]
 
-## 24.1 코드를 실행합니다
+검사 기준을 저장할 경로를 정한다.
 
-프로젝트 루트에서 실행합니다.
+configs/day05_logo_rules.json
+
+이 파일에 Calibration에서 결정한
+판정 기준을 저장할 준비를 한다.
+
+          ↓
+
+[2. Calibration 분석에서 선택한 Threshold 준비]
+
+앞에서 선택한 SIFT 기준값을 준비한다.
+
+SIFT Good Match >= 129
+
+          ↓
+
+앞에서 선택한 Inlier Ratio 기준값을 준비한다.
+
+Inlier Ratio >= 0.8664
+
+          ↓
+
+이 두 기준값을 변수에 저장한다.
+
+          ↓
+
+[3. Baseline Rule 정보를 딕셔너리로 구성]
+
+main() 함수를 만든다.
+
+검사 기준을 저장할
+rules 딕셔너리를 만든다.
+
+          ↓
+
+[3-1. Rule 버전 기록]
+
+Baseline Rule의 버전 이름을 정한다.
+
+day05-logo-v1.0
+
+          ↓
+
+[3-2. 검사 대상 기록]
+
+무엇을 검사하는지 기록한다.
+
+광천김 로고 존재 및 정합 검사
+
+          ↓
+
+[3-3. Positive Class 정의]
+
+이번 제조검사에서는
+불량을 찾아내는 것이 중요하므로
+
+Positive Class = NG
+
+로 기록한다.
+
+          ↓
+
+[3-4. Reference 이미지 경로 기록]
+
+검사에 사용할 기준 로고 경로를 저장한다.
+
+samples/day04/reference/reference_label.jpg
+
+          ↓
+
+[3-5. OK / NG 판정에 사용할 복합 Rule 저장]
+
+첫 번째 조건을 기록한다.
+
+Homography 계산 성공
+
+          AND
+
+두 번째 조건을 기록한다.
+
+SIFT Good Match >= 129
+
+          AND
+
+세 번째 조건을 기록한다.
+
+Inlier Ratio >= 0.8664
+
+          ↓
+
+세 조건을 모두 만족하면 OK
+
+하나라도 만족하지 않으면 NG
+
+          ↓
+
+이 판정 기준을
+required_rules에 저장한다.
+
+          ↓
+
+[3-6. Calibration 평가 결과 기록]
+
+앞에서 측정한 Calibration 결과를 기록한다.
+
+Accuracy = 0.9167
+
+FP = 1
+
+FN = 0
+
+          ↓
+
+현재 Baseline Rule이
+어떤 결과를 바탕으로 선택되었는지 기록한다.
+
+          ↓
+
+[3-7. Rule 설명 기록]
+
+현재 Rule이 Calibration 분석으로
+결정된 Baseline Rule임을 설명하는
+문장을 저장한다.
+
+          ↓
+
+[4. JSON 파일을 저장할 폴더 생성]
+
+configs 폴더가 있는지 확인한다.
+
+폴더가 없다면 새로 만든다.
+
+폴더가 이미 있다면 그대로 사용한다.
+
+          ↓
+
+[5. Baseline Rule을 JSON 파일로 저장]
+
+day05_logo_rules.json 파일을
+쓰기 모드로 연다.
+
+          ↓
+
+rules 딕셔너리를 JSON으로 변환한다.
+
+한글을 읽을 수 있도록 저장한다.
+들여쓰기를 적용한다.
+
+          ↓
+
+JSON 파일에 Baseline Rule을 저장한다.
+
+          ↓
+
+[6. Rule 저장 완료 메시지와 JSON 내용 출력]
+
+Rule 동결 완료 메시지를 출력한다.
+
+JSON 저장 경로를 출력한다.
+
+          ↓
+
+저장한 Rule의 내용을 출력한다.
+
+Baseline 버전
+검사 대상
+Positive Class
+Reference 경로
+Required Rules
+Calibration 결과
+설명
+
+          ↓
+
+[7. Python 파일을 직접 실행하면 main() 호출]
+
+현재 Python 파일을 직접 실행했는지 확인한다.
+
+직접 실행했다면
+main() 함수를 호출한다.
+
+          ↓
+
+[최종 결과]
+
+Calibration 분석 결과
+        ↓
+SIFT Good Match >= 129
+        +
+Inlier Ratio >= 0.8664
+        +
+Homography 계산 성공
+        ↓
+Baseline Rule 결정
+        ↓
+rules 딕셔너리 생성
+        ↓
+JSON 파일로 저장
+        ↓
+configs/day05_logo_rules.json
+        ↓
+Baseline Rule 버전
+day05-logo-v1.0
+        ↓
+다음 실습
+37_day05_test.py
+        ↓
+처음 보는 Test 이미지 6장에
+동일한 판정 기준 적용
+        ↓
+OK / NG 판정 및 성능 확인
+```
+
+코드를 실행합니다
 
 ```
 python src/36_day05_freeze_rule.py
@@ -4936,40 +7429,9 @@ configs/
 └── day05_logo_rules.json
 ```
 
-### 의사코드
-
-```
-1. Rule을 저장할 JSON 파일 위치를 정한다.
-
-2. Calibration 분석에서 선택한
-   SIFT 기준값 129를 준비한다.
-
-3. Inlier Ratio 기준값
-   0.8664를 준비한다.
-
-4. 검사 Rule의 이름을
-   day05-logo-v1.0으로 정한다.
-
-5. 어떤 Reference 이미지를 사용하는지 기록한다.
-
-6. Homography가 성공해야 한다는 조건을 기록한다.
-
-7. SIFT Good Match가
-   129 이상이어야 한다고 기록한다.
-
-8. Inlier Ratio가
-   0.8664 이상이어야 한다고 기록한다.
-
-9. Calibration에서 얻은
-   Accuracy / FP / FN도 함께 기록한다.
-
-10. 모든 내용을
-    day05_logo_rules.json에 저장한다.
-```
-
 ---
 
-## 24.2 만들어진 JSON을 확인합니다
+## 24.1 만들어진 JSON을 확인합니다
 
 다음 파일을 엽니다.
 
@@ -5024,6 +7486,76 @@ OK / NG
 ```
 
 를 판단하게 됩니다.
+
+---
+
+### 실제 산업현장에서 사용하는 AI 검사 시스템의 데이터 수집 → 추론 → 분석 → 성능 개선 구조
+
+```
+[1] 실시간 카메라 영상 수집
+           ↓
+[2] OpenCV 이미지 전처리
+           ↓
+[3] 검사 기준 JSON 불러오기
+    SIFT ≥ 129 / Ratio ≥ 0.8664
+           ↓
+[4] Rule 기반 판정 또는 AI 추론
+           ↓
+       OK / NG 판정
+           ↓
+[5] 결과 저장 및 대시보드 표시
+           ↓
+[6] NG 이미지와 검사 수치 축적
+           ↓
+[7] Lakehouse에서 데이터 분석
+    Raw → 정제 → 분석용 데이터
+           ↓
+[8] 오판정·새로운 불량 유형 분석
+           ↓
+[9] Threshold 개선 또는 AI 재학습
+           ↓
+[10] 새 기준의 성능 검증
+           ↓
+[11] 새로운 Rule JSON / AI 모델 배포
+           ↓
+    실시간 검사에 다시 적용
+           ↺
+```
+
+실제로는 실시간 검사와 Lakehouse 저장을 병렬로 처리하는 것이 좋습니다. 즉, Raw 데이터를 Lakehouse에 저장하는 동안 실시간 판정은 별도로 빠르게 수행하고, 이미지·판정 결과·측정값을 함께 축적합니다.
+
+### 핵심 파일의 역할
+
+| 구성 요소          | 역할                    |
+| -------------- | --------------------- |
+| `rules.json`   | 현재 적용할 검사 기준과 버전 저장   |
+| Raw Data       | 카메라 원본 이미지·영상 보존      |
+| Lakehouse      | 원본·정제·검사 결과 데이터 통합 관리 |
+| AI / OpenCV    | 실제 OK/NG 추론 및 판정      |
+| NG 데이터         | 불량 유형과 판정 오류 분석에 활용   |
+| 새 Rule / AI 모델 | 검증 후 개선된 기준으로 교체      |
+
+우리가 최종 목표로 하는 시스넴은 다음 흐름과 같습니다.
+
+```
+제품이 컨베이어벨트에서 카메라 앞을 지나가면 자동 촬영 
+→ 원본 이미지 및 촬영 정보 수집 → 원본 데이터 저장(Bronze·Raw Data) 
+→ 제품 영역 검출 및 이미지 전처리 
+→ OpenCV/AI 특징값 분석 
+→ JSON 검사 기준 적용 
+→ OK/NG 자동 판정 
+→ 검사 결과 및 측정값 저장 
+→ 원본과 검사 결과 연결·정제(Silver) 
+→ 검사량·불량률 등 분석용 데이터 집계(Gold·Data Mart) 
+→ 실시간 대시보드 표시 
+→ NG 데이터 분석 및 오판정 확인 
+→ 검사 Rule/AI 모델 개선 
+→ 성능 검증 후 새로운 버전 적용까지 자동화하는 시스템입니다.
+```
+
+핵심: 원본 데이터 저장과 실시간 검사는 병렬로 진행하며, NG 분석 후 검사 기준 변경은 검증과 승인을 거쳐 적용합니다.
+
+![[Pasted image 20261029084845.png]]
 
 ---
 
@@ -5291,6 +7823,15 @@ import json
 import cv2
 import numpy as np
 
+# 앞에서 만든 공통 측정 함수
+#
+# prepare_reference():
+# 기준 로고의 특징점을 준비합니다.
+#
+# measure_target():
+# 이미지 한 장의 Template, SIFT, Homography
+# 측정값을 계산합니다.
+
 from day05_logo_features import (
     prepare_reference,
     measure_target,
@@ -5298,7 +7839,28 @@ from day05_logo_features import (
 
 
 # --------------------------------------------------
-# 경로
+# 1. Rule JSON, Test 이미지 및 결과 저장 경로 설정
+#
+# 무엇을 하나요?
+# - 동결한 Baseline Rule JSON 경로를 지정합니다.
+# - Test 이미지가 있는 폴더를 지정합니다.
+# - 검사 결과 이미지와 CSV의 저장 경로를 정합니다.
+#
+# RULE_PATH:
+# Calibration에서 선택한 판정 기준이 저장된 JSON
+#
+# DATA_DIR:
+# 정상 Test 3장과 불량 Test 3장이 있는 폴더
+#
+# OUTPUT_DIR:
+# 판정 결과를 표시한 이미지를 저장할 폴더
+#
+# OUTPUT_CSV:
+# 이미지별 측정값과 OK/NG 판정을 기록할 파일
+#
+# 왜 필요한가요?
+# Test에서는 기준값을 새로 만드는 것이 아니라
+# 앞에서 동결한 JSON을 읽어서 사용하기 때문입니다.
 # --------------------------------------------------
 
 RULE_PATH = Path(
@@ -5319,15 +7881,37 @@ OUTPUT_CSV = Path(
 
 
 # --------------------------------------------------
-# 1. Test 이미지 목록 만들기
+# 2. Test 이미지 목록과 실제 정답 준비
+#
+# 무엇을 하나요?
+# - test_ok_*.jpg 패턴의 이미지를 찾습니다.
+# - test_ng_*.jpg 패턴의 이미지를 찾습니다.
+# - 각 이미지에 실제 정답인 OK 또는 NG를 연결합니다.
+#
+# 예상 데이터:
+# test_ok_01.jpg ~ test_ok_03.jpg
+# test_ng_01.jpg ~ test_ng_03.jpg
+#
+# actual:
+# 사람이 미리 알고 있는 실제 정답입니다.
+#
+# 주의:
+# 여기서는 파일명으로 실제 정답을 지정합니다.
+# 프로그램이 예측한 결과는 나중에 따로 계산합니다.
 # --------------------------------------------------
 
 def find_test_images():
 
     image_infos = []
 
+    # --------------------------------------------------
+    # 2-1. 실제 정상(OK) Test 이미지 찾기
+    #
+    # - test_ok_로 시작하는 이미지를 찾습니다.
+    # - 파일명 순서대로 정렬합니다.
+    # - 이미지 경로와 실제 정답 "OK"를 저장합니다.
+    # --------------------------------------------------
 
-    # 실제 정상 Test 이미지
     for image_path in sorted(
         DATA_DIR.glob("test_ok_*.jpg")
     ):
@@ -5339,8 +7923,14 @@ def find_test_images():
             )
         )
 
+    # --------------------------------------------------
+    # 2-2. 실제 불량(NG) Test 이미지 찾기
+    #
+    # - test_ng_로 시작하는 이미지를 찾습니다.
+    # - 파일명 순서대로 정렬합니다.
+    # - 이미지 경로와 실제 정답 "NG"를 저장합니다.
+    # --------------------------------------------------
 
-    # 실제 불량 Test 이미지
     for image_path in sorted(
         DATA_DIR.glob("test_ng_*.jpg")
     ):
@@ -5352,12 +7942,37 @@ def find_test_images():
             )
         )
 
-
+    # 이미지 경로와 실제 정답 목록 반환
     return image_infos
 
 
 # --------------------------------------------------
-# 2. 측정값에 Rule 적용
+# 3. 측정값에 동결한 Rule을 적용하는 판정 함수
+#
+# 무엇을 하나요?
+# - measure_target()에서 계산한 측정값을 받습니다.
+# - JSON에 저장된 검사 기준과 비교합니다.
+# - 조건을 만족하지 못한 이유를 기록합니다.
+# - 최종 OK 또는 NG를 판정합니다.
+#
+# 이번 Baseline Rule:
+#
+# Homography 계산 성공
+#           AND
+# SIFT Good Match >= 129
+#           AND
+# Inlier Ratio >= 0.8664
+#
+# 세 조건을 모두 만족하면 OK입니다.
+# 하나라도 만족하지 못하면 NG입니다.
+#
+# 입력:
+# measurement → 이미지의 측정값
+# rules       → JSON에서 읽은 검사 기준
+#
+# 반환:
+# predicted → OK 또는 NG
+# reasons   → 기준을 만족하지 못한 이유
 # --------------------------------------------------
 
 def judge_measurement(
@@ -5365,14 +7980,29 @@ def judge_measurement(
     rules,
 ):
 
+    # 실패 이유를 저장할 빈 리스트
     reasons = []
 
+    # JSON의 required_rules 가져오기
     required = rules[
         "required_rules"
     ]
 
+    # --------------------------------------------------
+    # 3-1. Homography 계산 성공 여부 검사
+    #
+    # 무엇을 하나요?
+    # - JSON에서 Homography가 필수 조건인지 확인합니다.
+    # - 필수인데 계산에 실패했다면 NG 이유를 기록합니다.
+    #
+    # HOMOGRAPHY_NOT_FOUND:
+    # 두 이미지 사이의 Homography 계산에 실패
+    #
+    # 주의:
+    # Homography 성공은 로고가 정상이라는 의미가 아니라
+    # 기하학적 변환 행렬을 계산했다는 의미입니다.
+    # --------------------------------------------------
 
-    # Homography 성공 여부
     if (
         required["homography_found"]
         and measurement["homography_found"] != 1
@@ -5382,8 +8012,23 @@ def judge_measurement(
             "HOMOGRAPHY_NOT_FOUND"
         )
 
+    # --------------------------------------------------
+    # 3-2. SIFT Good Match 기준 검사
+    #
+    # 무엇을 하나요?
+    # - 측정한 SIFT Good Match 개수를 확인합니다.
+    # - JSON의 최소 기준값과 비교합니다.
+    #
+    # 예:
+    # 측정값 = 105
+    # 기준값 = 129
+    #
+    # 105 < 129 이므로 기준 미달입니다.
+    #
+    # LOW_SIFT_MATCH:
+    # 특징점 대응 개수가 부족하다는 의미입니다.
+    # --------------------------------------------------
 
-    # SIFT Good Match 검사
     if (
         measurement["sift_good_matches"]
         < required["sift_good_matches_min"]
@@ -5393,8 +8038,23 @@ def judge_measurement(
             "LOW_SIFT_MATCH"
         )
 
+    # --------------------------------------------------
+    # 3-3. Inlier Ratio 기준 검사
+    #
+    # 무엇을 하나요?
+    # - 측정한 Inlier Ratio를 확인합니다.
+    # - JSON의 최소 기준값과 비교합니다.
+    #
+    # 예:
+    # 측정값 = 0.8397
+    # 기준값 = 0.8664
+    #
+    # 0.8397 < 0.8664 이므로 기준 미달입니다.
+    #
+    # LOW_INLIER_RATIO:
+    # 일관된 특징점 대응의 비율이 부족하다는 의미입니다.
+    # --------------------------------------------------
 
-    # Inlier Ratio 검사
     if (
         measurement["inlier_ratio"]
         < required["inlier_ratio_min"]
@@ -5404,8 +8064,22 @@ def judge_measurement(
             "LOW_INLIER_RATIO"
         )
 
+    # --------------------------------------------------
+    # 3-4. 검사 실패 이유를 확인하여 최종 판정
+    #
+    # 무엇을 하나요?
+    # - reasons 리스트가 비어 있는지 확인합니다.
+    #
+    # 실패 이유 없음:
+    # 세 조건을 모두 통과했으므로 OK
+    #
+    # 실패 이유 있음:
+    # 하나 이상의 조건을 통과하지 못했으므로 NG
+    #
+    # 반환값:
+    # predicted와 reasons
+    # --------------------------------------------------
 
-    # 실패 이유가 하나도 없으면 OK
     if not reasons:
 
         predicted = "OK"
@@ -5414,14 +8088,38 @@ def judge_measurement(
 
         predicted = "NG"
 
-
     return predicted, reasons
 
 
 # --------------------------------------------------
-# 3. 실제 정답과 프로그램 판정 비교
+# 4. 실제 정답과 프로그램 판정을 비교하는 함수
 #
-# 이번 수업에서는 NG를 Positive로 둡니다.
+# 무엇을 하나요?
+# - 사람이 알고 있는 실제 정답(actual)과
+#   프로그램의 판정(predicted)을 비교합니다.
+# - 결과를 TP, TN, FP, FN으로 구분합니다.
+#
+# 이번 제조검사에서는 NG를 Positive로 정의합니다.
+#
+# TP:
+# 실제 NG → 프로그램 NG
+# 불량을 올바르게 검출
+#
+# TN:
+# 실제 OK → 프로그램 OK
+# 정상을 올바르게 통과
+#
+# FP:
+# 실제 OK → 프로그램 NG
+# 정상을 불량으로 잘못 판정
+#
+# FN:
+# 실제 NG → 프로그램 OK
+# 불량을 정상으로 잘못 통과
+#
+# 왜 필요한가요?
+# 전체 Accuracy뿐 아니라 어떤 종류의
+# 판정 오류가 발생했는지 확인하기 위해서입니다.
 # --------------------------------------------------
 
 def classify_error(
@@ -5429,39 +8127,54 @@ def classify_error(
     predicted,
 ):
 
+    # 실제 NG를 NG로 올바르게 검출
     if (
         actual == "NG"
         and predicted == "NG"
     ):
         return "TP"
 
-
+    # 실제 OK를 OK로 올바르게 판정
     if (
         actual == "OK"
         and predicted == "OK"
     ):
         return "TN"
 
-
+    # 실제 OK를 NG로 잘못 판정
     if (
         actual == "OK"
         and predicted == "NG"
     ):
         return "FP"
 
-
+    # 실제 NG를 OK로 잘못 통과
     if (
         actual == "NG"
         and predicted == "OK"
     ):
         return "FN"
 
-
     return "UNKNOWN"
 
 
 # --------------------------------------------------
-# 4. 결과 이미지 만들기
+# 5. 판정 결과와 로고 위치를 이미지에 표시하는 함수
+#
+# 무엇을 하나요?
+# - 검사 이미지의 복사본을 만듭니다.
+# - Homography로 계산한 로고 위치를 사각형으로 표시합니다.
+# - OK/NG에 따라 사각형 색상을 구분합니다.
+# - 실제 정답, 프로그램 판정, 측정값, NG 이유를 표시합니다.
+#
+# 왜 필요한가요?
+# CSV의 숫자만 보는 것보다 실제 이미지에서
+# 어떤 위치를 찾았고 왜 NG가 되었는지
+# 쉽게 확인할 수 있기 때문입니다.
+#
+# 주의:
+# 사각형은 Homography로 계산한 위치이며,
+# 실제 로고가 정확히 검출되었음을 보증하지 않습니다.
 # --------------------------------------------------
 
 def annotate_result(
@@ -5471,18 +8184,32 @@ def annotate_result(
     reasons,
 ):
 
+    # 원본 Target을 수정하지 않도록 복사
     image = (
         measurement["target_image"]
         .copy()
     )
 
-
+    # Homography로 계산한 로고 영역 좌표
     polygon = measurement.get(
         "polygon"
     )
 
+    # --------------------------------------------------
+    # 5-1. Homography로 찾은 로고 영역 표시
+    #
+    # 무엇을 하나요?
+    # - polygon 좌표가 있는지 확인합니다.
+    # - 네 모서리 좌표를 정수로 변환합니다.
+    # - 네 점을 연결할 수 있는 형태로 변환합니다.
+    #
+    # np.int32():
+    # 좌표를 정수로 변환합니다.
+    #
+    # reshape(-1, 1, 2):
+    # OpenCV의 polylines()에서 사용할 배열 형태입니다.
+    # --------------------------------------------------
 
-    # Homography로 찾은 로고 영역 표시
     if polygon is not None:
 
         points = np.int32(
@@ -5493,8 +8220,22 @@ def annotate_result(
             2
         )
 
+        # --------------------------------------------------
+        # 5-2. 프로그램 판정에 따라 사각형 색상 선택
+        #
+        # Predicted = OK:
+        # 초록색 (0, 255, 0)
+        #
+        # Predicted = NG:
+        # 빨간색 (0, 0, 255)
+        #
+        # OpenCV는 BGR 색상 순서를 사용합니다.
+        #
+        # 중요:
+        # 색상은 프로그램 판정을 나타냅니다.
+        # 실제 정답과 일치한다는 뜻은 아닙니다.
+        # --------------------------------------------------
 
-        # OK와 NG의 선 색상을 구분
         if predicted == "OK":
 
             line_color = (
@@ -5511,6 +8252,18 @@ def annotate_result(
                 255
             )
 
+        # --------------------------------------------------
+        # 5-3. 계산된 로고 영역에 사각형 그리기
+        #
+        # cv2.polylines():
+        # 여러 점을 선으로 연결하는 함수
+        #
+        # True:
+        # 마지막 점과 처음 점을 연결하여 도형을 닫습니다.
+        #
+        # 3:
+        # 선의 두께입니다.
+        # --------------------------------------------------
 
         cv2.polylines(
             image,
@@ -5520,6 +8273,21 @@ def annotate_result(
             3
         )
 
+    # --------------------------------------------------
+    # 5-4. 검사 실패 이유를 표시할 문자열 만들기
+    #
+    # 무엇을 하나요?
+    # - 실패 이유가 여러 개이면 +로 연결합니다.
+    # - 실패 이유가 없다면 PASS로 표시합니다.
+    #
+    # 예:
+    # LOW_SIFT_MATCH+LOW_INLIER_RATIO
+    #
+    # 또는:
+    # PASS
+    #
+    # 이 문자열은 결과 이미지에 표시할 때 사용합니다.
+    # --------------------------------------------------
 
     reason_text = (
         "+".join(reasons)
@@ -5527,6 +8295,29 @@ def annotate_result(
         else "PASS"
     )
 
+    # --------------------------------------------------
+    # 5-5. 결과 이미지에 표시할 측정 정보 준비
+    #
+    # 표시 항목:
+    #
+    # Actual:
+    # 실제 정답인 OK 또는 NG
+    #
+    # Predicted:
+    # 프로그램이 판정한 OK 또는 NG
+    #
+    # SIFT Good:
+    # Good Match 개수
+    #
+    # Inlier Ratio:
+    # 기하학적으로 일관된 대응점 비율
+    #
+    # Template:
+    # Template Matching 유사도
+    #
+    # Reason:
+    # NG 판정 이유 또는 PASS
+    # --------------------------------------------------
 
     lines = [
 
@@ -5552,9 +8343,27 @@ def annotate_result(
         f"Reason: {reason_text}",
     ]
 
+    # --------------------------------------------------
+    # 5-6. 결과 이미지에 측정값을 문자로 표시
+    #
+    # 무엇을 하나요?
+    # - 준비한 lines를 한 줄씩 가져옵니다.
+    # - 이미지의 왼쪽 위부터 순서대로 표시합니다.
+    #
+    # cv2.putText():
+    # 이미지 위에 문자를 작성하는 함수
+    #
+    # (30, y):
+    # 문자를 표시할 위치
+    #
+    # (255, 255, 255):
+    # 흰색
+    #
+    # y += 35:
+    # 다음 줄을 아래로 35픽셀 이동합니다.
+    # --------------------------------------------------
 
     y = 40
-
 
     for line in lines:
 
@@ -5571,19 +8380,31 @@ def annotate_result(
 
         y += 35
 
-
+    # 결과 문자가 표시된 이미지 반환
     return image
 
 
 # --------------------------------------------------
-# 실행
+# 6. 동결한 Baseline Rule JSON 읽기
+#
+# 무엇을 하나요?
+# - main() 함수를 정의합니다.
+# - 이전 실습에서 저장한 JSON이 있는지 확인합니다.
+# - JSON을 Python 딕셔너리로 읽습니다.
+# - 사용할 Rule 버전과 Threshold를 출력합니다.
+#
+# 왜 필요한가요?
+# Calibration에서 결정한 기준을
+# Test에서 변경하지 않고 그대로 사용하기 위해서입니다.
+#
+# json.load():
+# JSON 파일의 데이터를 Python 객체로 읽는 함수입니다.
+#
+# Rule JSON이 없다면:
+# 먼저 36_day05_freeze_rule.py를 실행해야 합니다.
 # --------------------------------------------------
 
 def main():
-
-    # ==============================================
-    # 1. 동결한 Rule 읽기
-    # ==============================================
 
     if not RULE_PATH.exists():
 
@@ -5591,7 +8412,6 @@ def main():
             "Rule JSON이 없습니다. "
             "먼저 36_day05_freeze_rule.py를 실행하세요."
         )
-
 
     with RULE_PATH.open(
         "r",
@@ -5602,7 +8422,7 @@ def main():
             file
         )
 
-
+    # Rule 버전과 Threshold 확인
     print("=" * 70)
 
     print(
@@ -5629,9 +8449,18 @@ def main():
     )
 
 
-    # ==============================================
-    # 2. Reference 준비
-    # ==============================================
+    # --------------------------------------------------
+    # 7. JSON에 기록된 Reference 이미지 준비
+    #
+    # 무엇을 하나요?
+    # - JSON에 저장된 Reference 이미지 경로를 읽습니다.
+    # - prepare_reference() 공통 함수를 호출합니다.
+    # - 기준 로고의 SIFT 특징점을 한 번 준비합니다.
+    #
+    # 왜 필요한가요?
+    # Calibration과 Test에서 동일한 Reference를 사용하고
+    # Target마다 특징점을 다시 계산하지 않기 위해서입니다.
+    # --------------------------------------------------
 
     reference_path = Path(
         rules[
@@ -5641,26 +8470,39 @@ def main():
         ]
     )
 
-
     reference_data = prepare_reference(
         reference_path
     )
 
 
-    # ==============================================
-    # 3. Test 이미지 확인
-    # ==============================================
+    # --------------------------------------------------
+    # 8. Test 이미지 6장 확인 및 결과 저장 폴더 준비
+    #
+    # 무엇을 하나요?
+    # - find_test_images() 함수를 호출합니다.
+    # - 실제 OK 3장과 NG 3장의 목록을 가져옵니다.
+    # - 전체 이미지 개수를 확인합니다.
+    # - 결과 이미지와 CSV를 저장할 폴더를 생성합니다.
+    #
+    # 예상 데이터:
+    # OK 3장 + NG 3장 = 총 6장
+    #
+    # 주의:
+    # 현재 코드는 6장이 아니더라도 경고만 출력하고
+    # 프로그램을 계속 진행합니다.
+    #
+    # rows:
+    # 이미지별 검사 결과를 저장할 리스트입니다.
+    # --------------------------------------------------
 
     image_infos = (
         find_test_images()
     )
 
-
     print(
         "Test Images:",
         len(image_infos)
     )
-
 
     if len(image_infos) != 6:
 
@@ -5668,7 +8510,6 @@ def main():
             "주의: Test 이미지는 "
             "OK 3장 + NG 3장 = 6장을 예상합니다."
         )
-
 
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -5680,19 +8521,32 @@ def main():
         exist_ok=True
     )
 
-
     rows = []
 
 
-    # ==============================================
-    # 4. Test 6장 검사
-    # ==============================================
+    # --------------------------------------------------
+    # 9. Test 이미지마다 공통 측정 함수 실행
+    #
+    # 무엇을 하나요?
+    # - Test 이미지를 하나씩 가져옵니다.
+    # - measure_target() 공통 함수를 호출합니다.
+    # - 이미지의 Template, SIFT, Homography 측정값을 구합니다.
+    #
+    # measure_target() 내부 처리:
+    #
+    # ① Target 이미지 읽기
+    # ② Template Matching
+    # ③ SIFT Keypoint / Descriptor 추출
+    # ④ BFMatcher
+    # ⑤ Ratio Test
+    # ⑥ RANSAC + Homography
+    # ⑦ Inlier Count / Inlier Ratio 계산
+    #
+    # 아직 이 단계에서는 판정하지 않고
+    # 측정값만 구합니다.
+    # --------------------------------------------------
 
     for image_path, actual in image_infos:
-
-        # ------------------------------------------
-        # 측정
-        # ------------------------------------------
 
         measurement = measure_target(
             image_path,
@@ -5700,9 +8554,26 @@ def main():
         )
 
 
-        # ------------------------------------------
-        # 동결 Rule로 판정
-        # ------------------------------------------
+        # --------------------------------------------------
+        # 10. 측정값에 동결한 Baseline Rule 적용
+        #
+        # 무엇을 하나요?
+        # - 3번에서 만든 judge_measurement()를 호출합니다.
+        # - 측정값과 JSON 기준을 비교합니다.
+        #
+        # 모든 기준 통과:
+        # predicted = OK
+        #
+        # 하나라도 기준 미달:
+        # predicted = NG
+        #
+        # reasons:
+        # 기준을 통과하지 못한 이유를 저장합니다.
+        #
+        # 왜 필요한가요?
+        # Calibration에서 결정한 복합 Rule을
+        # 새로운 Test 이미지에 그대로 적용하기 위해서입니다.
+        # --------------------------------------------------
 
         predicted, reasons = (
             judge_measurement(
@@ -5712,9 +8583,25 @@ def main():
         )
 
 
-        # ------------------------------------------
-        # 실제 정답과 비교
-        # ------------------------------------------
+        # --------------------------------------------------
+        # 11. 실제 정답과 프로그램 판정 비교
+        #
+        # 무엇을 하나요?
+        # - 4번에서 만든 classify_error()를 호출합니다.
+        # - 실제 정답과 예측 결과를 비교합니다.
+        # - TP, TN, FP, FN 중 하나로 구분합니다.
+        #
+        # 예:
+        # actual = OK
+        # predicted = NG
+        #
+        # 결과:
+        # FP
+        #
+        # 왜 필요한가요?
+        # Test 이미지에서 프로그램이
+        # 몇 장을 올바르게 판정했는지 평가하기 위해서입니다.
+        # --------------------------------------------------
 
         error_type = classify_error(
             actual,
@@ -5722,9 +8609,27 @@ def main():
         )
 
 
-        # ------------------------------------------
-        # 결과 이미지 생성
-        # ------------------------------------------
+        # --------------------------------------------------
+        # 12. 검사 결과 이미지 생성 및 저장
+        #
+        # 무엇을 하나요?
+        # - annotate_result() 함수를 호출합니다.
+        # - 로고 위치와 측정값을 이미지에 표시합니다.
+        # - Target 이름을 이용하여 결과 파일명을 만듭니다.
+        # - 결과 이미지를 JPG로 저장합니다.
+        #
+        # 예:
+        # test_ok_01.jpg
+        #        ↓
+        # test_ok_01_result.jpg
+        #
+        # 저장 위치:
+        # outputs/day05/test/
+        #
+        # 왜 필요한가요?
+        # 실제 이미지에서 어떤 위치를 검출했고
+        # 어떤 이유로 판정했는지 눈으로 확인하기 위해서입니다.
+        # --------------------------------------------------
 
         result_image = annotate_result(
             measurement,
@@ -5732,7 +8637,6 @@ def main():
             predicted,
             reasons
         )
-
 
         output_image = (
             OUTPUT_DIR
@@ -5742,16 +8646,56 @@ def main():
             )
         )
 
-
         cv2.imwrite(
             str(output_image),
             result_image
         )
 
 
-        # ------------------------------------------
-        # CSV 결과
-        # ------------------------------------------
+        # --------------------------------------------------
+        # 13. 이미지별 판정 결과를 CSV용 데이터로 정리
+        #
+        # 무엇을 하나요?
+        # - 현재 Test 이미지의 측정값과 판정 결과를 정리합니다.
+        # - 하나의 딕셔너리로 저장합니다.
+        # - rows 리스트에 추가합니다.
+        # - 터미널에 현재 검사 결과를 출력합니다.
+        #
+        # 주요 저장 항목:
+        #
+        # file:
+        # 이미지 이름
+        #
+        # actual:
+        # 실제 정답
+        #
+        # predicted:
+        # 프로그램 판정
+        #
+        # error_type:
+        # TP / TN / FP / FN
+        #
+        # ng_reason:
+        # NG 판정 이유 또는 PASS
+        #
+        # template_score:
+        # Template Matching 유사도
+        #
+        # sift_good_matches:
+        # SIFT Good Match 개수
+        #
+        # homography_found:
+        # Homography 계산 성공 여부
+        #
+        # homography_inliers:
+        # RANSAC Inlier 개수
+        #
+        # inlier_ratio:
+        # Inlier 비율
+        #
+        # result_image:
+        # 결과 이미지 저장 경로
+        # --------------------------------------------------
 
         row = {
 
@@ -5809,20 +8753,39 @@ def main():
                 str(output_image),
         }
 
-
         rows.append(
             row
         )
-
 
         print(
             row
         )
 
 
-    # ==============================================
-    # 5. CSV 저장
-    # ==============================================
+    # --------------------------------------------------
+    # 14. Test 6장의 측정 및 판정 결과를 CSV로 저장
+    #
+    # 무엇을 하나요?
+    # - CSV 컬럼명을 정합니다.
+    # - CSV 파일을 생성합니다.
+    # - Test 이미지별 측정값과 판정을 저장합니다.
+    #
+    # 저장 파일:
+    # reports/day05_test_results.csv
+    #
+    # utf-8-sig:
+    # Excel에서 한글이 깨질 가능성을 줄입니다.
+    #
+    # writer.writeheader():
+    # 첫 번째 행에 컬럼명을 기록합니다.
+    #
+    # writer.writerows(rows):
+    # 모든 이미지의 검사 결과를 기록합니다.
+    #
+    # 왜 필요한가요?
+    # 이후 성능 평가와 실패 분석에서
+    # 동일한 검사 결과를 재사용하기 위해서입니다.
+    # --------------------------------------------------
 
     fieldnames = [
         "file",
@@ -5837,7 +8800,6 @@ def main():
         "inlier_ratio",
         "result_image",
     ]
-
 
     with OUTPUT_CSV.open(
         "w",
@@ -5857,9 +8819,30 @@ def main():
         )
 
 
-    # ==============================================
-    # 6. Test 결과 요약
-    # ==============================================
+    # --------------------------------------------------
+    # 15. Test 전체의 TP/TN/FP/FN과 Accuracy 계산
+    #
+    # 무엇을 하나요?
+    # - 각 이미지에서 기록한 error_type을 확인합니다.
+    # - TP, TN, FP, FN의 전체 개수를 계산합니다.
+    # - Test 전체 Accuracy를 계산합니다.
+    #
+    # Accuracy:
+    # (TP + TN) / 전체 Test 이미지 수
+    #
+    # 예:
+    # 6장 중 3장을 올바르게 판정하면
+    # Accuracy = 3 / 6 = 0.5
+    #
+    # 왜 필요한가요?
+    # Calibration에서 선택한 Rule이
+    # 새로운 이미지에서도 얼마나 정확하게
+    # 동작하는지 평가하기 위해서입니다.
+    #
+    # 주의:
+    # 현재 코드는 이미 기록된 error_type을 집계하며,
+    # Rule을 다시 변경하거나 재학습하지 않습니다.
+    # --------------------------------------------------
 
     tp = sum(
         row["error_type"] == "TP"
@@ -5881,9 +8864,7 @@ def main():
         for row in rows
     )
 
-
     total = len(rows)
-
 
     accuracy = (
         (tp + tn) / total
@@ -5891,6 +8872,28 @@ def main():
         else 0.0
     )
 
+
+    # --------------------------------------------------
+    # 16. Test 완료 및 전체 검사 결과 출력
+    #
+    # 무엇을 하나요?
+    # - 검사한 Test 이미지 수를 출력합니다.
+    # - Accuracy를 출력합니다.
+    # - TP, TN, FP, FN 개수를 출력합니다.
+    # - CSV와 결과 이미지의 저장 위치를 출력합니다.
+    #
+    # 왜 필요한가요?
+    # Baseline Rule이 Test 데이터에서
+    # 어떻게 동작했는지 한눈에 확인하기 위해서입니다.
+    #
+    # 특히 확인할 값:
+    #
+    # FP:
+    # 정상 이미지를 NG로 잘못 판정한 개수
+    #
+    # FN:
+    # 불량 이미지를 OK로 잘못 통과시킨 개수
+    # --------------------------------------------------
 
     print()
 
@@ -5946,67 +8949,520 @@ def main():
     )
 
 
+# --------------------------------------------------
+# 17. Python 파일을 직접 실행하면 main() 호출
+#
+# 무엇을 하나요?
+# - 현재 파일이 직접 실행되었는지 확인합니다.
+# - 직접 실행했다면 main() 함수를 호출합니다.
+#
+# 왜 필요한가요?
+# 다른 파일에서 이 코드를 import할 때
+# Test 작업이 자동으로 실행되지 않도록 하기 위해서입니다.
+#
+# 실행 명령어:
+# python src/37_day05_test.py
+# --------------------------------------------------
+
 if __name__ == "__main__":
     main()
 ```
-
----
-
-## 26.4 의사코드로 읽어봅니다
+### 의사코드
 
 ```
-1. 앞에서 저장한 Rule JSON을 읽는다.
+[1. Rule JSON, Test 이미지 및 결과 저장 경로 설정]
 
-2. JSON에서 다음 기준을 가져온다.
+동결한 Rule JSON 파일의 경로를 지정한다.
 
-   SIFT >= 129
-   Inlier Ratio >= 0.8664
-   Homography 성공
+configs/day05_logo_rules.json
 
-3. JSON에 저장된 Reference 경로를 읽는다.
+Test 이미지가 있는 폴더를 지정한다.
 
-4. Reference의 SIFT 특징점을 준비한다.
+samples/day05/resized/
 
-5. test_ok_로 시작하는 이미지 3장을 찾는다.
+결과 이미지를 저장할 폴더를 지정한다.
 
-6. 이 이미지의 실제 정답을 OK라고 기록한다.
+outputs/day05/test/
 
-7. test_ng_로 시작하는 이미지 3장을 찾는다.
+검사 결과 CSV 경로를 지정한다.
 
-8. 이 이미지의 실제 정답을 NG라고 기록한다.
+reports/day05_test_results.csv
 
-9. Test 이미지 한 장을 측정한다.
+          ↓
 
-10. SIFT Good Match를 구한다.
+[2. Test 이미지 목록과 실제 정답 준비]
 
-11. Homography를 계산한다.
+find_test_images() 함수를 만든다.
 
-12. Inlier Ratio를 구한다.
+이미지 정보를 저장할 빈 리스트를 만든다.
 
-13. 동결한 Rule과 측정값을 비교한다.
+          ↓
 
-14. 조건을 모두 만족하면 OK,
-    하나라도 실패하면 NG로 판정한다.
+[2-1. 정상 Test 이미지 찾기]
 
-15. 프로그램 판정과 실제 정답을 비교한다.
+test_ok_로 시작하는 JPG 이미지를 찾는다.
 
-16. TP / TN / FP / FN을 기록한다.
+각 이미지의 경로를 저장한다.
+실제 정답을 OK로 기록한다.
 
-17. NG라면 어떤 조건에서 실패했는지 기록한다.
+          ↓
 
-18. 검출 위치와 측정값을 결과 이미지에 표시한다.
+[2-2. 불량 Test 이미지 찾기]
 
-19. 같은 작업을 Test 6장에 반복한다.
+test_ng_로 시작하는 JPG 이미지를 찾는다.
 
-20. 모든 결과를 CSV로 저장한다.
+각 이미지의 경로를 저장한다.
+실제 정답을 NG로 기록한다.
 
-21. 최종 Accuracy와
-    TP / TN / FP / FN을 출력한다.
+          ↓
+
+Test 이미지 목록과 실제 정답을 반환한다.
+
+          ↓
+
+[3. 측정값에 동결한 Rule을 적용하는 판정 함수]
+
+judge_measurement() 함수를 만든다.
+
+이미지의 측정값을 전달받는다.
+JSON에서 읽은 Rule을 전달받는다.
+
+실패 이유를 저장할 빈 리스트를 만든다.
+
+          ↓
+
+[3-1. Homography 성공 여부 확인]
+
+JSON의 Homography 필수 조건을 확인한다.
+
+Homography가 필수이고 계산에 실패했다면
+
+HOMOGRAPHY_NOT_FOUND
+
+를 실패 이유에 추가한다.
+
+          ↓
+
+[3-2. SIFT Good Match 검사]
+
+SIFT Good Match 측정값을 읽는다.
+JSON의 최소 SIFT 기준값을 읽는다.
+
+SIFT Good Match < 기준값
+
+이면
+
+LOW_SIFT_MATCH
+
+를 실패 이유에 추가한다.
+
+          ↓
+
+[3-3. Inlier Ratio 검사]
+
+Inlier Ratio 측정값을 읽는다.
+JSON의 최소 Inlier Ratio 기준값을 읽는다.
+
+Inlier Ratio < 기준값
+
+이면
+
+LOW_INLIER_RATIO
+
+를 실패 이유에 추가한다.
+
+          ↓
+
+[3-4. 최종 OK / NG 판정]
+
+실패 이유 리스트를 확인한다.
+
+실패 이유가 없다면
+Predicted = OK
+
+실패 이유가 하나라도 있다면
+Predicted = NG
+
+          ↓
+
+Predicted와 실패 이유 리스트를 반환한다.
+
+          ↓
+
+[4. 실제 정답과 프로그램 판정을 비교하는 함수]
+
+classify_error() 함수를 만든다.
+
+실제 정답 Actual을 전달받는다.
+프로그램 판정 Predicted를 전달받는다.
+
+          ↓
+
+실제 NG / 예측 NG
+→ TP 반환
+
+실제 OK / 예측 OK
+→ TN 반환
+
+실제 OK / 예측 NG
+→ FP 반환
+
+실제 NG / 예측 OK
+→ FN 반환
+
+그 외의 값
+→ UNKNOWN 반환
+
+          ↓
+
+[5. 판정 결과와 로고 위치를 이미지에 표시하는 함수]
+
+annotate_result() 함수를 만든다.
+
+Target 이미지의 복사본을 만든다.
+
+Homography로 계산한
+Polygon 좌표가 있는지 확인한다.
+
+          ↓
+
+[5-1. 로고 영역 좌표 준비]
+
+Polygon 좌표가 있다면
+네 모서리 좌표를 정수로 변환한다.
+
+OpenCV에서 사각형을 그릴 수 있도록
+좌표 배열을 준비한다.
+
+          ↓
+
+[5-2. 판정에 따라 색상 선택]
+
+프로그램 판정이 OK라면
+초록색을 선택한다.
+
+프로그램 판정이 NG라면
+빨간색을 선택한다.
+
+          ↓
+
+[5-3. 로고 영역 사각형 그리기]
+
+Homography로 계산한 네 점을
+선으로 연결한다.
+
+선택된 색상으로 로고 영역을 표시한다.
+
+          ↓
+
+[5-4. NG Reason 문자열 만들기]
+
+실패 이유가 여러 개라면
++ 기호로 연결한다.
+
+실패 이유가 없다면
+PASS라고 기록한다.
+
+          ↓
+
+[5-5. 결과 이미지에 표시할 정보 준비]
+
+Actual을 준비한다.
+Predicted를 준비한다.
+SIFT Good Match를 준비한다.
+Inlier Ratio를 준비한다.
+Template Score를 준비한다.
+NG Reason을 준비한다.
+
+          ↓
+
+[5-6. 측정값과 판정 결과 표시]
+
+이미지 왼쪽 위부터 문자를 표시한다.
+
+한 줄을 표시한 뒤
+다음 줄은 35픽셀 아래에 표시한다.
+
+모든 정보를 표시한
+결과 이미지를 반환한다.
+
+          ↓
+
+[6. 동결한 Baseline Rule JSON 읽기]
+
+main() 함수를 만든다.
+
+Rule JSON 파일이 있는지 확인한다.
+
+파일이 없다면
+오류를 발생시킨다.
+
+파일이 있다면
+json.load()로 내용을 읽는다.
+
+          ↓
+
+Rule 버전을 출력한다.
+SIFT Threshold를 출력한다.
+Inlier Ratio Threshold를 출력한다.
+
+          ↓
+
+[7. JSON에 기록된 Reference 이미지 준비]
+
+JSON에서 기준 로고 경로를 가져온다.
+
+prepare_reference() 함수를 호출한다.
+
+Reference 이미지를 읽는다.
+SIFT 특징점을 계산한다.
+
+Reference 정보를 저장한다.
+
+          ↓
+
+[8. Test 이미지와 결과 폴더 준비]
+
+find_test_images() 함수를 호출한다.
+
+Test 이미지 목록을 가져온다.
+
+전체 이미지 개수를 확인한다.
+
+          ↓
+
+Test 이미지가 6장이 아니라면
+경고를 출력한다.
+
+          ↓
+
+결과 이미지 폴더를 준비한다.
+CSV 저장 폴더를 준비한다.
+
+검사 결과를 저장할
+빈 rows 리스트를 만든다.
+
+          ↓
+
+[9. Test 이미지마다 공통 측정 함수 실행]
+
+첫 번째 Test 이미지를 선택한다.
+
+이미지 경로와 실제 정답을 가져온다.
+
+measure_target() 함수를 호출한다.
+
+          ↓
+
+Template Score를 계산한다.
+SIFT Good Match 개수를 계산한다.
+Homography 계산 성공 여부를 확인한다.
+Homography Inlier 개수를 계산한다.
+Inlier Ratio를 계산한다.
+
+          ↓
+
+측정값을 measurement에 저장한다.
+
+          ↓
+
+[10. 동결한 Baseline Rule 적용]
+
+judge_measurement() 함수를 호출한다.
+
+측정값과 JSON Rule을 전달한다.
+
+          ↓
+
+Homography 계산 성공 여부를 확인한다.
+
+SIFT Good Match 기준을 확인한다.
+
+Inlier Ratio 기준을 확인한다.
+
+          ↓
+
+모두 통과하면 OK
+
+하나라도 실패하면 NG
+
+          ↓
+
+Predicted와 NG Reason을 반환받는다.
+
+          ↓
+
+[11. 실제 정답과 프로그램 판정 비교]
+
+classify_error() 함수를 호출한다.
+
+Actual과 Predicted를 비교한다.
+
+          ↓
+
+TP / TN / FP / FN 중
+해당하는 결과를 저장한다.
+
+          ↓
+
+[12. 검사 결과 이미지 생성 및 저장]
+
+annotate_result() 함수를 호출한다.
+
+          ↓
+
+로고 위치를 사각형으로 표시한다.
+실제 정답을 표시한다.
+프로그램 판정을 표시한다.
+측정값과 NG Reason을 표시한다.
+
+          ↓
+
+결과 이미지 파일명을 만든다.
+
+예:
+test_ok_01_result.jpg
+
+          ↓
+
+JPG 파일로 저장한다.
+
+          ↓
+
+[13. 이미지별 판정 결과 정리]
+
+현재 이미지의 검사 결과를
+하나의 딕셔너리로 만든다.
+
+          ↓
+
+이미지 이름을 기록한다.
+실제 정답을 기록한다.
+프로그램 판정을 기록한다.
+TP/TN/FP/FN을 기록한다.
+
+          ↓
+
+NG Reason을 기록한다.
+Template Score를 기록한다.
+SIFT Good Match를 기록한다.
+Homography Found를 기록한다.
+Homography Inlier를 기록한다.
+Inlier Ratio를 기록한다.
+결과 이미지 경로를 기록한다.
+
+          ↓
+
+rows 리스트에 추가한다.
+
+현재 검사 결과를 터미널에 출력한다.
+
+          ↓
+
+아직 검사할 Test 이미지가 남았다면
+9번으로 돌아가 다음 이미지를 검사한다.
+
+모든 Test 이미지 검사가 끝나면
+14번으로 이동한다.
+
+          ↓
+
+[14. Test 결과 CSV 저장]
+
+CSV 컬럼명을 준비한다.
+
+          ↓
+
+day05_test_results.csv 파일을 연다.
+
+첫 번째 행에 컬럼명을 작성한다.
+
+모든 Test 이미지의 결과를
+한 행씩 저장한다.
+
+          ↓
+
+[15. TP/TN/FP/FN과 Accuracy 계산]
+
+rows에서 TP 개수를 센다.
+rows에서 TN 개수를 센다.
+rows에서 FP 개수를 센다.
+rows에서 FN 개수를 센다.
+
+          ↓
+
+전체 Test 이미지 개수를 계산한다.
+
+Accuracy =
+(TP + TN) / 전체 이미지 개수
+
+          ↓
+
+전체 판정 정확도를 계산한다.
+
+          ↓
+
+[16. Test 완료 및 전체 결과 출력]
+
+Test 완료 메시지를 출력한다.
+
+전체 이미지 개수를 출력한다.
+
+Accuracy를 출력한다.
+
+TP 개수를 출력한다.
+TN 개수를 출력한다.
+FP 개수를 출력한다.
+FN 개수를 출력한다.
+
+CSV 저장 경로를 출력한다.
+결과 이미지 저장 경로를 출력한다.
+
+          ↓
+
+[17. 프로그램 실행]
+
+Python 파일을 직접 실행했다면
+main() 함수를 호출한다.
+
+          ↓
+
+[최종 결과]
+
+Calibration에서 동결한 Rule JSON
+          +
+Test 이미지 6장
+          ↓
+Reference 특징점 준비
+          ↓
+Test 이미지 한 장 측정
+          ↓
+Template / SIFT / Homography
+          ↓
+JSON의 복합 Rule 적용
+          ↓
+OK / NG 판정
+          ↓
+실제 정답과 비교
+          ↓
+TP / TN / FP / FN
+          ↓
+결과 이미지 저장
+          +
+측정 결과 CSV 저장
+          ↓
+Accuracy 계산
+          ↓
+Test 전체 성능 확인
+          ↓
+다음 실습
+38_day05_evaluate.py
+          ↓
+Precision / Recall 평가
+          +
+FP / FN 실패 분석
 ```
-
----
-
-## 26.5 실행합니다
+### 실행합니다
 
 ```
 python src/37_day05_test.py
@@ -6630,7 +10086,23 @@ import pandas as pd
 
 
 # --------------------------------------------------
-# 입력 파일
+# 1. Test 결과 CSV와 Baseline Rule JSON 경로 설정
+#
+# 무엇을 하나요?
+# - 앞에서 실행한 Test 결과 CSV의 경로를 정합니다.
+# - Test에 사용했던 Baseline Rule JSON 경로를 정합니다.
+#
+# RESULT_CSV:
+# 이미지별 실제 정답, 프로그램 판정,
+# TP/TN/FP/FN 등이 기록된 파일입니다.
+#
+# RULE_PATH:
+# Calibration에서 확정하고 동결한
+# Baseline Rule 정보가 저장된 JSON 파일입니다.
+#
+# 왜 필요한가요?
+# Test 결과를 평가하고
+# 어떤 버전의 Rule을 사용했는지 기록하기 위해서입니다.
 # --------------------------------------------------
 
 RESULT_CSV = Path(
@@ -6643,7 +10115,26 @@ RULE_PATH = Path(
 
 
 # --------------------------------------------------
-# 출력 파일
+# 2. 평가 보고서 및 FP/FN 이미지 저장 경로 설정
+#
+# 무엇을 하나요?
+# - 성능 평가 보고서를 저장할 경로를 정합니다.
+# - FP 이미지를 모아 둘 폴더를 지정합니다.
+# - FN 이미지를 모아 둘 폴더를 지정합니다.
+#
+# REPORT_PATH:
+# Accuracy, Precision, Recall 등을 기록할
+# Markdown 보고서 파일입니다.
+#
+# FP_DIR:
+# 실제 OK인데 NG로 잘못 판정한 이미지 저장 폴더
+#
+# FN_DIR:
+# 실제 NG인데 OK로 잘못 통과한 이미지 저장 폴더
+#
+# 왜 필요한가요?
+# 잘못 판정한 이미지만 따로 모아서
+# 어떤 원인으로 오류가 발생했는지 분석하기 위해서입니다.
 # --------------------------------------------------
 
 REPORT_PATH = Path(
@@ -6660,7 +10151,29 @@ FN_DIR = Path(
 
 
 # --------------------------------------------------
-# 0으로 나누는 오류를 막는 함수
+# 3. 0으로 나누는 오류를 방지하는 공통 함수
+#
+# 무엇을 하나요?
+# - 두 숫자를 전달받아 나눗셈을 수행합니다.
+# - 분모가 0이면 0.0을 반환합니다.
+#
+# a:
+# 분자
+#
+# b:
+# 분모
+#
+# 예:
+# safe_divide(3, 6) → 0.5
+# safe_divide(3, 0) → 0.0
+#
+# 왜 필요한가요?
+# Accuracy, Precision, Recall 계산 중
+# 분모가 0이 되면 ZeroDivisionError가 발생하기 때문입니다.
+#
+# 주의:
+# 분모가 0인 경우의 0.0은 계산을 위한 기본값입니다.
+# 해당 지표가 실제로 0%라는 의미와는 구분해야 합니다.
 # --------------------------------------------------
 
 def safe_divide(a, b):
@@ -6672,15 +10185,41 @@ def safe_divide(a, b):
 
 
 # --------------------------------------------------
-# 실행
+# 4. Test 결과 CSV 읽기 및 필수 컬럼 확인
+#
+# 무엇을 하나요?
+# - main() 함수를 정의합니다.
+# - Test 결과 CSV가 존재하는지 확인합니다.
+# - Pandas로 CSV를 읽습니다.
+# - 평가에 필요한 컬럼이 있는지 검사합니다.
+#
+# 필수 컬럼:
+#
+# file:
+# 검사 이미지 이름
+#
+# actual:
+# 실제 정답인 OK 또는 NG
+#
+# predicted:
+# 프로그램이 판정한 OK 또는 NG
+#
+# error_type:
+# TP / TN / FP / FN
+#
+# result_image:
+# 검사 결과 이미지 저장 경로
+#
+# 왜 필요한가요?
+# 앞 단계에서 만들어진 Test 결과가 있어야
+# 전체 성능을 평가할 수 있기 때문입니다.
+#
+# 필수 컬럼이 없다면 프로그램을 중단합니다.
 # --------------------------------------------------
 
 def main():
 
-    # ==============================================
-    # 1. Test 결과 CSV 확인
-    # ==============================================
-
+    # Test 결과 CSV 존재 여부 확인
     if not RESULT_CSV.exists():
 
         raise FileNotFoundError(
@@ -6689,11 +10228,13 @@ def main():
         )
 
 
+    # CSV를 Pandas DataFrame으로 읽기
     df = pd.read_csv(
         RESULT_CSV
     )
 
 
+    # 평가에 필요한 컬럼 목록
     required_columns = {
         "file",
         "actual",
@@ -6703,12 +10244,14 @@ def main():
     }
 
 
+    # CSV에서 누락된 컬럼 찾기
     missing = (
         required_columns
         - set(df.columns)
     )
 
 
+    # 필수 컬럼이 없으면 오류 발생
     if missing:
 
         raise RuntimeError(
@@ -6716,9 +10259,28 @@ def main():
         )
 
 
-    # ==============================================
-    # 2. 사용한 Rule 버전 확인
-    # ==============================================
+    # --------------------------------------------------
+    # 5. Test에 사용한 Baseline Rule 버전 확인
+    #
+    # 무엇을 하나요?
+    # - Rule 버전의 기본값을 UNKNOWN으로 설정합니다.
+    # - JSON 파일이 있으면 내용을 읽습니다.
+    # - baseline_version 값을 가져옵니다.
+    #
+    # 예:
+    # day05-logo-v1.0
+    #
+    # 왜 필요한가요?
+    # 어떤 Rule을 사용하여 Test했는지
+    # 평가 보고서에 기록하기 위해서입니다.
+    #
+    # 주의:
+    # JSON이 없으면 UNKNOWN으로 기록합니다.
+    #
+    # 또한 이 코드는 현재 JSON의 버전명을 읽는 것이므로
+    # CSV를 생성할 당시 사용한 버전과 동일한지까지
+    # 자동으로 검증하지는 않습니다.
+    # --------------------------------------------------
 
     baseline_version = "UNKNOWN"
 
@@ -6741,9 +10303,42 @@ def main():
         )
 
 
-    # ==============================================
-    # 3. TP / TN / FP / FN 집계
-    # ==============================================
+    # --------------------------------------------------
+    # 6. Test 결과에서 TP / TN / FP / FN 개수 집계
+    #
+    # 무엇을 하나요?
+    # - CSV의 error_type 컬럼을 확인합니다.
+    # - TP, TN, FP, FN이 각각 몇 개인지 계산합니다.
+    #
+    # 이번 제조검사에서는 NG를 Positive로 정의합니다.
+    #
+    # TP (True Positive):
+    # 실제 NG → 프로그램 NG
+    # 불량을 올바르게 검출한 경우
+    #
+    # TN (True Negative):
+    # 실제 OK → 프로그램 OK
+    # 정상을 올바르게 통과시킨 경우
+    #
+    # FP (False Positive):
+    # 실제 OK → 프로그램 NG
+    # 정상을 불량으로 잘못 판정한 경우
+    #
+    # FN (False Negative):
+    # 실제 NG → 프로그램 OK
+    # 불량을 정상으로 잘못 통과시킨 경우
+    #
+    # value_counts():
+    # 각 error_type이 나타난 횟수를 계산합니다.
+    #
+    # counts.get("TP", 0):
+    # TP가 없으면 0을 반환합니다.
+    #
+    # 왜 필요한가요?
+    # 전체 정확도뿐 아니라
+    # 어떤 종류의 판정 오류가 발생했는지
+    # 확인하기 위해서입니다.
+    # --------------------------------------------------
 
     counts = (
         df["error_type"]
@@ -6752,23 +10347,31 @@ def main():
     )
 
 
+    # 불량을 올바르게 검출한 개수
     tp = int(
         counts.get("TP", 0)
     )
 
+
+    # 정상을 올바르게 통과한 개수
     tn = int(
         counts.get("TN", 0)
     )
 
+
+    # 정상을 NG로 잘못 판정한 개수
     fp = int(
         counts.get("FP", 0)
     )
 
+
+    # 불량을 OK로 잘못 통과시킨 개수
     fn = int(
         counts.get("FN", 0)
     )
 
 
+    # TP / TN / FP / FN으로 분류된 전체 이미지 수
     total = (
         tp
         + tn
@@ -6777,16 +10380,52 @@ def main():
     )
 
 
-    # ==============================================
-    # 4. 성능 지표 계산
-    # ==============================================
+    # --------------------------------------------------
+    # 7. Accuracy / NG Precision / NG Recall 계산
+    #
+    # 무엇을 하나요?
+    # - 전체 판정 정확도를 계산합니다.
+    # - NG라고 판정한 결과의 정밀도를 계산합니다.
+    # - 실제 NG를 얼마나 검출했는지 계산합니다.
+    #
+    # ① Accuracy
+    #
+    # 전체 이미지 중 올바르게 판정한 비율
+    #
+    # Accuracy = (TP + TN) / 전체 이미지 수
+    #
+    # ② NG Precision
+    #
+    # 프로그램이 NG라고 판정한 이미지 중
+    # 실제 NG가 차지하는 비율
+    #
+    # Precision = TP / (TP + FP)
+    #
+    # ③ NG Recall
+    #
+    # 실제 NG 이미지 중
+    # 프로그램이 NG로 검출한 비율
+    #
+    # Recall = TP / (TP + FN)
+    #
+    # 왜 필요한가요?
+    # Accuracy 하나만으로는
+    # 정상 과검출과 불량 미검출을
+    # 충분히 구분하기 어렵기 때문입니다.
+    #
+    # 제조검사에서는 특히
+    # 실제 불량을 OK로 통과시키는 FN을
+    # 중요하게 확인합니다.
+    # --------------------------------------------------
 
+    # 전체 정확도
     accuracy = safe_divide(
         tp + tn,
         total
     )
 
 
+    # NG라고 판정한 것 중 실제 NG의 비율
     # NG를 Positive로 정의합니다.
     precision_ng = safe_divide(
         tp,
@@ -6794,23 +10433,42 @@ def main():
     )
 
 
+    # 실제 NG 중 올바르게 검출한 비율
     recall_ng = safe_divide(
         tp,
         tp + fn
     )
 
 
-    # ==============================================
-    # 5. 기존 FP / FN 폴더 초기화
+    # --------------------------------------------------
+    # 8. 기존 FP / FN 이미지 폴더 초기화
     #
-    # 이전 실행 결과가 섞이지 않도록 합니다.
-    # ==============================================
+    # 무엇을 하나요?
+    # - 이전 실행에서 저장한 FP/FN 폴더를 확인합니다.
+    # - 폴더가 있다면 삭제합니다.
+    # - 새로운 빈 FP/FN 폴더를 생성합니다.
+    #
+    # shutil.rmtree():
+    # 폴더와 그 안의 파일을 모두 삭제하는 함수
+    #
+    # mkdir():
+    # 폴더를 만드는 함수
+    #
+    # 왜 필요한가요?
+    # 이전 Test에서 만들어진 실패 이미지가
+    # 현재 Test 결과에 섞이지 않도록 하기 위해서입니다.
+    #
+    # 주의:
+    # FP_DIR과 FN_DIR 안의 기존 파일은
+    # 모두 삭제되므로 별도 자료를 보관하면 안 됩니다.
+    # --------------------------------------------------
 
     for folder in [
         FP_DIR,
         FN_DIR,
     ]:
 
+        # 기존 폴더가 있다면 삭제
         if folder.exists():
 
             shutil.rmtree(
@@ -6818,31 +10476,63 @@ def main():
             )
 
 
+        # 새로운 빈 폴더 생성
         folder.mkdir(
             parents=True,
             exist_ok=True
         )
 
 
-    # ==============================================
-    # 6. FP / FN 결과 이미지를 따로 복사
-    # ==============================================
+    # --------------------------------------------------
+    # 9. FP / FN으로 잘못 판정한 결과 이미지를 분리
+    #
+    # 무엇을 하나요?
+    # - Test 결과 CSV의 각 행을 확인합니다.
+    # - 각 이미지의 error_type을 읽습니다.
+    # - 결과 이미지 경로를 확인합니다.
+    #
+    # FP인 경우:
+    # outputs/day05/fp/ 폴더에 복사
+    #
+    # FN인 경우:
+    # outputs/day05/fn/ 폴더에 복사
+    #
+    # shutil.copy2():
+    # 원본 파일을 보존하면서 파일을 복사합니다.
+    # 가능한 파일 메타데이터도 함께 보존합니다.
+    #
+    # 왜 필요한가요?
+    # 정상인데 NG로 잘못 판정한 이미지와
+    # 불량인데 OK로 잘못 통과한 이미지를
+    # 구분해서 분석하기 위해서입니다.
+    #
+    # 주의:
+    # 결과 이미지 파일이 없으면
+    # 현재 코드는 해당 행을 건너뜁니다.
+    # 따라서 오류 개수와 복사된 이미지 수가
+    # 다를 수 있습니다.
+    # --------------------------------------------------
 
     for _, row in df.iterrows():
 
+        # 현재 이미지의 오류 유형
         error_type = row[
             "error_type"
         ]
 
+
+        # 검사 결과 이미지 경로
         source = Path(
             row["result_image"]
         )
 
 
+        # 이미지가 없으면 건너뛰기
         if not source.exists():
             continue
 
 
+        # FP: 실제 OK → 프로그램 NG
         if error_type == "FP":
 
             shutil.copy2(
@@ -6851,6 +10541,7 @@ def main():
             )
 
 
+        # FN: 실제 NG → 프로그램 OK
         elif error_type == "FN":
 
             shutil.copy2(
@@ -6859,9 +10550,31 @@ def main():
             )
 
 
-    # ==============================================
-    # 7. 평가 보고서 만들기
-    # ==============================================
+    # --------------------------------------------------
+    # 10. 전체 Test 성능을 Markdown 보고서로 저장
+    #
+    # 무엇을 하나요?
+    # - 보고서를 저장할 폴더를 준비합니다.
+    # - Baseline Rule 버전을 기록합니다.
+    # - TP/TN/FP/FN을 Confusion Matrix로 정리합니다.
+    # - Accuracy, Precision, Recall을 기록합니다.
+    # - FP와 FN의 의미를 설명합니다.
+    #
+    # Confusion Matrix:
+    # 실제 정답과 프로그램 판정을 비교하는 표입니다.
+    #
+    # 보고서 파일:
+    # reports/day05_test_metrics.md
+    #
+    # 왜 필요한가요?
+    # Test 결과를 문서로 남겨
+    # 이후 Baseline 성능과 실패 원인을
+    # 확인할 수 있도록 하기 위해서입니다.
+    #
+    # 주의:
+    # 이 보고서는 집계된 평가 결과를 기록합니다.
+    # 실제 Failure Cause를 자동으로 분석하지는 않습니다.
+    # --------------------------------------------------
 
     REPORT_PATH.parent.mkdir(
         parents=True,
@@ -6869,6 +10582,7 @@ def main():
     )
 
 
+    # Markdown 형식의 보고서 내용 작성
     report = f"""# Day05 Test Metrics
 
 ## Baseline
@@ -6899,15 +10613,27 @@ def main():
 """
 
 
+    # Markdown 파일 저장
     REPORT_PATH.write_text(
         report,
         encoding="utf-8"
     )
 
 
-    # ==============================================
-    # 8. 터미널 출력
-    # ==============================================
+    # --------------------------------------------------
+    # 11. 전체 평가 결과와 저장 경로를 터미널에 출력
+    #
+    # 무엇을 하나요?
+    # - 사용한 Rule 버전을 출력합니다.
+    # - Test 이미지 개수를 출력합니다.
+    # - TP/TN/FP/FN을 출력합니다.
+    # - Accuracy, Precision, Recall을 출력합니다.
+    # - 평가 보고서와 FP/FN 이미지 폴더 경로를 출력합니다.
+    #
+    # 왜 필요한가요?
+    # 평가 결과를 파일로 열기 전에도
+    # 터미널에서 전체 성능을 확인하기 위해서입니다.
+    # --------------------------------------------------
 
     print("=" * 70)
 
@@ -6918,11 +10644,14 @@ def main():
     print("=" * 70)
 
 
+    # 사용한 Baseline Rule 버전
     print(
         "Rule:",
         baseline_version
     )
 
+
+    # 전체 평가 이미지 수
     print(
         "Test Images:",
         total
@@ -6930,6 +10659,8 @@ def main():
 
     print()
 
+
+    # TP / TN / FP / FN 출력
     print(
         "TP:",
         tp
@@ -6952,6 +10683,8 @@ def main():
 
     print()
 
+
+    # Accuracy 출력
     print(
         "Accuracy:",
         round(
@@ -6960,6 +10693,8 @@ def main():
         )
     )
 
+
+    # NG Precision 출력
     print(
         "NG Precision:",
         round(
@@ -6968,6 +10703,8 @@ def main():
         )
     )
 
+
+    # NG Recall 출력
     print(
         "NG Recall:",
         round(
@@ -6978,6 +10715,8 @@ def main():
 
     print()
 
+
+    # 결과물 저장 경로 확인
     print(
         "평가 보고서:",
         REPORT_PATH
@@ -6994,6 +10733,21 @@ def main():
     )
 
 
+# --------------------------------------------------
+# 12. Python 파일을 직접 실행하면 main() 호출
+#
+# 무엇을 하나요?
+# - 현재 파일이 직접 실행되었는지 확인합니다.
+# - 직접 실행했다면 main() 함수를 호출합니다.
+#
+# 왜 필요한가요?
+# 다른 파일에서 이 코드를 import할 때
+# 평가 작업이 자동 실행되지 않도록 하기 위해서입니다.
+#
+# 실행 명령어:
+# python src/38_day05_evaluate.py
+# --------------------------------------------------
+
 if __name__ == "__main__":
     main()
 ```
@@ -7007,33 +10761,348 @@ python src/38_day05_evaluate.py
 ### 의사코드
 
 ```
-1. 앞에서 만든 Test 결과 CSV를 읽는다.
+[1. Test 결과 CSV와 Baseline Rule JSON 경로 설정]
 
-2. 사용했던 Baseline Rule 버전을 확인한다.
+Test 결과 CSV 경로를 정한다.
 
-3. Test 결과에서
-   TP / TN / FP / FN의 개수를 센다.
+reports/day05_test_results.csv
 
-4. 전체 이미지 중
-   몇 장을 올바르게 판정했는지
-   Accuracy를 계산한다.
+사용한 Baseline Rule JSON 경로를 정한다.
 
-5. NG라고 판정한 것 중
-   실제 NG가 얼마나 되는지
-   NG Precision을 계산한다.
+configs/day05_logo_rules.json
 
-6. 실제 NG 중
-   얼마나 놓치지 않고 잡았는지
-   NG Recall을 계산한다.
+          ↓
 
-7. FP 이미지가 있다면
-   outputs/day05/fp에 따로 복사한다.
+[2. 평가 보고서 및 FP/FN 이미지 저장 경로 설정]
 
-8. FN 이미지가 있다면
-   outputs/day05/fn에 따로 복사한다.
+평가 보고서 경로를 정한다.
 
-9. 전체 평가 결과를
-   day05_test_metrics.md에 저장한다.
+reports/day05_test_metrics.md
+
+FP 이미지 저장 폴더를 정한다.
+
+outputs/day05/fp/
+
+FN 이미지 저장 폴더를 정한다.
+
+outputs/day05/fn/
+
+          ↓
+
+[3. 0으로 나누는 오류 방지 함수]
+
+safe_divide() 함수를 만든다.
+
+분자 a와 분모 b를 전달받는다.
+
+          ↓
+
+분모가 0인지 확인한다.
+
+분모가 0이면 0.0을 반환한다.
+
+분모가 0이 아니면
+a / b 결과를 반환한다.
+
+          ↓
+
+[4. Test 결과 CSV 읽기 및 필수 컬럼 확인]
+
+main() 함수를 시작한다.
+
+Test 결과 CSV가 있는지 확인한다.
+
+파일이 없다면 오류를 발생시킨다.
+
+          ↓
+
+Pandas로 CSV를 읽는다.
+
+          ↓
+
+필수 컬럼이 있는지 확인한다.
+
+file
+actual
+predicted
+error_type
+result_image
+
+          ↓
+
+필수 컬럼이 누락되었다면
+오류를 발생시킨다.
+
+모든 컬럼이 있다면
+다음 단계로 이동한다.
+
+          ↓
+
+[5. Test에 사용한 Baseline Rule 버전 확인]
+
+Baseline Rule 버전의 기본값을
+UNKNOWN으로 설정한다.
+
+          ↓
+
+Rule JSON 파일이 있는지 확인한다.
+
+파일이 있다면 JSON을 읽는다.
+
+          ↓
+
+baseline_version 값을 가져온다.
+
+예:
+day05-logo-v1.0
+
+          ↓
+
+[6. TP / TN / FP / FN 개수 집계]
+
+Test 결과 CSV의
+error_type 컬럼을 확인한다.
+
+          ↓
+
+실제 NG이고 프로그램 판정도 NG인
+TP 개수를 센다.
+
+실제 OK이고 프로그램 판정도 OK인
+TN 개수를 센다.
+
+실제 OK인데 프로그램이 NG라고 판정한
+FP 개수를 센다.
+
+실제 NG인데 프로그램이 OK라고 판정한
+FN 개수를 센다.
+
+          ↓
+
+TP + TN + FP + FN
+
+을 계산한다.
+
+전체 평가 이미지 개수를 구한다.
+
+          ↓
+
+[7. Accuracy / NG Precision / NG Recall 계산]
+
+전체 정확도 Accuracy를 계산한다.
+
+Accuracy =
+(TP + TN) / 전체 이미지 수
+
+          ↓
+
+NG Precision을 계산한다.
+
+Precision =
+TP / (TP + FP)
+
+          ↓
+
+NG Recall을 계산한다.
+
+Recall =
+TP / (TP + FN)
+
+          ↓
+
+계산 과정에서 분모가 0이면
+safe_divide()가 0.0을 반환한다.
+
+          ↓
+
+[8. 기존 FP / FN 이미지 폴더 초기화]
+
+FP 이미지 폴더가 있는지 확인한다.
+
+폴더가 있으면 삭제한다.
+
+새로운 빈 FP 폴더를 생성한다.
+
+          ↓
+
+FN 이미지 폴더가 있는지 확인한다.
+
+폴더가 있으면 삭제한다.
+
+새로운 빈 FN 폴더를 생성한다.
+
+          ↓
+
+이전 실행에서 저장한 이미지가
+현재 결과에 섞이지 않도록 준비한다.
+
+          ↓
+
+[9. FP / FN 결과 이미지 분리]
+
+Test 결과 CSV를 한 행씩 읽는다.
+
+          ↓
+
+현재 이미지의 error_type을 확인한다.
+
+결과 이미지 경로를 가져온다.
+
+          ↓
+
+결과 이미지 파일이 없다면
+현재 행을 건너뛴다.
+
+          ↓
+
+error_type이 FP이면
+
+결과 이미지를
+outputs/day05/fp/ 폴더에 복사한다.
+
+          ↓
+
+error_type이 FN이면
+
+결과 이미지를
+outputs/day05/fn/ 폴더에 복사한다.
+
+          ↓
+
+나머지 Test 결과도 같은 과정을 반복한다.
+
+          ↓
+
+[10. 전체 Test 성능을 Markdown 보고서로 저장]
+
+평가 보고서 저장 폴더를 준비한다.
+
+          ↓
+
+Baseline Rule 버전을 기록한다.
+
+Positive Class가 NG임을 기록한다.
+
+Test 이미지 개수를 기록한다.
+
+          ↓
+
+Confusion Matrix를 작성한다.
+
+실제 NG / 예측 NG → TP
+실제 NG / 예측 OK → FN
+실제 OK / 예측 NG → FP
+실제 OK / 예측 OK → TN
+
+          ↓
+
+Accuracy를 기록한다.
+
+NG Precision을 기록한다.
+
+NG Recall을 기록한다.
+
+FP 개수를 기록한다.
+
+FN 개수를 기록한다.
+
+          ↓
+
+FP와 FN의 의미를 설명한다.
+
+          ↓
+
+day05_test_metrics.md 파일로 저장한다.
+
+          ↓
+
+[11. 전체 평가 결과를 터미널에 출력]
+
+사용한 Baseline Rule 버전을 출력한다.
+
+전체 Test 이미지 개수를 출력한다.
+
+          ↓
+
+TP를 출력한다.
+TN을 출력한다.
+FP를 출력한다.
+FN을 출력한다.
+
+          ↓
+
+Accuracy를 출력한다.
+
+NG Precision을 출력한다.
+
+NG Recall을 출력한다.
+
+          ↓
+
+평가 보고서 경로를 출력한다.
+
+FP 이미지 폴더 경로를 출력한다.
+
+FN 이미지 폴더 경로를 출력한다.
+
+          ↓
+
+[12. 프로그램 실행]
+
+Python 파일을 직접 실행했는지 확인한다.
+
+직접 실행했다면
+main() 함수를 호출한다.
+
+          ↓
+
+[최종 결과]
+
+37_day05_test.py
+        ↓
+Test 이미지 6장 검사 결과
+        ↓
+day05_test_results.csv
+        ↓
+38_day05_evaluate.py
+        ↓
+TP / TN / FP / FN 집계
+        ↓
+Accuracy 계산
+        ↓
+NG Precision 계산
+        ↓
+NG Recall 계산
+        ↓
+FP / FN 이미지 분리
+        ↓
+┌────────────────────────────────┐
+│ 결과 1                          │
+│ day05_test_metrics.md          │
+│ 전체 Test 성능 평가 보고서        │
+└────────────────────────────────┘
+        +
+┌────────────────────────────────┐
+│ 결과 2                          │
+│ outputs/day05/fp/              │
+│ 정상 이미지를 NG로 잘못 판정      │
+│ FP 이미지 저장                  │
+└────────────────────────────────┘
+        +
+┌────────────────────────────────┐
+│ 결과 3                          │
+│ outputs/day05/fn/              │
+│ 불량 이미지를 OK로 잘못 통과      │
+│ FN 이미지 저장                  │
+└────────────────────────────────┘
+        ↓
+실패한 이미지 확인
+        ↓
+NG Reason과 실제 Failure Cause 구분
+        ↓
+Baseline Rule의 한계 분석
+        ↓
+5일차 Test 평가 완료
 ```
 
 ---
@@ -7578,7 +11647,6 @@ Ratio가 낮아졌는지 분석
 입니다.
 
 > 현재 `day05-logo-v1.0`은 불량 3장을 모두 검출하여 NG Recall은 100%였지만, 정상 3장도 모두 NG로 판정하여 FP가 3건 발생했습니다. 따라서 현재 Rule은 불량 검출에는 강하지만 정상 제품을 통과시키는 데에는 지나치게 엄격한 특성을 보였습니다.
-
 
 ---
 

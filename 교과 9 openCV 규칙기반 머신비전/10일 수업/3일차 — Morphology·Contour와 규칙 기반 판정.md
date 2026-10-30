@@ -40,7 +40,8 @@ Otsu는 픽셀을 검정(0)과 흰색(255)으로 구분하는 작업이고, Morp
 
 **2일차는** ROI 이미지의 상태에 따라 Brightness, Gamma, CLAHE, Gaussian, Median 같은 여러 전처리 방법을 비교하고 어떤 방법을 사용할지 판단하는 과정을 배웠습니다. 마지막에는 Gray 이미지에 Threshold / Otsu를 적용하여 객체와 배경을 검정과 흰색의 Binary Image로 분리했고, 그 결과 중 하나가 `otsu.jpg`입니다.
 
-**3일차는** 같은 ROI 이미지를 다시 사용하여 `Gray → Otsu`로 Binary Image를 다시 만든 뒤, Morphology로 영역을 정리하고 Contour로 객체를 찾습니다. 이후 Area, Count, BBox, Center 같은 Feature를 숫자로 측정하고, `cap_on`과 `cap_off`의 실제 측정값 차이를 비교하여 Rule을 만든 뒤 OK / NG를 판정하는 과정을 배우는 날입니다.
+**3일차는** 같은 ROI 이미지를 다시 사용하여 `Gray → Otsu`로 Binary Image를 다시 만든 뒤, Morphology로 영역을 정리하고 Contour로 객체를 찾습니다. 이후 Area, Count, BBox, Center 
+같은 Feature를 숫자로 측정하고, `cap_on`과 `cap_off`의 실제 측정값 차이를 비교하여 Rule을 만든 뒤 OK / NG를 판정하는 과정을 배우는 날입니다.
 
 ```text
 1일차
@@ -168,7 +169,7 @@ center_x = 0.52
 
 > 오늘은 “Area가 얼마면 정상이다”라는 숫자를 외우게 아니고, 실제 이미지에서 값을 먼저 측정하고, 그 차이를 확인한 뒤 기준 후보를 만드는 날입니다.
 
-![[Pasted image 20260829102708.png]]
+![[Pasted image 20261027075028.png]]
 
 
 ---
@@ -278,13 +279,14 @@ cap_on.jpg / cap_off.jpg
 ```text
 어두운 병뚜껑
         ↓
-THRESH_BINARY_INV
+THRESH_BINARY_INV (이진화 결과를 반대로 만드는 방식)
         ↓
 병뚜껑을 흰색 객체로 표시
 ```
 
 Otsu까지 함께 사용하면 다음과 같습니다.
 
+`15_threshold_otsu.py` 코드에서 238번째 줄
 ```python
 otsu_value, binary = cv2.threshold(
     gray,
@@ -311,6 +313,8 @@ otsu_value, binary = cv2.threshold(
 따라서 오늘도 다음 원칙을 유지합니다.
 
 > Threshold 종류를 외우는 것이 아니라 검사할 객체를 흰색 영역으로 만들기 위해 어떤 방향이 맞는지 판단합니다.
+
+![[Pasted image 20261026124213.png]]
 
 ---
 
@@ -570,13 +574,15 @@ Closing은 흰색 객체 내부의 작은 구멍이나 끊어진 영역을 연�
 
 # 9. Kernel과 Iteration은 왜 비교해야 하나요?
 
-![[Pasted image 20260829195047.png]]
+![[Pasted image 20261027080218.png]]
 
 ![[Pasted image 20260829195147.png]]
 
-**Kernel**: Morphology가 주변 픽셀을 확인할 때 사용하는 작은 구조 요소입니다. 크기가 클수록 이미지에 미치는 영향 범위가 커집니다.
+**Kernel**: Morphology가 주변 픽셀을 확인할 때 사용하는 작은 구조 요소입니다. 크기가 클수록 
+이미지에 미치는 영향 범위가 커집니다.
 
-**Iteration**: 같은 Morphology 연산을 몇 번 반복할지 정하는 값입니다. 횟수가 많을수록 변화가 더 강하게 적용됩니다.
+**Iteration**: 같은 Morphology 연산을 몇 번 반복할지 정하는 값입니다. 횟수가 많을수록 변화가 
+더 강하게 적용됩니다.
 
 Opening과 Closing의 역할
 
@@ -2497,6 +2503,19 @@ cap_off = True
 
 `cap_off=True`는 병뚜껑이 없는 이미지에서 가장 큰 Contour가 ROI 경계까지 연결되었다는 뜻입니다. 따라서 결과 이미지를 보면서 병목이나 주변 영역이 큰 객체로 잡힌 것은 아닌지 확인하는 보조 정보로 사용합니다.
 
+### 다른 측정값도 있는데 왜 면적 비율을 선택했을까요?
+
+| Feature              | 비교 결과            | 선택하지 않은 이유                                    |
+| -------------------- | ---------------- | --------------------------------------------- |
+| `otsu_value`         | 111 vs 116       | 이진화에 사용한 밝기 기준값으로, 직접적인 병뚜껑 유무 판단에는 적합하지 않음   |
+| `valid_count`        | 3 vs 1           | 차이는 있지만 작은 노이즈나 Morphology 설정에 따라 개수가 변할 수 있음 |
+| `largest_area`       | 27,878 vs 19,347 | 차이가 있지만 ROI 크기에 영향을 받는 절대 면적                  |
+| `largest_area_ratio` | 0.661 vs 0.459   | 면적 차이를 비율로 쉽게 비교할 수 있어 우선 선택                  |
+| `center_x_norm`      | 0.491 vs 0.536   | 좌우 중심 위치 차이가 상대적으로 작음                         |
+| `center_y_norm`      | 0.461 vs 0.551   | 위치 차이는 있지만 위치만으로 유무 판단이 안정적인지는 확인 필요          |
+| `touches_border`     | False vs True    | 유용한 보조 정보지만 ROI 설정에 따라 결과가 달라질 수 있음           |
+
+---
 ### 현재 결과에서의 판단
 
 ```
@@ -3367,11 +3386,11 @@ IP Webcam 입력 해상도
 
 따라서 이번 실습에서는 다음 6장을 하나의 비교 데이터로 사용합니다.
 
-|촬영|병뚜껑 있음|병뚜껑 없음|
-|---|---|---|
-|1차|`live_roi03/cap_on.jpg`|`live_roi03/cap_off.jpg`|
-|2차|`live_roi03-1/cap_on.jpg`|`live_roi03-1/cap_off.jpg`|
-|3차|`live_roi03-2/cap_on.jpg`|`live_roi03-2/cap_off.jpg`|
+| 촬영  | 병뚜껑 있음                    | 병뚜껑 없음                     |
+| --- | ------------------------- | -------------------------- |
+| 1차  | `live_roi03/cap_on.jpg`   | `live_roi03/cap_off.jpg`   |
+| 2차  | `live_roi03-1/cap_on.jpg` | `live_roi03-1/cap_off.jpg` |
+| 3차  | `live_roi03-2/cap_on.jpg` | `live_roi03-2/cap_off.jpg` |
 
 ---
 
