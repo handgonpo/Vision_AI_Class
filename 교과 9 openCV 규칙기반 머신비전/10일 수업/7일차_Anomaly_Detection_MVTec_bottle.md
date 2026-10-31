@@ -15,11 +15,17 @@
 → OCR로 문자를 읽고 기준값과 비교
 ```
 
-7일차에서는 검사 방법이 조금 달라집니다.
+7일차에서는 제품을 검사하는 방법이 조금 달라집니다.
 
-이번에는 특정 불량 하나를 찾는 것이 아니라,
+지금까지는 병뚜껑이 있는지, 제품에 흠집이 있는지처럼 **검사할 항목을 미리 정하고 기준에 따라 정상과 불량을 판단**했습니다.
 
-> 정상 제품의 모습을 기준으로 만들어 두고, 정상과 많이 다른 제품을 이상(Anomaly)으로 찾아봅니다.
+이번에는 정상 제품의 사진을 여러 장 분석하여 **정상 제품이 가진 공통적인 특징을 기준으로 만듭니다.**
+
+이후 새로운 제품이 들어오면 정상 기준과 비교하여 비슷하면 정상, 차이가 크면 이상으로 판단합니다.
+
+이처럼 **불량의 종류를 미리 지정하지 않고, 정상 제품과 다른 특징을 찾아내는 기술을 Anomaly Detection(이상검출)** 이라고 합니다.
+
+7일차에서는 정상 병 이미지를 이용해 기준을 만들고, 새로운 병 이미지에서 이상이 있는지 찾아보겠습니다.
 
 ---
 
@@ -38,6 +44,8 @@
 → broken_small
 → contamination
 ```
+
+![[Pasted image 20261031144922.png]]
 
 의미는 다음과 같습니다.
 
@@ -77,13 +85,16 @@ samples/day07/original/bottle/
 │   └── contamination/
 │
 └── ground_truth/
+    ├── broken_large/
+    ├── broken_small/
+    └── contamination/
 ```
 
 ---
 
 ## 오늘의 전체 흐름
 
-![[Pasted image 20260901221557.png]]
+![[Pasted image 20261031145538.png]]
 
 ```
 정상 병 이미지
@@ -174,7 +185,7 @@ Normal / Anomaly
 
 7일차 전체 실습은 다음 순서로 진행합니다.
 
-![[Pasted image 20260901223141.png]]
+![[Pasted image 20261031150306.png]]
 
 ```
 정상 병 사진 준비
@@ -336,7 +347,7 @@ Normal Validation
 
 7일차에서는 불량의 모양을 하나씩 정해서 찾는 대신 정상 제품의 모습을 먼저 기준으로 만듭니다.
 
-![[Pasted image 20260902114731.png]]
+![[Pasted image 20261031150924.png]]
 
 - ResNet18 = 이미지에서 모양, 색, 경계, 패턴 같은 특징을 찾아내는 CNN 모델
 
@@ -395,9 +406,7 @@ Feature
 | `60_day07_run_challenge.py`           | 촬영환경 변화에 따른 성능 검증  | 변형 이미지 5장에 기존 Rule을 적용하여 정상 제품이 촬영 조건 변화로 Anomaly로 잘못 판정되는지 확인합니다.            |
 | `61_day07_mini_challenge.py`          | 나만의 이상검출 실험        | 다른 정상 병 이미지를 선택하고 Dark·Blur·Rotation 강도를 직접 조절하여 Score와 PASS / FP 결과를 분석합니다.  |
 
-![[Pasted image 20261020092823.png]]
-
-![[Pasted image 20261020093149.png]]
+![[Pasted image 20261031151839.png]]
 
 ---
 
@@ -661,9 +670,30 @@ MVTec bottle 폴더
 src/50_day07_check_anomaly_env.py
 ```
 
-작성합니다.
+이 단계의 흐름만 간단히 보면:
+
+```
+실행 환경 확인
+        ↓
+Dataset 경로 확인
+        ↓
+필요한 폴더 확인
+        ↓
+이미지 수 확인
+        ↓
+7일차 실습 준비 완료
+```
+
+입니다.
+
+코드를 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → 폴더 확인과 AI 실행환경 점검에 사용
+# ==================================================
 from pathlib import Path
 
 import cv2
@@ -672,37 +702,56 @@ import torch
 import torchvision
 
 
+# ==================================================
+# ② MVTec bottle 원본 데이터 경로 설정
+#    → 오늘 검사할 병 이미지가 있는 위치
+# ==================================================
 ROOT = Path(
     "samples/day07/original/bottle"
 )
 
+
+# ==================================================
+# ③ 반드시 있어야 하는 Dataset 폴더 목록
+#    → 정상 / 이상 / 실제 결함 위치 폴더 확인용
+# ==================================================
 required_dirs = [
+    # 정상 학습 이미지
     ROOT / "train/good",
 
+    # 정상 및 이상 Test 이미지
     ROOT / "test/good",
     ROOT / "test/broken_large",
     ROOT / "test/broken_small",
     ROOT / "test/contamination",
 
+    # 실제 결함 위치를 표시한 Mask
     ROOT / "ground_truth/broken_large",
     ROOT / "ground_truth/broken_small",
     ROOT / "ground_truth/contamination",
 ]
 
 
+# ==================================================
+# ④ 프로그램 시작 제목 출력
+#    → 7일차 환경 점검이 시작되었음을 표시
+# ==================================================
 print("=" * 70)
 print("DAY07 ANOMALY ENV CHECK")
 print("=" * 70)
 
-# --------------------------------------------------
-# 1. 실행 환경 확인
-# --------------------------------------------------
+
+# ==================================================
+# ⑤ AI 라이브러리 버전과 GPU 사용 여부 확인
+#    → PyTorch / OpenCV 등이 정상 설치되었는지 확인
+# ==================================================
 print("Torch      :", torch.__version__)
 print("Torchvision:", torchvision.__version__)
 print("OpenCV     :", cv2.__version__)
 print("NumPy      :", np.__version__)
 print("CUDA       :", torch.cuda.is_available())
 
+# CUDA를 사용할 수 있다면 GPU 이름 출력
 if torch.cuda.is_available():
     print(
         "GPU        :",
@@ -710,36 +759,49 @@ if torch.cuda.is_available():
     )
 
 
-# --------------------------------------------------
-# 2. Dataset 폴더 확인
-# --------------------------------------------------
+# ==================================================
+# ⑥ Dataset 폴드가 실제로 존재하는지 확인
+#    → required_dirs의 모든 경로를 하나씩 검사
+# ==================================================
 print()
 print("Dataset:", ROOT)
 
+# 처음에는 모든 폴더가 정상이라고 가정
 all_ok = True
 
 for directory in required_dirs:
+
+    # 현재 폴더가 존재하면 True, 없으면 False
     exists = directory.exists()
 
+    # 하나라도 없으면 전체 점검 실패로 표시
     if not exists:
         all_ok = False
 
+    # 폴더별 확인 결과 출력
     print(
         f"[{'OK' if exists else 'MISSING'}]",
         directory,
     )
 
+
+# ==================================================
+# ⑦ 필요한 폴더가 없으면 오류 발생
+#    → Dataset이 불완전한 상태에서 실습 진행 방지
+# ==================================================
 if not all_ok:
     raise FileNotFoundError(
         "MVTec bottle 폴더 구조를 다시 확인하세요."
     )
 
 
-# --------------------------------------------------
-# 3. 이미지 수 확인
-# --------------------------------------------------
+# ==================================================
+# ⑧ 정상 / 이상 이미지 수 확인
+#    → 각 폴더의 PNG 이미지 개수를 출력
+# ==================================================
 print()
 
+# 정상 학습 이미지 수
 print(
     "Train Good        :",
     len(
@@ -749,6 +811,7 @@ print(
     ),
 )
 
+# 정상 Test 이미지 수
 print(
     "Test Good         :",
     len(
@@ -758,6 +821,7 @@ print(
     ),
 )
 
+# 크게 파손된 병 이미지 수
 print(
     "Broken Large      :",
     len(
@@ -767,6 +831,7 @@ print(
     ),
 )
 
+# 작게 파손된 병 이미지 수
 print(
     "Broken Small      :",
     len(
@@ -776,6 +841,7 @@ print(
     ),
 )
 
+# 오염된 병 이미지 수
 print(
     "Contamination     :",
     len(
@@ -786,8 +852,58 @@ print(
 )
 
 
+# ==================================================
+# ⑨ 환경 점검 완료 메시지 출력
+#    → 필요한 폴더 확인과 이미지 수 점검 완료
+# ==================================================
 print()
 print("Day07 Environment OK")
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - Path로 폴더와 파일 경로를 다룬다.
+   - OpenCV, NumPy, PyTorch, Torchvision을 준비한다.
+
+② MVTec bottle 데이터 경로 설정
+   - 정상 병과 이상 병 이미지가 들어 있는
+     원본 Dataset 위치를 지정한다.
+
+③ 확인할 폴더 목록 만들기
+   - 정상 학습 폴더를 등록한다.
+   - 정상·이상 Test 폴더를 등록한다.
+   - 실제 결함 위치 Mask 폴더를 등록한다.
+
+④ 프로그램 시작 메시지 출력
+   - DAY07 ANOMALY ENV CHECK를 표시한다.
+
+⑤ AI 실행환경 확인
+   - PyTorch와 Torchvision 버전을 출력한다.
+   - OpenCV와 NumPy 버전을 출력한다.
+   - CUDA 사용 가능 여부를 확인한다.
+   - GPU를 사용할 수 있으면 GPU 이름도 출력한다.
+
+⑥ Dataset 폴더 존재 여부 확인
+   - 필요한 폴더를 하나씩 확인한다.
+   - 폴더가 있으면 OK를 출력한다.
+   - 폴더가 없으면 MISSING을 출력한다.
+
+⑦ 폴더 누락 여부 판단
+   - 필요한 폴더가 하나라도 없으면 오류를 발생시킨다.
+   - 모든 폴더가 있으면 다음 단계로 이동한다.
+
+⑧ 정상 및 이상 이미지 수 확인
+   - 정상 Train 이미지 수를 계산한다.
+   - 정상 Test 이미지 수를 계산한다.
+   - 큰 파손 이미지 수를 계산한다.
+   - 작은 파손 이미지 수를 계산한다.
+   - 오염 이미지 수를 계산한다.
+
+⑨ 점검 완료
+   - Day07 Environment OK를 출력한다.
+   - 다음 데이터 분리 실습을 진행할 준비를 마친다.
 ```
 
 실행합니다.
@@ -842,79 +958,87 @@ PyTorch 환경이 정상인가?
 
 를 확인하는 것입니다.
 
-### 의사코드
-
-```
-1. 7일차 MVTec bottle 원본 경로를 지정한다.
-
-2. 수업에 필요한
-   train / test / ground_truth 폴더 목록을 만든다.
-
-3. PyTorch, Torchvision, OpenCV, NumPy 버전을 출력한다.
-
-4. CUDA 사용 가능 여부를 확인한다.
-
-5. CUDA를 사용할 수 있으면 GPU 이름도 출력한다.
-
-6. 필요한 MVTec bottle 폴더가 모두 존재하는지 확인한다.
-
-7. 하나라도 빠진 폴더가 있으면 오류를 발생시키고
-   Dataset 구조를 다시 확인한다.
-
-8. 정상 Train 이미지 수를 확인한다.
-
-9. 정상 Test와
-   broken_large / broken_small / contamination
-   이미지 수를 확인한다.
-
-10. 모든 점검이 끝나면
-    Day07 Environment OK를 출력한다.
-```
-
-이 단계의 흐름만 간단히 보면:
-
-```
-실행 환경 확인
-        ↓
-Dataset 경로 확인
-        ↓
-필요한 폴더 확인
-        ↓
-이미지 수 확인
-        ↓
-7일차 실습 준비 완료
-```
-
-입니다.
-
 ---
 
-# 12. ResNet18의 학습된 Weight를 준비합니다
+# 12. 다음 실습에서 사용할 ResNet18의 사전학습 Weight를 준비합니다
 
-7일차에서는 처음부터 ResNet18을 새로 학습시키지 않습니다.
+앞에서 `50_day07_check_anomaly_env.py`를 실행하여 PyTorch 환경과 MVTec bottle 데이터가 정상적으로 준비되었는지 확인했습니다.
 
-이미 많은 이미지를 학습한 Pretrained ResNet18을 불러와 사용합니다.
+이제 다음 실습에서 사용할 **ResNet18 딥러닝 모델**을 준비하겠습니다.
+
+ResNet18은 CNN 기반의 딥러닝 모델로, 이미지에서 모양, 경계, 패턴 등의 특징을 추출할 수 있습니다.
+
+이번 7일차에서는 ResNet18을 처음부터 학습시키지 않습니다. 대신 ImageNet 데이터로 이미 학습된 ResNet18을 불러와 **병 이미지의 특징을 숫자(Feature)로 추출하는 데 사용**합니다.
+
+다시 쉽게 설명하면
+
+7~8일차에서는 **딥러닝과 규칙 기반 검사 방법을 결합한 이상검출**을 실습합니다.
+
+먼저 사전학습된 딥러닝 모델인 ResNet18을 이용하여 병 이미지의 특징(Feature)을 숫자로 추출하고, 이를 정상 또는 불량의 기준값으로 저장합니다.
+
+이후 새로운 병 이미지가 들어오면 같은 ResNet18로 특징을 추출하고, **머신러닝에서도 사용하는 거리·유사도 계산 알고리즘과 미리 정한 판정 규칙**을 적용하여 정상(OK)과 이상(NG)을 구분합니다.
+
+즉, **딥러닝은 이미지의 특징을 추출하고, 거리·유사도 기반 알고리즘은 그 특징을 비교하여 판정하는 하이브리드(Hybrid) 머신비전 사례**입니다.
+
+그렇다면 추출한 Feature로 어떻게 이상을 찾아낼까요?
+
+먼저 정상 병 이미지 167장의 Feature를 추출하고 평균을 계산하여 **정상 기준(Normal Reference)** 을 만듭니다.
+
+이후 새로운 병이 들어오면 같은 ResNet18로 Feature를 추출한 뒤, 정상 기준과 얼마나 다른지 **유클리드 거리(Euclidean Distance)** 를 계산합니다.
+
+이 거리값을 `Anomaly Score`라고 하며, 정상 Validation 데이터로 정한 `Threshold(임계값)`와 비교하여 정상인지 이상인지 판단합니다.
+
+전체 원리를 간단히 보면 다음과 같습니다.
+
+![[Pasted image 20261031154034.png]]
 
 ```
-ResNet18
-        +
-미리 학습된 Weight
+[딥러닝 모델 활용]
+
+사전학습된 ResNet18
         ↓
-이미지의 특징 추출
+정상 병 이미지 167장의 Feature 추출
+        ↓
+Feature 평균 계산
+        ↓
+Normal Reference 생성
+(정상 특징의 기준)
+        ↓
+────────────────────────
+
+[이상검출 알고리즘]
+
+새로운 병 이미지
+        ↓
+ResNet18로 Feature 추출
+        ↓
+Normal Reference와 비교
+        ↓
+Euclidean Distance 계산
+        ↓
+Anomaly Score 생성
+        ↓
+Threshold와 비교
+        ↓
+Normal / Anomaly 판정
 ```
 
-여기서 `Weight`는 ResNet18이 이전 학습을 통해 얻은 **학습된 값**입니다.
-즉 우리가 처음부터 학습시키지 않아도 이미 ImageNet으로 학습된 Weight가 들어 있는 ResNet18을 불러옵니다.
+즉, **ResNet18은 이미지의 특징을 추출하는 역할**을 하고, **거리 계산과 Threshold 비교 알고리즘은 정상과 이상을 판단하는 역할**을 합니다. 이 과정에서 ResNet18의 학습된 가중치를 변경하거나 별도의 머신러닝 분류 모델을 학습하지는 않습니다.
 
-오늘은 다음 설정을 사용합니다.
+## 사전학습된 Weight를 준비합니다
 
-```python
+이제 ResNet18을 사용하기 위해 미리 학습된 `Weight(가중치)`를 준비하겠습니다.
+
+Weight는 딥러닝 모델이 이전 학습 과정에서 얻은 값입니다. 이 값이 있어야 ResNet18이 이미지에서 학습된 특징을 추출할 수 있습니다.
+
+이번 실습에서는 다음 설정으로 Torchvision에서 기본 권장하는 사전학습 Weight를 불러옵니다.
+
+```
 ResNet18_Weights.DEFAULT
 ```
 
-처음 실행하는 경우에는 이 Weight 파일이 자동으로 다운로드될 수 있습니다.
-
-따라서 본 실습 전에 한 번 실행하여 정상적으로 준비되는지 확인합니다.
+처음 실행할 때는 Weight 파일이 인터넷에서 자동으로 다운로드될 수 있으므로, 아래 명령어로 
+정상적으로 준비되는지 확인합니다.
 
 ```bash
 python -c "from torchvision.models import resnet18, ResNet18_Weights; resnet18(weights=ResNet18_Weights.DEFAULT); print('ResNet18 Weight OK')"
@@ -926,23 +1050,12 @@ python -c "from torchvision.models import resnet18, ResNet18_Weights; resnet18(w
 ResNet18 Weight OK
 ```
 
-한 번 다운로드된 Weight는 보통 컴퓨터에 저장되므로 이후 실행에서는 다시 받을 필요가 없습니다.
+한 번 다운로드한 Weight는 일반적으로 컴퓨터에 저장되므로 이후에는 다시 다운로드하지 않고 사용할 수 있습니다.
 
-만약 다운로드 과정에서 오류가 발생한다면 인터넷 연결 상태를 먼저 확인합니다.
+다운로드 중 오류가 발생하면 인터넷 연결 상태를 먼저 확인합니다.
 
-> 이 단계의 목적은 뒤의 실습에서 ResNet18을 바로 사용할 수 있도록 미리 학습된 Weight를 준비하는 것입니다.
+> **이번 단계에서는 ResNet18 딥러닝 모델의 사전학습 Weight가 정상적으로 준비되는지만 확인합니다.** 실제 정상 병 이미지의 Feature 추출, Normal Reference 생성, Anomaly Score 계산과 판정은 이후 실습에서 순서대로 진행하겠습니다.
 
-간단히 보면:
-
-```
-Pretrained ResNet18 사용
-        ↓
-처음 실행 시 Weight 다운로드
-        ↓
-컴퓨터에 저장
-        ↓
-이후 Feature 추출에 사용
-```
 ---
 
 # PART2 — Anomaly Detection(이상탐지) 원리 + 공통 Feature 함수 (13~19)
@@ -967,7 +1080,9 @@ Pretrained ResNet18 사용
 
 Classification은 이미지 전체를 보고 **어떤 종류인지 분류하는 방법**입니다.
 
-![[Pasted image 20260902130403.png]]
+![[Group 41.png]]
+
+![[Pasted image 20261031161929.png]]
 
 예를 들어 미리 다음 세 종류를 학습했다고 가정합니다.
 
@@ -1001,7 +1116,9 @@ Scratch
 
 Detection은 결함의 종류뿐 아니라 **이미지 안에서 결함이 있는 위치까지 찾는 방법**입니다.
 
-![[Pasted image 20260902130621.png]]
+![[Pasted image 20261031162435.png]]
+
+![[Pasted image 20261031162514.png]]
 
 예를 들어:
 
@@ -1036,7 +1153,7 @@ Detection
 
 Anomaly Detection은 조금 다릅니다.
 
-![[Pasted image 20260902130807.png]]
+![[Group 41 (1).png]]
 
 여러 장의 정상 이미지를 이용하여 먼저 **정상의 기준**을 만듭니다.
 
@@ -1068,20 +1185,17 @@ Normal
 
 ---
 
-세 가지를 한 줄로 정리하면:
+이미지를 분석하는 방법에는 **Classification(이미지 분류), Detection(객체 검출), Anomaly Detection(이상검출)** 등이 있습니다.
 
-```
-Classification
-→ 무엇인가?
+Classification은 이미지가 어떤 종류인지 구분하고, Detection은 무엇이 어디에 있는지 찾으며, Anomaly Detection은 정상 제품과 얼마나 다른지 확인하는 방법입니다.
 
-Detection
-→ 무엇이 어디에 있는가?
+이 세 가지는 하나의 모델에 들어 있는 기능이 아니라 **서로 다른 이미지 분석 방법**입니다.
 
-Anomaly Detection
-→ 정상과 얼마나 다른가?
-```
+**7일차에서는 Anomaly Detection을 실습합니다.** 사전학습된 딥러닝 모델인 ResNet18을 이용하여 정상 병 이미지의 특징(Feature)을 추출하고 정상 기준을 만듭니다.
 
-7일차에서는 이 중 **Anomaly Detection**을 사용합니다.
+이후 새로운 병 이미지의 특징을 정상 기준과 비교하고, **거리 계산과 Threshold(임계값)를 이용하여 정상(Normal)과 이상(Anomaly)을 판정**합니다.
+
+즉, 이번 수업은 **ResNet18의 특징 추출 기능과 규칙 기반 판정 알고리즘을 결합한 이상검출 실습**입니다.
 
 ---
 
@@ -1186,6 +1300,54 @@ Anomaly Score
 
 이제 이 기능들을 여러 실습에서 반복해서 사용할 수 있도록 하나의 파일에 모아 둡니다.
 
+전체 흐름으로 보면 다음과 같습니다.
+
+```
+① 필요한 라이브러리 불러오기
+   → PyTorch / Torchvision / OpenCV / NumPy
+        ↓
+② DEVICE 설정
+   → GPU(CUDA) 또는 CPU 선택
+        ↓
+③ WEIGHTS / PREPROCESS 설정
+   → 사전학습 Weight와 이미지 전처리 준비
+        ↓
+④ create_backbone()
+   → 사전학습 ResNet18 불러오기
+   → layer3까지 특징 추출기로 사용
+        ↓
+⑤ load_image_tensor()
+   → 병 이미지 읽기
+   → RGB / Tensor 변환 및 전처리
+        ↓
+⑥ extract_features()
+   → ResNet18로 Feature 추출
+        ↓
+   ┌───────────────┴───────────────┐
+   ↓                               ↓
+Feature Vector                Feature Map
+(이미지 전체 특징)             (위치별 특징)
+   ↓                               ↓
+⑦ anomaly_score()             ⑧ anomaly_map()
+   → 정상 기준 Vector와         → 정상 기준 Map과
+     유클리드 거리 계산            위치별 차이 계산
+   ↓                               ↓
+Anomaly Score                 ⑨ make_heatmap_overlay()
+(정상과 다른 정도)               → Heatmap 생성
+   ↓                               ↓
+이후 Threshold와 비교          이상하게 보인 위치 확인
+   ↓
+Normal / Anomaly 판정
+
+
+⑩ load_reference()
+   → 저장된 normal_reference.npz 읽기
+   → 정상 기준 Vector / Map 제공
+   → ⑦, ⑧에서 비교 기준으로 사용
+```
+
+핵심: ResNet18은 특징을 추출하고, `anomaly_score()`는 이미지 전체의 차이를 계산하며, `anomaly_map()`과 `make_heatmap_overlay()`는 어느 위치가 정상과 다른지 시각화합니다.
+
 파일:
 
 ```
@@ -1193,11 +1355,16 @@ src/day07_anomaly_core.py
 ```
 
 > 이 파일은 단독으로 실행하는 프로그램이 아닙니다.  
-> 뒤에서 작성하는 `52`, `53`, `56`, `58` 등의 프로그램이 이 파일의 함수를 불러서 사용합니다.
+> 뒤에서 작성하는 `52`, `53`, `56`, `58`번 코드등이 이 파일의 함수를 불러서 사용합니다.
 
-작성합니다.
+코드를 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → 이미지 처리, 딥러닝 모델, 수치 계산에 사용
+# ==================================================
 import cv2
 import numpy as np
 import torch
@@ -1210,53 +1377,66 @@ from torchvision.models import (
 )
 
 
-# --------------------------------------------------
-# 1. 실행 장치 설정
-# --------------------------------------------------
+# ==================================================
+# ② 실행 장치 설정
+#    → GPU(CUDA)가 있으면 GPU, 없으면 CPU 사용
+# ==================================================
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
 
-# --------------------------------------------------
-# 2. Pretrained ResNet18 설정
-# --------------------------------------------------
+# ==================================================
+# ③ 사전학습 Weight와 이미지 전처리 설정
+#    → ImageNet으로 학습된 ResNet18 가중치 사용
+#    → 모델 입력에 맞는 이미지 전처리 방법 준비
+# ==================================================
 WEIGHTS = ResNet18_Weights.DEFAULT
 
-# ResNet18에 맞는 이미지 전처리 방법
 PREPROCESS = WEIGHTS.transforms()
 
 
-# --------------------------------------------------
-# 3. Feature 추출용 ResNet18 생성
-# --------------------------------------------------
+# ==================================================
+# ④ Feature 추출용 ResNet18 모델 생성
+#    → 마지막 분류 기능은 제외
+#    → layer3까지 사용하여 이미지 특징 추출
+# ==================================================
 def create_backbone():
+
+    # 사전학습된 ResNet18 불러오기
     model = resnet18(
         weights=WEIGHTS
     )
 
-    # ResNet18의 layer3 출력까지 사용합니다.
-    # 이미지의 위치 정보가 어느 정도 남아 있기 때문에
-    # Feature Vector와 Heatmap에 모두 사용할 수 있습니다.
+    # ResNet18의 layer3까지 사용
+    # 마지막 분류 결과는 사용하지 않음
     feature_extractor = torch.nn.Sequential(
         *list(model.children())[:-3]
     )
 
-    # 학습하지 않고 Feature 추출용으로 사용합니다.
+    # 학습 모드가 아닌 평가 모드로 설정
     feature_extractor.eval()
+
+    # GPU 또는 CPU로 모델 이동
     feature_extractor.to(DEVICE)
 
     return feature_extractor
 
 
-# --------------------------------------------------
-# 4. 이미지를 ResNet18 입력 형식으로 변환
-# --------------------------------------------------
+# ==================================================
+# ⑤ 이미지를 ResNet18 입력 형식으로 변환
+#    → 이미지 읽기 → RGB 변환 → 전처리
+#    → Tensor를 GPU 또는 CPU로 이동
+# ==================================================
 def load_image_tensor(image_path):
+
+    # 이미지 파일을 읽고 RGB로 변환
     image = Image.open(
         image_path
     ).convert("RGB")
 
+    # ResNet18 입력 규격에 맞게 전처리
+    # unsqueeze(0): 배치 차원 추가
     tensor = PREPROCESS(
         image
     ).unsqueeze(0)
@@ -1264,45 +1444,56 @@ def load_image_tensor(image_path):
     return tensor.to(DEVICE)
 
 
-# --------------------------------------------------
-# 5. Feature Vector + Feature Map 추출
-# --------------------------------------------------
+# ==================================================
+# ⑥ ResNet18으로 Feature 추출
+#    → Feature Vector: 이미지 전체 특징
+#    → Feature Map: 이미지의 위치별 특징
+# ==================================================
 @torch.no_grad()
 def extract_features(
     model,
     image_path,
 ):
+
+    # ⑤에서 만든 함수로 이미지 전처리
     tensor = load_image_tensor(
         image_path
     )
 
+    # ResNet18으로 Feature Map 추출
     feature_map = model(
         tensor
     )
 
     # ----------------------------------------------
-    # 이미지 전체 특징
-    # Feature Map → Pooling → Feature Vector
+    # ⑥-1. 이미지 전체 Feature Vector 생성
+    #       → Feature Map을 Pooling하여 요약
+    #       → 이미지 전체 Anomaly Score에 사용
     # ----------------------------------------------
     pooled = F.adaptive_avg_pool2d(
         feature_map,
         (1, 1),
     ).flatten(1)
 
+    # Feature Vector 정규화
     pooled = F.normalize(
         pooled,
         dim=1,
     )
 
     # ----------------------------------------------
-    # 위치별 특징
-    # Heatmap에서 사용
+    # ⑥-2. 위치별 Feature Map 정규화
+    #       → 위치별 차이와 Heatmap 계산에 사용
     # ----------------------------------------------
     normalized_map = F.normalize(
         feature_map,
         dim=1,
     )
 
+    # ----------------------------------------------
+    # ⑥-3. Feature를 NumPy 배열로 변환
+    #       → 이후 평균 및 거리 계산에 사용
+    # ----------------------------------------------
     vector = (
         pooled[0]
         .cpu()
@@ -1318,37 +1509,48 @@ def extract_features(
     return vector, spatial_map
 
 
-# --------------------------------------------------
-# 6. 이미지 전체 Anomaly Score 계산
-# --------------------------------------------------
+# ==================================================
+# ⑦ 이미지 전체 Anomaly Score 계산
+#    → 검사 이미지와 정상 기준의 Feature 비교
+#    → 유클리드 거리로 차이를 숫자로 계산
+# ==================================================
 def anomaly_score(
     feature_vector,
     reference_vector,
 ):
+
+    # 검사 Feature - 정상 기준 Feature
     difference = (
         feature_vector
         - reference_vector
     )
 
+    # 유클리드 거리 계산
     score = np.linalg.norm(
         difference
     )
 
+    # 거리값을 Anomaly Score로 반환
     return float(score)
 
 
-# --------------------------------------------------
-# 7. 위치별 Anomaly 차이 계산
-# --------------------------------------------------
+# ==================================================
+# ⑧ 위치별 Anomaly 차이 계산
+#    → 검사 Feature Map과 정상 기준 Map 비교
+#    → 위치마다 정상과 얼마나 다른지 계산
+# ==================================================
 def anomaly_map(
     spatial_feature,
     reference_map,
 ):
+
+    # 검사 이미지와 정상 기준의 위치별 차이
     difference = (
         spatial_feature
         - reference_map
     )
 
+    # 각 위치에서 Feature 차이의 크기 계산
     score_map = np.sqrt(
         np.sum(
             difference ** 2,
@@ -1359,13 +1561,17 @@ def anomaly_map(
     return score_map
 
 
-# --------------------------------------------------
-# 8. Heatmap 이미지 생성
-# --------------------------------------------------
+# ==================================================
+# ⑨ Heatmap과 Overlay 이미지 생성
+#    → 정상과 차이가 큰 위치를 색으로 표시
+#    → 원본 이미지 위에 Heatmap을 겹쳐 표시
+# ==================================================
 def make_heatmap_overlay(
     image_path,
     score_map,
 ):
+
+    # 원본 이미지 읽기
     image = cv2.imread(
         str(image_path)
     )
@@ -1375,14 +1581,21 @@ def make_heatmap_overlay(
             image_path
         )
 
+    # 원본 이미지 크기 확인
     height, width = image.shape[:2]
 
+    # ----------------------------------------------
+    # ⑨-1. Score Map을 원본 이미지 크기로 확대
+    # ----------------------------------------------
     resized_map = cv2.resize(
         score_map,
         (width, height),
         interpolation=cv2.INTER_CUBIC,
     )
 
+    # ----------------------------------------------
+    # ⑨-2. Score 값을 0~255 범위로 변환
+    # ----------------------------------------------
     normalized = cv2.normalize(
         resized_map,
         None,
@@ -1397,11 +1610,19 @@ def make_heatmap_overlay(
         )
     )
 
+    # ----------------------------------------------
+    # ⑨-3. 차이값을 색상으로 표현
+    #       → Heatmap 생성
+    # ----------------------------------------------
     heatmap_color = cv2.applyColorMap(
         heatmap_uint8,
         cv2.COLORMAP_JET,
     )
 
+    # ----------------------------------------------
+    # ⑨-4. 원본 이미지와 Heatmap 합성
+    #       → Overlay 생성
+    # ----------------------------------------------
     overlay = cv2.addWeighted(
         image,
         0.65,
@@ -1417,20 +1638,106 @@ def make_heatmap_overlay(
     )
 
 
-# --------------------------------------------------
-# 9. 저장된 Normal Reference 불러오기
-# --------------------------------------------------
+# ==================================================
+# ⑩ 저장된 Normal Reference 불러오기
+#    → 이전 실습에서 만든 정상 기준을 읽음
+#    → reference_vector / reference_map 반환
+# ==================================================
 def load_reference(
     reference_path,
 ):
+
+    # .npz 파일에 저장된 정상 특징 읽기
     data = np.load(
         reference_path
     )
 
+    # 이미지 전체 기준 + 위치별 기준 반환
     return (
         data["reference_vector"],
         data["reference_map"],
     )
+```
+
+## 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - PyTorch와 Torchvision을 준비한다.
+   - OpenCV와 NumPy를 준비한다.
+   - PIL을 준비한다.
+   - ResNet18과 사전학습 Weight를 불러온다.
+
+② 실행 장치 설정
+   - GPU(CUDA)를 사용할 수 있는지 확인한다.
+   - 사용할 수 있으면 GPU를 선택한다.
+   - 사용할 수 없으면 CPU를 선택한다.
+
+③ 사전학습 Weight 및 전처리 준비
+   - ImageNet으로 학습된 ResNet18 Weight를 선택한다.
+   - 모델에 맞는 이미지 전처리 방법을 준비한다.
+
+④ Feature 추출용 ResNet18 생성
+   - 사전학습된 ResNet18을 불러온다.
+   - 마지막 분류 부분을 제외한다.
+   - layer3까지 Feature 추출에 사용한다.
+   - 모델을 평가 모드로 설정한다.
+   - 모델을 GPU 또는 CPU에 배치한다.
+
+⑤ 이미지 입력 및 전처리
+   - 병 이미지 파일을 읽는다.
+   - RGB 형식으로 변환한다.
+   - ResNet18의 입력 규격에 맞게 전처리한다.
+   - 배치 차원을 추가한다.
+   - Tensor를 GPU 또는 CPU로 이동한다.
+
+⑥ 이미지 Feature 추출
+   - 전처리된 이미지를 ResNet18에 입력한다.
+   - ResNet18에서 Feature Map을 얻는다.
+
+   [이미지 전체 특징]
+   - Feature Map을 Pooling한다.
+   - Feature Vector를 생성한다.
+   - Feature Vector를 정규화한다.
+
+   [이미지 위치별 특징]
+   - Feature Map을 정규화한다.
+   - 이미지의 위치별 특징을 보존한다.
+
+   - 두 결과를 NumPy 배열로 변환한다.
+   - Feature Vector와 Feature Map을 반환한다.
+
+⑦ 이미지 전체 Anomaly Score 계산
+   - 검사 이미지의 Feature Vector를 가져온다.
+   - 정상 기준인 reference_vector를 가져온다.
+   - 두 Feature Vector의 차이를 계산한다.
+   - 유클리드 거리를 계산한다.
+   - 계산한 거리를 Anomaly Score로 반환한다.
+
+   거리 작음 → 정상과 비슷함
+   거리 큼   → 정상과 많이 다름
+
+⑧ 위치별 Anomaly 차이 계산
+   - 검사 이미지의 Feature Map을 가져온다.
+   - 정상 기준인 reference_map을 가져온다.
+   - 각 위치의 Feature 차이를 계산한다.
+   - 위치마다 차이의 크기를 구한다.
+   - 위치별 Score Map을 반환한다.
+
+⑨ Heatmap 및 Overlay 생성
+   - 원본 이미지를 읽는다.
+   - Score Map을 원본 이미지 크기로 확대한다.
+   - Score를 0~255 범위로 정규화한다.
+   - 차이가 큰 위치를 색상으로 표현한다.
+   - Heatmap을 생성한다.
+   - 원본 이미지 위에 Heatmap을 겹친다.
+   - Heatmap과 Overlay를 반환한다.
+
+⑩ 저장된 Normal Reference 불러오기
+   - 앞에서 생성한 normal_reference.npz를 읽는다.
+   - 이미지 전체 비교용 reference_vector를 가져온다.
+   - 위치별 비교용 reference_map을 가져온다.
+   - 두 정상 기준을 반환한다.
 ```
 
 ---
@@ -1471,79 +1778,6 @@ load_reference()
 → 저장해 둔 정상 기준 불러오기
 ```
 
-전체 흐름으로 보면 다음과 같습니다.
-
-```
-이미지
-        ↓
-load_image_tensor()
-→ 이미지를 읽고 ResNet18 입력 형식으로 변환
-        ↓
-ResNet18
-→ 이미지의 특징 추출
-        ↓
-extract_features()
-→ 추출된 특징을 두 가지 형태로 정리
-        ↓
- ┌──────┴──────────────────────┐
- ↓                             ↓
-Feature Vector             Feature Map
- ↓                             ↓
-anomaly_score()            anomaly_map()
- ↓                             ↓
-전체 차이 점수              위치별 차이
-                               ↓
-                         make_heatmap_overlay()
-                               ↓
-                            Heatmap
-```
-
----
-
-## 의사코드
-
-```
-1. CUDA를 사용할 수 있는지 확인하고
-   GPU 또는 CPU를 실행 장치로 정한다.
-
-2. ImageNet으로 미리 학습된
-   ResNet18 Weight를 준비한다.
-
-3. ResNet18 전체를 분류기로 사용하지 않고
-   layer3까지를 Feature 추출기로 만든다.
-
-4. 입력 이미지를 RGB로 읽는다.
-
-5. ResNet18이 사용할 수 있는 크기와 형식으로
-   이미지를 전처리한다.
-
-6. ResNet18에 이미지를 넣어
-   Feature Map을 얻는다.
-
-7. Feature Map을 Pooling하여
-   이미지 전체를 나타내는
-   Feature Vector를 만든다.
-
-8. Feature Vector는
-   이미지 전체 Anomaly Score 계산에 사용한다.
-
-9. Feature Map은
-   이미지의 위치별 차이를 계산하는 데 사용한다.
-
-10. 검사 Feature Vector와
-    Normal Reference Vector의 거리를 계산하여
-    Anomaly Score를 만든다.
-
-11. 검사 Feature Map과
-    Normal Reference Map의 위치별 차이를 계산한다.
-
-12. 위치별 차이를 색으로 표현하여
-    Heatmap을 만들 수 있도록 준비한다.
-
-13. 뒤의 프로그램에서 사용할
-    Normal Reference를 파일에서 불러오는 기능도 만든다.
-```
-
 > 아직 정상 기준 자체를 만든 것은 아닙니다.  
 > 지금은 정상 기준을 만들고 검사하기 위해 필요한 공통 도구를 준비한 단계입니다.
 
@@ -1551,39 +1785,24 @@ anomaly_score()            anomaly_map()
 
 # 18. 왜 ResNet18의 `layer3`까지 사용하나요?
 
-이 부분은 day07_anomaly_core.py 코드 안에서 왜 `layer3`까지 사용했는지를 설명하는 단락입니다.
+앞에서 작성한 `day07_anomaly_core.py`에서는 ResNet18을 이용하여 병 이미지의 특징을 추출하는 공통 함수를 만들었습니다.
 
-![[Pasted image 20260902135835.png]]
+그런데 ResNet18의 모든 기능을 사용하는 것이 아니라, **중간 단계인** `**layer3**`**까지 사용하도록 설정**했습니다.
 
-ResNet18은 여러 Layer를 차례대로 통과하면서 이미지의 특징을 추출합니다.
+왜 이렇게 했을까요?
 
-```
-이미지
- ↓
-초기 Layer
- ↓
-중간 Layer
- ↓
-후반 Layer
- ↓
-최종 분류
-```
+ResNet18은 여러 Layer를 통과하면서 이미지의 특징을 추출합니다. 뒤쪽 Layer로 갈수록 이미지의 특징은 더 추상적으로 표현되지만, 특징이 어느 위치에 있는지를 나타내는 공간정보는 점점 줄어듭니다.
 
-뒤쪽 Layer로 갈수록 이미지 전체를 구분하는 데 필요한 특징은 강해지지만, 이미지에서 어느 위치에 특징이 있었는지에 대한 공간정보는 점점 줄어듭니다.
+7일차에서는 다음 두 가지 정보가 필요합니다.
 
-7일차에서는 두 가지가 모두 필요합니다.
+- **Feature Vector:** 병 이미지 전체가 정상 기준과 얼마나 다른지 계산할 때 사용합니다.
+    
+- **Feature Map:** 병 이미지의 어느 위치가 정상 기준과 다른지 Heatmap으로 확인할 때 사용합니다.
+    
 
-```
-Feature Vector
-→ 이미지 전체가 정상과 얼마나 다른지 계산
+따라서 이번 실습에서는 **이미지의 특징과 위치정보를 함께 활용하기 위해** `**layer3**`**의 출력을 선택**했습니다.
 
-Feature Map
-→ 이미지의 어느 위치가 정상과 다른지 확인
-```
-
-그래서 오늘은 ResNet18의 중간 부분인 `layer3`까지 사용합니다.
-
-코드의 이 부분입니다.
+앞에서 작성한 코드의 다음 부분입니다.
 
 ```python
 feature_extractor = torch.nn.Sequential(
@@ -1591,117 +1810,47 @@ feature_extractor = torch.nn.Sequential(
 )
 ```
 
-쉽게 말하면:
+이 코드는 ResNet18의 마지막 분류 부분을 사용하지 않고, `layer3`까지의 출력을 Feature 추출에 활용한다는 의미입니다.
+
+![[Pasted image 20260902135835.png]]
 
 ```
-ResNet18 전체를 사용하여
-최종 분류까지 하지 않고
-
-        ↓
-
-중간 Feature까지만 꺼내서 사용
+병 이미지
+    ↓
+ResNet18 (layer3까지)
+    ↓
+Feature Map
+    │
+    ├─ 그대로 활용
+    │     ↓
+    │   위치별 차이 계산 → Heatmap
+    │
+    └─ Pooling 적용
+          ↓
+        Feature Vector
+          ↓
+        전체 차이 계산 → Anomaly Score
 ```
 
-하는 것입니다.
+즉, **하나의 ResNet18에서 추출한 특징을 두 가지 용도로 활용**하는 것입니다.
 
-```
-ResNet18 layer3
-        ↓
- ┌──────┴──────┐
- ↓             ↓
-Feature Vector  Feature Map
- ↓             ↓
-전체 차이       위치별 차이
-```
-
-> `layer3`가 모든 이상탐지 문제에서 반드시 정답이라는 뜻은 아닙니다. 
-> 7일차에서는 전체 Score와 Heatmap을 함께 실습하기 위한 교육용 선택으로 사용합니다.
+> `layer3`는 이번 실습에서 전체 Anomaly Score와 Heatmap을 함께 계산하기 위해 선택한 중간 Layer입니다. 모든 이상검출 문제에서 반드시 `layer3`를 사용해야 하는 것은 아닙니다.
 
 ---
 
-# 19. 지금 만든 Baseline을 어떻게 이해해야 하나요?
+# 19. 공통 함수 작성 마무리 — Baseline 준비
 
-#17에서 만든 코드는 아직 직접적인 검사 결과를 출력하지 않습니다.
+지금까지 `day07_anomaly_core.py`에서 ResNet18을 이용한 **특징 추출, 정상 기준과의 거리 계산, Heatmap 생성에 필요한 공통 함수**를 작성했습니다.
 
-이 파일은 뒤의 프로그램에서 다음 계산을 하기 위한 **공통 기능**입니다.
+이 파일은 아직 정상과 이상을 직접 판정하지 않습니다. 뒤에서 진행할 이상검출 실습에 필요한 기능을 미리 준비한 것입니다.
 
-7일차에서 사용할 기본 검사 방식은 다음과 같습니다.
+다음 실습에서는 이 공통 함수를 활용하여 정상 병 이미지의 특징을 평균 내어 **Normal Reference(정상 기준)** 를 만들고, 새로운 병 이미지와 비교하여 **Anomaly Score(이상 점수)** 를 계산합니다.
 
-```
-Pretrained ResNet18
-        ↓
-Feature 추출
-        ↓
-정상 여러 장의 Feature 평균
-        ↓
-Normal Reference
-        ↓
-새 이미지의 Feature와 비교
-        ↓
-Euclidean Distance
-        ↓
-Anomaly Score
-```
+이후 Threshold(임계값)를 설정하여 정상과 이상을 판정하는 기본 검사기를 완성합니다.
 
-이처럼 가장 먼저 만들어 보는 기본 검사 방법을 **Baseline**이라고 부릅니다.
+이렇게 처음 만들어 성능을 확인하고, 이후 개선 방법과 비교하는 기본 검사 방식을 **Baseline(기준 모델 또는 기본 검사 방식)** 이라고 합니다.
 
-쉽게 말하면:
-
-> 복잡한 개선을 하기 전에 먼저 만들어 보는 기본형 검사기
-
-입니다.
-
-이후 실제 결과가 나오면 다음과 같이 해석합니다.
-
-```
-Score 낮음
-→ 정상 기준과 비슷함
-
-Score 높음
-→ 정상 기준과 많이 다름
-```
-
-하지만 여기서 주의할 점이 있습니다.
-
-Score가 높다고 해서 반드시 제품에 실제 결함이 있다는 뜻은 아닙니다.
-
-예를 들어:
-
-```
-작은 결함
-→ 전체 Feature 변화가 작아
-  Score가 충분히 높아지지 않을 수 있음
-
-
-조명 변화
-위치 변화
-배경 변화
-→ 제품은 정상이어도
-  Feature가 달라져
-  Score가 높아질 수 있음
-```
-
-따라서 뒤의 실습에서는 단순히:
-
-```
-Score가 높다 / 낮다
-```
-
-만 확인하는 것이 아니라,
-
-```
-정상과 이상이 실제로 잘 구분되는가?
-
-어떤 결함을 놓치는가?
-
-정상인데 이상으로 판단하는 경우가 있는가?
-
-어느 위치를 이상하게 보고 있는가?
-```
-
-까지 확인합니다.
-
-> 7일차의 목적은 처음부터 완벽한 이상탐지 모델을 만드는 것이 아니라, 기본 Baseline을 만든 뒤 실제 결과를 보고 잘되는 조건과 실패하는 조건을 분석하는 것입니다.
+> **핵심 정리:** 공통 함수 준비를 마쳤습니다. 이제 이 함수들을 이용해 정상 기준을 만들고, 실제 병 이미지의 이상 여부를 검사하는 Baseline을 단계별로 완성해 보겠습니다.
 ---
 
 # PART3 — Normal Train으로 정상 Feature 기준 생성 (20~24)
@@ -1717,6 +1866,8 @@ samples/day07/original/bottle/
 ```
 
 원본 데이터는 그대로 보존하고, 프로그램이 필요한 이미지를 복사하여 다음과 같은 수업용 데이터를 만듭니다.
+
+![[Pasted image 20261031165640.png]]
 
 ```
 MVTec 원본
@@ -1771,14 +1922,24 @@ src/51_day07_prepare_dataset.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → random : 정상 이미지 무작위 섞기
+#    → shutil : 파일 복사 및 폴더 삭제
+#    → Path   : 파일과 폴더 경로 관리
+# ==================================================
 import random
 import shutil
 from pathlib import Path
 
 
-# --------------------------------------------------
-# 1. 원본과 실습용 데이터 경로
-# --------------------------------------------------
+# ==================================================
+# ② 원본 및 실습용 데이터 경로 설정
+#    → 원본 데이터는 original/bottle에 보존
+#    → 실습용 데이터는 samples/day07에 생성
+#    → 정상 데이터의 80%를 Train으로 사용
+# ==================================================
 RAW_ROOT = Path(
     "samples/day07/original/bottle"
 )
@@ -1787,25 +1948,31 @@ OUTPUT_ROOT = Path(
     "samples/day07"
 )
 
+# 무작위 분리 결과를 재현하기 위한 고정값
 SEED = 42
+
+# 정상 데이터의 80%를 학습용으로 사용
 TRAIN_RATIO = 0.8
 
 random.seed(SEED)
 
 
-# --------------------------------------------------
-# 2. 원본 데이터 확인
-# --------------------------------------------------
+# ==================================================
+# ③ MVTec bottle 원본 데이터 확인
+#    → 원본 폴더가 없으면 오류 발생
+#    → 데이터가 없는 상태에서 실행하지 않도록 확인
+# ==================================================
 if not RAW_ROOT.exists():
     raise FileNotFoundError(
         f"MVTec bottle 원본을 확인하세요: {RAW_ROOT}"
     )
 
 
-# --------------------------------------------------
-# 3. 이전에 생성한 실습용 데이터만 초기화
-#    original 폴더는 절대 삭제하지 않습니다.
-# --------------------------------------------------
+# ==================================================
+# ④ 이전에 생성한 실습용 폴더 초기화
+#    → 이전 실행 결과를 삭제하고 다시 준비
+#    → original 폴더는 삭제하지 않음
+# ==================================================
 generated_dirs = [
     OUTPUT_ROOT / "train",
     OUTPUT_ROOT / "validation",
@@ -1814,39 +1981,54 @@ generated_dirs = [
 ]
 
 for directory in generated_dirs:
+
+    # 해당 폴더가 이미 존재하면 삭제
     if directory.exists():
-        shutil.rmtree(directory)
+        shutil.rmtree(
+            directory
+        )
 
 
-# --------------------------------------------------
-# 4. 실습용 폴더 생성
-# --------------------------------------------------
+# ==================================================
+# ⑤ 실습에서 사용할 폴더 생성
+#    → train      : 정상 기준 생성용
+#    → validation : Threshold 결정용
+#    → test       : 최종 검사 및 성능 평가용
+#    → ground_truth : 결함 위치 정답 Mask
+# ==================================================
+
+# 정상 기준 생성에 사용할 폴더
 train_dir = (
     OUTPUT_ROOT
     / "train/normal"
 )
 
+# 임계값 결정에 사용할 정상 검증 폴더
 val_dir = (
     OUTPUT_ROOT
     / "validation/normal"
 )
 
+# 최종 검사에 사용할 정상 이미지 폴더
 test_normal_dir = (
     OUTPUT_ROOT
     / "test/normal"
 )
 
+# 최종 검사에 사용할 이상 이미지 폴더
 test_anomaly_dir = (
     OUTPUT_ROOT
     / "test/anomaly"
 )
 
+# 결함 위치 정답 Mask 폴더
 ground_truth_dir = (
     OUTPUT_ROOT
     / "ground_truth"
 )
 
 
+# 필요한 폴더를 모두 생성
 for directory in [
     train_dir,
     val_dir,
@@ -1860,20 +2042,39 @@ for directory in [
     )
 
 
-# --------------------------------------------------
-# 5. Normal Train / Validation 분리
-# --------------------------------------------------
+# ==================================================
+# ⑥ 정상 이미지 Train / Validation 분리
+#    → 원본 train/good의 정상 이미지 목록 불러오기
+#    → 무작위로 섞은 후 80% / 20%로 분리
+#    → 각 폴더에 이미지 복사
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 원본 정상 이미지 목록 불러오기
+# ----------------------------------------------
 normal_files = sorted(
     (RAW_ROOT / "train/good").glob("*.png")
 )
 
+# 정상 이미지가 없으면 오류 발생
 if not normal_files:
     raise FileNotFoundError(
         RAW_ROOT / "train/good"
     )
 
-random.shuffle(normal_files)
 
+# ----------------------------------------------
+# ⑥-2. 정상 이미지 순서를 무작위로 섞기
+# ----------------------------------------------
+random.shuffle(
+    normal_files
+)
+
+
+# ----------------------------------------------
+# ⑥-3. Train / Validation 분리 위치 계산
+#       → 80% Train / 나머지 20% Validation
+# ----------------------------------------------
 split_index = int(
     len(normal_files)
     * TRAIN_RATIO
@@ -1888,48 +2089,73 @@ val_files = (
 )
 
 
+# ----------------------------------------------
+# ⑥-4. Normal Train 폴더에 이미지 복사
+# ----------------------------------------------
 for path in train_files:
+
     shutil.copy2(
         path,
         train_dir / path.name,
     )
 
+
+# ----------------------------------------------
+# ⑥-5. Normal Validation 폴더에 이미지 복사
+# ----------------------------------------------
 for path in val_files:
+
     shutil.copy2(
         path,
         val_dir / path.name,
     )
 
 
-# --------------------------------------------------
-# 6. Normal Test 복사
-# --------------------------------------------------
+# ==================================================
+# ⑦ 최종 검사(Test) 이미지 복사
+#    → 정상 이미지와 이상 이미지를 구분하여 복사
+#    → 원본은 이동하지 않고 그대로 보존
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. Normal Test 이미지 복사
+#       → 원본 test/good → test/normal
+# ----------------------------------------------
 for path in sorted(
     (RAW_ROOT / "test/good").glob("*.png")
 ):
+
     shutil.copy2(
         path,
         test_normal_dir / path.name,
     )
 
 
-# --------------------------------------------------
-# 7. Anomaly Test 복사
-# --------------------------------------------------
+# ----------------------------------------------
+# ⑦-2. 이상 이미지 종류 설정
+#       → 큰 파손 / 작은 파손 / 오염
+# ----------------------------------------------
 defect_names = [
     "broken_large",
     "broken_small",
     "contamination",
 ]
 
+
+# ----------------------------------------------
+# ⑦-3. 이상 이미지 종류별 폴더 생성 및 복사
+#       → test/anomaly/ 아래에 각각 저장
+# ----------------------------------------------
 for defect_name in defect_names:
 
+    # 원본 이상 이미지 폴더
     source_dir = (
         RAW_ROOT
         / "test"
         / defect_name
     )
 
+    # 실습용 이상 이미지 폴더
     destination = (
         test_anomaly_dir
         / defect_name
@@ -1940,26 +2166,32 @@ for defect_name in defect_names:
         exist_ok=True,
     )
 
+    # 이상 이미지 복사
     for path in sorted(
         source_dir.glob("*.png")
     ):
+
         shutil.copy2(
             path,
             destination / path.name,
         )
 
 
-# --------------------------------------------------
-# 8. Ground Truth Mask 복사
-# --------------------------------------------------
+# ==================================================
+# ⑧ Ground Truth Mask 복사
+#    → 실제 결함 위치가 표시된 정답 이미지 복사
+#    → 이후 Heatmap 결과를 비교할 때 사용
+# ==================================================
 for defect_name in defect_names:
 
+    # 원본 결함 위치 Mask 폴더
     source_dir = (
         RAW_ROOT
         / "ground_truth"
         / defect_name
     )
 
+    # 실습용 Mask 저장 폴더
     destination = (
         ground_truth_dir
         / defect_name
@@ -1970,35 +2202,53 @@ for defect_name in defect_names:
         exist_ok=True,
     )
 
+    # 해당 Mask 폴더가 없으면 건너뛰기
     if not source_dir.exists():
         continue
 
+    # Mask 이미지 복사
     for path in sorted(
         source_dir.glob("*.png")
     ):
+
         shutil.copy2(
             path,
             destination / path.name,
         )
 
 
-# --------------------------------------------------
-# 9. 결과 확인
-# --------------------------------------------------
+# ==================================================
+# ⑨ 데이터 분리 결과 확인
+#    → 정상 Train / Validation / Test 개수 출력
+#    → 이상 이미지 종류별 개수 출력
+#    → 데이터 준비가 완료되었는지 확인
+# ==================================================
 print("=" * 70)
 print("DAY07 DATASET PREPARED")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑨-1. Normal Train 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Normal Train      :",
     len(train_files),
 )
 
+
+# ----------------------------------------------
+# ⑨-2. Normal Validation 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Normal Validation :",
     len(val_files),
 )
 
+
+# ----------------------------------------------
+# ⑨-3. Normal Test 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Normal Test       :",
     len(
@@ -2009,6 +2259,9 @@ print(
 )
 
 
+# ----------------------------------------------
+# ⑨-4. 이상 이미지 종류별 개수 출력
+# ----------------------------------------------
 for defect_name in defect_names:
 
     count = len(
@@ -2024,59 +2277,80 @@ for defect_name in defect_names:
         f"{defect_name:18}:",
         count,
     )
+
+```
+
+### 의사코드
+
+```text
+① 필요한 라이브러리 불러오기
+   - random을 준비한다.
+   - shutil을 준비한다.
+   - pathlib의 Path를 준비한다.
+
+② 원본 및 실습용 경로 설정
+   - 원본 경로를 지정한다.
+   - 실습용 출력 경로를 지정한다.
+   - 랜덤 시드를 42로 설정한다.
+   - 정상 Train 비율을 80%로 설정한다.
+
+③ MVTec 원본 데이터 확인
+   - 원본 bottle 폴더가 있는지 확인한다.
+   - 없다면 오류를 발생시킨다.
+
+④ 이전 실습용 폴더 초기화
+   - 기존 train 폴더가 있으면 삭제한다.
+   - 기존 validation 폴더가 있으면 삭제한다.
+   - 기존 test 폴더가 있으면 삭제한다.
+   - 기존 ground_truth 폴더가 있으면 삭제한다.
+   - original 폴더는 그대로 보존한다.
+
+⑤ 실습용 폴더 생성
+   - train/normal 폴더를 생성한다.
+   - validation/normal 폴더를 생성한다.
+   - test/normal 폴더를 생성한다.
+   - test/anomaly 폴더를 생성한다.
+   - ground_truth 폴더를 생성한다.
+
+⑥ 정상 이미지 Train / Validation 분리
+   - 원본 train/good의 정상 이미지를 불러온다.
+   - 정상 이미지 목록을 무작위로 섞는다.
+   - 전체 이미지의 80%를 Train으로 분리한다.
+   - 나머지 20%를 Validation으로 분리한다.
+   - Train 이미지를 train/normal에 복사한다.
+   - Validation 이미지를 validation/normal에 복사한다.
+
+   Normal Train      → 정상 기준 생성
+   Normal Validation → Threshold 결정
+
+⑦ 최종 검사(Test) 이미지 복사
+   - 원본 test/good 이미지를 test/normal에 복사한다.
+   - broken_large 이미지를 복사한다.
+   - broken_small 이미지를 복사한다.
+   - contamination 이미지를 복사한다.
+   - 이상 이미지는 test/anomaly 아래에
+     종류별 폴더를 만들어 보관한다.
+
+⑧ Ground Truth Mask 복사
+   - 이상 종류별 ground_truth 폴더를 확인한다.
+   - 결함 위치가 표시된 Mask 이미지를 복사한다.
+   - 이후 Heatmap 비교에 사용할 수 있도록 준비한다.
+
+⑨ 결과 확인
+   - Normal Train 이미지 개수를 출력한다.
+   - Normal Validation 이미지 개수를 출력한다.
+   - Normal Test 이미지 개수를 출력한다.
+   - broken_large 이미지 개수를 출력한다.
+   - broken_small 이미지 개수를 출력한다.
+   - contamination 이미지 개수를 출력한다.
+
+   → 실습용 데이터 준비 완료
 ```
 
 실행합니다.
 
 ```bash
 python src/51_day07_prepare_dataset.py
-```
-
-### 의사코드
-
-```text
-1. MVTec bottle 원본 경로를 지정한다.
-
-2. 실습용 데이터를 만들
-   samples/day07 경로를 지정한다.
-
-3. Seed를 42로 고정하여
-   실행할 때마다 같은 데이터가 나뉘도록 한다.
-
-4. 원본 bottle 폴더가 실제로 있는지 확인한다.
-
-5. 이전 실행에서 만들어진
-   train / validation / test / ground_truth만 삭제한다.
-
-6. original 폴더는 삭제하지 않고 그대로 보존한다.
-
-7. 새로운
-   train / validation / test / ground_truth
-   폴더를 만든다.
-
-8. 원본 train/good의 정상 이미지 목록을 읽는다.
-
-9. 정상 이미지 순서를 섞는다.
-
-10. 정상 이미지의 80%를
-    Normal Train으로 복사한다.
-
-11. 나머지 20%를
-    Normal Validation으로 복사한다.
-
-12. 원본 test/good을
-    Normal Test로 복사한다.
-
-13. broken_large /
-    broken_small /
-    contamination을
-    Anomaly Test로 복사한다.
-
-14. 각 이상 이미지의
-    Ground Truth Mask도 복사한다.
-
-15. 만들어진 Train /
-    Validation / Test의 이미지 수를 출력한다.
 ```
 
 ---
@@ -2184,6 +2458,43 @@ reference_map
 
 > 이 과정에서 ResNet18을 새로 학습하는 것은 아닙니다. 이미 학습된 ResNet18을 이용하여 정상 이미지의 Feature를 뽑고 그 평균을 계산합니다.
 
+코드의 전체 흐름은 다음과 같습니다.
+
+```
+① 필요한 라이브러리 불러오기
+          ↓
+② 정상 이미지 입력 경로 / 결과 저장 경로 설정
+          ↓
+③ create_backbone()
+   → 사전학습된 ResNet18 특징 추출기 준비
+          ↓
+④ Feature 저장용 리스트 준비
+          ↓
+⑤ 정상 병 이미지 167장 불러오기
+          ↓
+⑥ extract_features()
+   → 정상 이미지마다 특징 추출
+          ↓
+   ┌─────────────┴─────────────┐
+   ↓                           ↓
+Feature Vector             Feature Map
+(이미지 전체 특징)          (이미지 위치별 특징)
+   ↓                           ↓
+⑦ 여러 Vector 묶기        ⑦ 여러 Map 묶기
+   ↓                           ↓
+⑧ Vector 평균 계산        ⑨ Map 평균 계산
+   ↓                           ↓
+정상 Vector 기준           정상 Map 기준
+   └─────────────┬─────────────┘
+                 ↓
+⑩ Normal Reference 저장
+   → normal_reference.npz
+   → Vector / Map 크기 확인
+
+※ 이 코드는 정상 기준을 생성하는 단계이며,
+   새로운 병의 정상·이상 판정은 아직 하지 않습니다.
+```
+
 파일:
 
 ```text
@@ -2193,6 +2504,13 @@ src/52_day07_build_normal_reference.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → Path : 이미지 및 저장 파일 경로 관리
+#    → NumPy : 특징 배열의 평균 계산 및 저장
+#    → 공통 함수 : ResNet18 생성 및 특징 추출
+# ==================================================
 from pathlib import Path
 
 import numpy as np
@@ -2203,9 +2521,11 @@ from day07_anomaly_core import (
 )
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 정상 이미지 입력 경로 및 결과 저장 경로 설정
+#    → 51번 코드에서 분리한 Normal Train 사용
+#    → 생성된 정상 기준은 .npz 파일로 저장
+# ==================================================
 TRAIN_DIR = Path(
     "samples/day07/train/normal"
 )
@@ -2214,28 +2534,36 @@ OUTPUT_PATH = Path(
     "artifacts/day07/normal_reference.npz"
 )
 
+# 결과를 저장할 폴더가 없으면 생성
 OUTPUT_PATH.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
 
-# --------------------------------------------------
-# 2. Feature 추출용 ResNet18 준비
-# --------------------------------------------------
+# ==================================================
+# ③ Feature 추출용 ResNet18 준비
+#    → 앞에서 작성한 공통 함수 사용
+#    → 사전학습된 ResNet18의 layer3까지 활용
+#    → 새로운 모델 학습 없이 Feature만 추출
+# ==================================================
 model = create_backbone()
 
 
-# --------------------------------------------------
-# 3. 정상 이미지의 Feature를 저장할 리스트
-# --------------------------------------------------
+# ==================================================
+# ④ Feature를 저장할 빈 리스트 준비
+#    → vectors : 이미지 전체 특징 저장
+#    → maps    : 이미지 위치별 특징 저장
+# ==================================================
 vectors = []
 maps = []
 
 
-# --------------------------------------------------
-# 4. Normal Train 이미지 읽기
-# --------------------------------------------------
+# ==================================================
+# ⑤ Normal Train 이미지 목록 불러오기
+#    → train/normal 폴더의 PNG 이미지 확인
+#    → 이미지가 없으면 오류 발생
+# ==================================================
 image_files = sorted(
     TRAIN_DIR.glob("*.png")
 )
@@ -2245,27 +2573,50 @@ if not image_files:
         "Normal Train 이미지가 없습니다."
     )
 
+# 정상 이미지 개수 출력
 print(
     "Normal Train:",
     len(image_files),
 )
 
 
-# --------------------------------------------------
-# 5. 정상 이미지마다 Feature 추출
-# --------------------------------------------------
+# ==================================================
+# ⑥ 정상 이미지마다 Feature 추출
+#    → 이미지 1장씩 ResNet18에 입력
+#    → Feature Vector와 Feature Map 추출
+#    → 추출한 결과를 각각 리스트에 저장
+# ==================================================
 for index, image_path in enumerate(
     image_files,
     start=1,
 ):
+
+    # ----------------------------------------------
+    # ⑥-1. 공통 함수를 이용하여 Feature 추출
+    # ----------------------------------------------
     vector, spatial_map = extract_features(
         model,
         image_path,
     )
 
-    vectors.append(vector)
-    maps.append(spatial_map)
+    # ----------------------------------------------
+    # ⑥-2. 이미지 전체 Feature 저장
+    # ----------------------------------------------
+    vectors.append(
+        vector
+    )
 
+    # ----------------------------------------------
+    # ⑥-3. 위치별 Feature Map 저장
+    # ----------------------------------------------
+    maps.append(
+        spatial_map
+    )
+
+    # ----------------------------------------------
+    # ⑥-4. 특징 추출 진행 상황 출력
+    #       → 첫 번째, 20장마다, 마지막 이미지
+    # ----------------------------------------------
     if (
         index == 1
         or index % 20 == 0
@@ -2277,55 +2628,81 @@ for index, image_path in enumerate(
         )
 
 
-# --------------------------------------------------
-# 6. 여러 이미지의 Feature를 하나의 배열로 묶기
-# --------------------------------------------------
+# ==================================================
+# ⑦ 추출한 Feature를 NumPy 배열로 묶기
+#    → 이미지별 리스트를 하나의 배열로 변환
+#    → 여러 이미지의 평균을 계산하기 위한 준비
+# ==================================================
+
+# 정상 이미지 전체의 Feature Vector 묶기
 vectors = np.stack(
     vectors
 )
 
+# 정상 이미지 전체의 Feature Map 묶기
 maps = np.stack(
     maps
 )
 
 
-# --------------------------------------------------
-# 7. Feature Vector 평균
-#    → 이미지 전체 비교용 정상 기준
-# --------------------------------------------------
+# ==================================================
+# ⑧ Feature Vector 평균 계산
+#    → 정상 이미지 전체의 특징을 하나로 요약
+#    → 이후 이미지 전체 Anomaly Score 계산에 사용
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. 모든 정상 Feature Vector의 평균 계산
+#       → axis=0 : 이미지 개수 방향으로 평균
+# ----------------------------------------------
 reference_vector = np.mean(
     vectors,
     axis=0,
 )
 
+# ----------------------------------------------
+# ⑧-2. 평균 Feature Vector의 크기 계산
+# ----------------------------------------------
 vector_norm = np.linalg.norm(
     reference_vector
 )
 
+# 크기가 0이면 정규화할 수 없으므로 오류 발생
 if vector_norm == 0:
     raise RuntimeError(
         "Normal Reference Vector를 만들 수 없습니다."
     )
 
+# ----------------------------------------------
+# ⑧-3. 평균 Feature Vector 정규화
+#       → 벡터의 길이를 1로 맞춤
+# ----------------------------------------------
 reference_vector = (
     reference_vector
     / vector_norm
 )
 
 
-# --------------------------------------------------
-# 8. Feature Map 평균
-#    → Heatmap 비교용 정상 기준
-# --------------------------------------------------
+# ==================================================
+# ⑨ Feature Map 평균 계산
+#    → 정상 이미지의 위치별 특징을 평균
+#    → 이후 위치별 Anomaly Map 비교에 사용
+# ==================================================
 reference_map = np.mean(
     maps,
     axis=0,
 )
 
 
-# --------------------------------------------------
-# 9. Normal Reference 저장
-# --------------------------------------------------
+# ==================================================
+# ⑩ Normal Reference 저장 및 결과 확인
+#    → 정상 Vector와 Map을 하나의 .npz 파일로 저장
+#    → 생성된 기준의 크기와 저장 위치 출력
+# ==================================================
+
+# ----------------------------------------------
+# ⑩-1. 정상 기준을 .npz 파일로 저장
+# ----------------------------------------------
 np.savez_compressed(
     OUTPUT_PATH,
     reference_vector=reference_vector,
@@ -2333,76 +2710,117 @@ np.savez_compressed(
 )
 
 
-# --------------------------------------------------
-# 10. 결과 확인
-# --------------------------------------------------
+# ----------------------------------------------
+# ⑩-2. 정상 기준 생성 완료 메시지 출력
+# ----------------------------------------------
 print("=" * 70)
 print("Normal Reference 생성 완료")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑩-3. Feature Vector 크기 확인
+# ----------------------------------------------
 print(
     "Vector shape:",
     reference_vector.shape,
 )
 
+
+# ----------------------------------------------
+# ⑩-4. Feature Map 크기 확인
+# ----------------------------------------------
 print(
     "Map shape   :",
     reference_map.shape,
 )
 
+
+# ----------------------------------------------
+# ⑩-5. 저장된 파일 경로 출력
+# ----------------------------------------------
 print(
     "Saved       :",
     OUTPUT_PATH,
 )
 ```
 
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - Path를 불러온다.
+   - NumPy를 불러온다.
+   - 공통 코드에서 다음 함수를 불러온다.
+     · create_backbone()
+     · extract_features()
+
+② 입력 및 출력 경로 설정
+   - 정상 이미지 폴더를 지정한다.
+     samples/day07/train/normal
+
+   - 정상 기준을 저장할 경로를 지정한다.
+     artifacts/day07/normal_reference.npz
+
+   - 저장 폴더가 없으면 생성한다.
+
+③ Feature 추출용 ResNet18 준비
+   - create_backbone()을 실행한다.
+   - 사전학습된 ResNet18 특징 추출기를 준비한다.
+   - 모델을 새로 학습하지는 않는다.
+
+④ Feature 저장용 리스트 준비
+   - 전체 특징을 저장할 vectors를 만든다.
+   - 위치별 특징을 저장할 maps를 만든다.
+
+⑤ 정상 이미지 목록 불러오기
+   - train/normal 폴더의 PNG 이미지를 찾는다.
+   - 이미지가 없으면 오류를 발생시킨다.
+   - 찾은 이미지 개수를 출력한다.
+
+⑥ 정상 이미지마다 Feature 추출
+   - 정상 이미지를 한 장씩 읽는다.
+   - extract_features()를 실행한다.
+   - Feature Vector를 추출한다.
+   - Feature Map을 추출한다.
+   - 각 결과를 vectors와 maps에 저장한다.
+   - 작업 진행 상황을 출력한다.
+
+⑦ Feature를 하나의 배열로 묶기
+   - vectors 리스트를 NumPy 배열로 변환한다.
+   - maps 리스트를 NumPy 배열로 변환한다.
+   - 여러 이미지의 평균을 계산할 준비를 한다.
+
+⑧ Feature Vector 평균 계산
+   - 정상 이미지들의 Feature Vector를 평균 낸다.
+   - 평균 Vector의 크기를 계산한다.
+   - 크기가 0이면 오류를 발생시킨다.
+   - 평균 Vector를 정규화한다.
+   - reference_vector를 완성한다.
+
+   → 이미지 전체 비교용 정상 기준
+
+⑨ Feature Map 평균 계산
+   - 정상 이미지들의 Feature Map을 평균 낸다.
+   - reference_map을 완성한다.
+
+   → 이미지 위치별 비교용 정상 기준
+
+⑩ 정상 기준 저장 및 결과 확인
+   - reference_vector를 저장한다.
+   - reference_map을 저장한다.
+   - 두 결과를 normal_reference.npz에 함께 저장한다.
+   - Vector 크기를 출력한다.
+   - Map 크기를 출력한다.
+   - 저장 경로를 출력한다.
+
+   → Normal Reference 생성 완료
+```
+
 실행합니다.
 
 ```bash
 python src/52_day07_build_normal_reference.py
-```
-
-### 의사코드
-
-```
-1. Normal Train 이미지가 들어 있는
-   samples/day07/train/normal 경로를 지정한다.
-
-2. 정상 기준을 저장할
-   artifacts/day07/normal_reference.npz
-   경로를 지정한다.
-
-3. Pretrained ResNet18 기반
-   Feature 추출기를 준비한다.
-
-4. Normal Train의 모든 PNG 이미지를 읽는다.
-
-5. 이미지가 하나도 없으면 실행을 중단한다.
-
-6. 정상 이미지 한 장씩 ResNet18에 넣는다.
-
-7. 각 이미지에서
-   Feature Vector와 Feature Map을 추출한다.
-
-8. 모든 정상 이미지의
-   Feature Vector를 모은다.
-
-9. 모든 정상 이미지의
-   Feature Map도 모은다.
-
-10. Feature Vector들의 평균을 계산한다.
-
-11. 평균 Feature Vector를 정규화하여
-    reference_vector를 만든다.
-
-12. Feature Map들의 평균을 계산하여
-    reference_map을 만든다.
-
-13. 두 정상 기준을
-    normal_reference.npz에 저장한다.
-
-14. 만들어진 Vector와 Map의 크기,
-    저장 위치를 출력한다.
 ```
 
 ---
@@ -2463,6 +2881,8 @@ Vector shape: (256,)
 
 쉽게 생각하면:
 
+![[Pasted image 20261031171245.png]]
+
 ```
 정상 병 여러 장
         ↓
@@ -2491,6 +2911,7 @@ Anomaly Score
 
 > `reference_vector`는 새로운 병이 정상 병 전체 특징과 얼마나 다른지 계산하기 위한 기준입니다.
 
+---
 ## `reference_map` — 위치별 비교용 정상 기준
 
 실행 결과:
@@ -2502,6 +2923,8 @@ Map shape: (256, 14, 14)
 은 정상 특징이 하나의 숫자 목록으로만 저장된 것이 아니라 14 × 14 위치정보를 유지한 형태로도 저장되었다는 뜻입니다.
 
 쉽게 보면:
+
+![[Pasted image 20261031171737.png]]
 
 ```
 정상 병
@@ -2793,6 +3216,12 @@ src/53_day07_measure_validation.py
 작성합니다.
 
 ```python
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#    → csv : 계산한 점수를 CSV 파일로 저장
+#    → Path : 입력 및 출력 파일 경로 관리
+#    → 공통 함수 : 특징 추출 및 거리 계산
+# ==================================================
 import csv
 from pathlib import Path
 
@@ -2804,84 +3233,140 @@ from day07_anomaly_core import (
 )
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#    → Validation : 정상 검증 이미지 42장
+#    → Reference  : 52번에서 저장한 정상 기준
+#    → CSV        : 이미지별 이상 점수 저장
+# ==================================================
+
+# 정상 검증 이미지 폴더
 VAL_DIR = Path(
     "samples/day07/validation/normal"
 )
 
+# 52번 코드에서 생성한 정상 기준 파일
 REFERENCE_PATH = Path(
     "artifacts/day07/normal_reference.npz"
 )
 
+# Anomaly Score 결과 저장 파일
 OUTPUT_CSV = Path(
     "reports/day07_validation_scores.csv"
 )
 
 
-# --------------------------------------------------
-# 2. 필요한 데이터가 있는지 확인
-# --------------------------------------------------
+# ==================================================
+# ③ 필요한 데이터 확인
+#    → Validation 폴더 존재 여부 확인
+#    → Normal Reference 파일 존재 여부 확인
+#    → Validation 이미지 목록 불러오기
+# ==================================================
+
+# ----------------------------------------------
+# ③-1. Validation 폴더 확인
+# ----------------------------------------------
 if not VAL_DIR.exists():
     raise FileNotFoundError(
         f"Validation 폴더를 확인하세요: {VAL_DIR}"
     )
 
+
+# ----------------------------------------------
+# ③-2. Normal Reference 파일 확인
+# ----------------------------------------------
 if not REFERENCE_PATH.exists():
     raise FileNotFoundError(
         f"Normal Reference를 확인하세요: {REFERENCE_PATH}"
     )
 
 
+# ----------------------------------------------
+# ③-3. 정상 검증 이미지 목록 불러오기
+# ----------------------------------------------
 image_files = sorted(
     VAL_DIR.glob("*.png")
 )
 
+# 이미지가 없으면 오류 발생
 if not image_files:
     raise RuntimeError(
         "Validation 이미지가 없습니다."
     )
 
 
-# --------------------------------------------------
-# 3. Normal Reference 불러오기
-# --------------------------------------------------
+# ==================================================
+# ④ 저장된 Normal Reference 불러오기
+#    → 공통 함수 load_reference() 사용
+#    → 전체 비교용 reference_vector만 사용
+#    → reference_map은 이번 코드에서 사용하지 않음
+# ==================================================
 reference_vector, _ = load_reference(
     REFERENCE_PATH
 )
 
 
-# --------------------------------------------------
-# 4. Feature 추출용 ResNet18 준비
-# --------------------------------------------------
+# ==================================================
+# ⑤ Feature 추출용 ResNet18 준비
+#    → 공통 함수 create_backbone() 사용
+#    → 사전학습된 ResNet18의 layer3까지 사용
+#    → 새로운 학습 없이 이미지 특징만 추출
+# ==================================================
 model = create_backbone()
 
 
-# --------------------------------------------------
-# 5. Validation 이미지의 Score 계산
-# --------------------------------------------------
+# ==================================================
+# ⑥ 정상 Validation 이미지의 Anomaly Score 계산
+#    → 각 이미지에서 Feature Vector 추출
+#    → 정상 기준과 유클리드 거리 계산
+#    → 이미지별 점수를 리스트에 기록
+# ==================================================
+
+# CSV에 저장할 결과 리스트
 rows = []
 
+# 검사할 정상 검증 이미지 개수 출력
 print(
     "Normal Validation:",
     len(image_files),
 )
 
+
+# ----------------------------------------------
+# ⑥-1. Validation 이미지 한 장씩 처리
+# ----------------------------------------------
 for index, image_path in enumerate(
     image_files,
     start=1,
 ):
+
+    # ------------------------------------------
+    # ⑥-2. 이미지 전체 Feature Vector 추출
+    #       → 위치별 Feature Map은 사용하지 않음
+    # ------------------------------------------
     vector, _ = extract_features(
         model,
         image_path,
     )
 
+    # ------------------------------------------
+    # ⑥-3. Normal Reference와 거리 계산
+    #       → 거리 = Anomaly Score
+    #
+    #       점수 낮음 : 정상 기준과 비슷함
+    #       점수 높음 : 정상 기준과 많이 다름
+    # ------------------------------------------
     score = anomaly_score(
         vector,
         reference_vector,
     )
 
+    # ------------------------------------------
+    # ⑥-4. 이미지 이름과 계산 결과 기록
+    #       → 모두 정상 검증 이미지이므로
+    #         실제 정답(actual)은 Normal
+    #       → 점수는 소수점 6자리로 반올림
+    # ------------------------------------------
     rows.append(
         {
             "file": image_path.name,
@@ -2893,6 +3378,10 @@ for index, image_path in enumerate(
         }
     )
 
+    # ------------------------------------------
+    # ⑥-5. 진행 상황 출력
+    #       → 첫 번째, 10장마다, 마지막 이미지
+    # ------------------------------------------
     if (
         index == 1
         or index % 10 == 0
@@ -2904,20 +3393,34 @@ for index, image_path in enumerate(
         )
 
 
-# --------------------------------------------------
-# 6. CSV 저장
-# --------------------------------------------------
+# ==================================================
+# ⑦ 계산한 Anomaly Score를 CSV 파일로 저장
+#    → 이미지 이름, 실제 정답, 이상 점수 기록
+#    → 이후 Threshold를 결정할 때 사용
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. 결과 저장 폴더 생성
+# ----------------------------------------------
 OUTPUT_CSV.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+
+# ----------------------------------------------
+# ⑦-2. CSV 파일 열기
+#       → utf-8-sig : Excel 한글 호환성 고려
+# ----------------------------------------------
 with OUTPUT_CSV.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
 
+    # ------------------------------------------
+    # ⑦-3. CSV 열 이름 설정
+    # ------------------------------------------
     writer = csv.DictWriter(
         file,
         fieldnames=[
@@ -2927,26 +3430,113 @@ with OUTPUT_CSV.open(
         ],
     )
 
+    # ------------------------------------------
+    # ⑦-4. CSV 헤더 작성
+    # ------------------------------------------
     writer.writeheader()
+
+    # ------------------------------------------
+    # ⑦-5. 이미지별 Anomaly Score 저장
+    # ------------------------------------------
     writer.writerows(rows)
 
 
-# --------------------------------------------------
-# 7. 결과 확인
-# --------------------------------------------------
+# ==================================================
+# ⑧ 실행 결과 확인
+#    → Validation Score 측정 완료 메시지 출력
+#    → 처리한 이미지 개수와 CSV 저장 위치 확인
+# ==================================================
 print("=" * 70)
 print("Validation Score 측정 완료")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑧-1. 처리한 정상 검증 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Images:",
     len(rows),
 )
 
+
+# ----------------------------------------------
+# ⑧-2. 결과 CSV 파일 경로 출력
+# ----------------------------------------------
 print(
     "Saved :",
     OUTPUT_CSV,
 )
+```
+
+## 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - csv와 Path를 불러온다.
+   - day07_anomaly_core에서 다음 함수를 불러온다.
+     · anomaly_score()
+     · create_backbone()
+     · extract_features()
+     · load_reference()
+
+② 입력 및 출력 경로 설정
+   - 정상 검증 이미지 폴더를 지정한다.
+     samples/day07/validation/normal
+
+   - 저장된 정상 기준 파일을 지정한다.
+     artifacts/day07/normal_reference.npz
+
+   - 결과 CSV 파일 경로를 지정한다.
+     reports/day07_validation_scores.csv
+
+③ 필요한 데이터 확인
+   - Validation 폴더가 있는지 확인한다.
+   - Normal Reference 파일이 있는지 확인한다.
+   - 정상 검증 이미지 목록을 불러온다.
+   - 이미지가 없다면 오류를 발생시킨다.
+
+④ Normal Reference 불러오기
+   - load_reference()를 실행한다.
+   - 저장된 reference_vector를 가져온다.
+   - reference_map은 이번 실습에서 사용하지 않는다.
+
+⑤ Feature 추출용 ResNet18 준비
+   - create_backbone()을 실행한다.
+   - 사전학습된 ResNet18을 준비한다.
+   - 별도의 모델 학습은 진행하지 않는다.
+
+⑥ 정상 Validation 이미지마다 점수 계산
+   - 결과를 기록할 빈 리스트를 생성한다.
+   - Validation 이미지를 한 장씩 가져온다.
+
+   [특징 추출]
+   - extract_features()를 실행한다.
+   - 이미지 전체 Feature Vector를 가져온다.
+
+   [거리 계산]
+   - anomaly_score()를 실행한다.
+   - 새로운 Vector와 reference_vector를 비교한다.
+   - 유클리드 거리를 Anomaly Score로 계산한다.
+
+   [결과 기록]
+   - 이미지 파일 이름을 저장한다.
+   - 실제 정답을 Normal로 기록한다.
+   - Anomaly Score를 소수점 6자리로 반올림한다.
+   - 결과 리스트에 추가한다.
+   - 진행 상황을 출력한다.
+
+⑦ CSV 파일로 저장
+   - reports 폴더가 없으면 생성한다.
+   - CSV 파일을 연다.
+   - file, actual, anomaly_score 열을 만든다.
+   - 이미지별 결과를 저장한다.
+
+⑧ 실행 결과 확인
+   - 처리한 Validation 이미지 개수를 출력한다.
+   - CSV 파일 저장 경로를 출력한다.
+
+   → 정상 Validation의 Anomaly Score 측정 완료
 ```
 
 실행합니다.
@@ -2955,7 +3545,7 @@ print(
 python src/53_day07_measure_validation.py
 ```
 
-정상적으로 실행되면 다음과 같이 출력됩니다.
+53번 코드를 실행하면 다음과 같이 출력됩니다.
 
 ```
 Normal Validation: 42
@@ -2972,228 +3562,127 @@ Images: 42
 Saved : reports/day07_validation_scores.csv
 ```
 
-즉 앞에서 분리한 Normal Validation 정상 이미지 42장을 모두 검사했다는 뜻입니다.
+이 결과는 **정상 병 이미지 42장을 Normal Reference(정상 기준)와 비교하여 Anomaly Score를 계산했다**는 뜻입니다.
 
-```
-Normal Validation 42장
-        ↓
-각 이미지에서 Feature Vector 추출
-        ↓
-Normal Reference와 비교
-        ↓
-Anomaly Score 42개 계산
-        ↓
-CSV 저장
-```
-
-결과는 다음 파일에 저장됩니다.
+계산한 결과는 다음 파일에 저장됩니다.
 
 ```
 reports/day07_validation_scores.csv
 ```
 
-파일을 열어 보면 다음과 같이 각 정상 이미지마다 서로 다른 Score가 기록되어 있습니다.
+### 정상 병인데 왜 점수가 서로 다를까요?
 
-```
-file,actual,anomaly_score
-001.png,Normal,0.039874
-006.png,Normal,0.065865
-007.png,Normal,0.039087
-008.png,Normal,0.055498
-...
-205.png,Normal,0.070818
-206.png,Normal,0.043039
-```
+CSV 파일을 열어 보면 다음과 같은 점수가 기록되어 있습니다.
 
-각 컬럼의 의미는 다음과 같습니다.
+| 이미지 | 실제 정답 | Anomaly Score |
+|---|---|---:|
+| 001.png | Normal | 0.039874 |
+| 006.png | Normal | 0.065865 |
+| 007.png | Normal | 0.039087 |
+| 008.png | Normal | 0.055498 |
+| 205.png | Normal | 0.070818 |
 
-| 컬럼              | 의미                               |
-| --------------- | -------------------------------- |
-| `file`          | 검사한 Validation 이미지               |
-| `actual`        | 실제 정답                            |
-| `anomaly_score` | Normal Reference와 얼마나 다른지를 나타낸 값 |
-여기서 모든 이미지의 `actual`은:
+**모두 정상 병이지만 Anomaly Score는 서로 다릅니다.**
 
-```
-Normal
-```
+정상 제품이라도 촬영 위치, 밝기, 모양 등이 조금씩 다르기 때문입니다.
 
-입니다.
+실제 42장의 점수를 정리하면 다음과 같습니다.
 
-하지만 `anomaly_score`는 모두 같지 않습니다.
+| 구분 | Anomaly Score |
+|---|---:|
+| 가장 낮은 점수 | 0.035927 |
+| 평균 점수 | 약 0.050680 |
+| 가장 높은 점수 | 0.070818 |
 
-실제 측정 결과를 보면 Score는 대략 다음 범위에 있습니다.
+여기서 기억할 것은 **점수가 낮으면 정상 기준과 비슷하고, 높으면 정상 기준과 많이 다르다**는 것입니다.
 
-```
-가장 낮은 Score
-0.035927
+하지만 정상 병에서도 0.070818처럼 비교적 높은 점수가 나왔습니다.
 
-평균 Score
-약 0.050680
+그렇다면 **어느 점수부터 이상이라고 판단해야 할까요?**
 
-가장 높은 Score
-0.070818
-```
+### Threshold(임계값)를 정해야 합니다
 
-즉 정상 이미지라고 해서:
+Threshold는 정상과 이상을 구분하기 위해 정하는 기준 점수입니다.
 
-```
-Score = 0
+```text
+Anomaly Score ≤ Threshold
+→ Normal (정상)
+
+Anomaly Score > Threshold
+→ Anomaly (이상)
 ```
 
-이 되는 것이 아닙니다.
+Threshold를 너무 낮게 설정하면 정상 병도 이상으로 잘못 판단할 수 있습니다.
 
-실제로 정상 이미지 42장에서도:
+반대로 너무 높게 설정하면 실제 결함을 놓칠 수도 있습니다.
 
-```
-0.035927
-0.039874
-0.050599
-0.065865
-0.070818
-...
-```
+그래서 정상 이미지 42장의 점수를 이용하여 다음 세 가지 기준을 비교합니다.
 
-처럼 서로 다른 Score가 나왔습니다.
+| Threshold 후보 | 계산된 기준값(약) | 의미 |
+|---|---:|---|
+| 90 Percentile | 0.065345 | 정상 점수의 약 90%가 이 값 이하 |
+| **95 Percentile** | **0.067469** | **정상 점수의 약 95%가 이 값 이하** |
+| 99 Percentile | 0.069548 | 정상 점수의 약 99%가 이 값 이하 |
 
-왜냐하면 같은 정상 병이라도 이미지마다:
+여기서 Percentile(백분위수)이란 **점수를 작은 순서대로 정렬하여 일정 비율에 해당하는 경계값을 계산하는 방법**입니다.
 
-```
-병의 위치
-밝기
-표면 상태
-촬영 상태
-세부적인 모양
-```
+예를 들어 95 Percentile을 선택한다는 것은 정상 점수의 대부분을 정상으로 받아들이되, 
+기준보다 높은 점수는 이상으로 판단하도록 설정한다는 의미입니다.
 
-이 조금씩 다르기 때문입니다.
+단, **95 Percentile이 정확도 95%를 보장한다는 뜻은 아닙니다.**
 
-그래서 현재 결과에서 중요한 것은 어떤 이미지의 Score가 가장 높았는지 자체가 아니라, 정상 이미지의 Score가 어느 정도 범위에 분포하는지를 확인하는 것입니다.
+### 그래서 어떤 Threshold를 사용할까요?
 
-```
-Normal Validation 42장
+**7일차에서는 세 가지 후보를 비교한 뒤, 95 Percentile인 약 0.067469를 기본 Threshold로 선택합니다.**
 
-낮은 Score
-        ↓
-대부분의 정상 Score
-        ↓
-높은 정상 Score
+이 기준을 적용하면 다음과 같이 판정합니다.
 
-약 0.036
-        ↓
-약 0.051 부근
-        ↓
-약 0.071
-```
+```text
+Threshold = 0.067469
 
-현재 가장 높은 정상 Score는:
+검사 이미지 A
+Anomaly Score = 0.050
+       ↓
+0.050 ≤ 0.067469
+       ↓
+Normal (정상)
 
-```
-205.png
-→ 0.070818
+
+검사 이미지 B
+Anomaly Score = 0.080
+       ↓
+0.080 > 0.067469
+       ↓
+Anomaly (이상)
 ```
 
-이고 가장 낮은 정상 Score는:
+위의 두 검사 이미지는 판정 규칙을 이해하기 위한 예시입니다.
 
-```
-050.png
-→ 0.035927
-```
+95 Percentile을 선택하더라도 일부 정상 이미지가 이상으로 판정될 수 있으며, 실제 결함을 얼마나 잘 찾아내는지는 최종 Test에서 확인해야 합니다.
 
-입니다.
+### 다음 실습에서는 무엇을 하나요?
 
-따라서 이제 다음 질문을 할 수 있습니다.
+지금까지는 **53번 코드를 통해 정상 이미지 42장의 Anomaly Score를 CSV에 저장**했습니다.
 
-> 정상 이미지의 Score가 이 정도 범위에서 나오는데, Normal(정상)과 Anomaly(비정상)를 나누는 Threshold를 어디에 둘 것인가?
-
-아직 이 단계에서는:
-
-```
-Normal / Anomaly 최종 판정 (아직 불가능)
-
-Threshold 확정 (아직 불가능)
-```
-
-입니다.
-
-지금까지 한 것은:
-
-```
-정상 이미지 42장
-        ↓
-실제 Anomaly Score 측정
-        ↓
-정상 Score 데이터 확보
-        ↓
-CSV 저장
-```
-
-까지입니다.
-
-### 다음단계
+다음 실습에서는 다음 순서로 진행합니다.
 
 ![[Group 18.png]]
 
-다음 단계에서는 이 42개의 실제 Score를 이용하여:
-
+```text
+53번 코드
+정상 이미지 42장의 Score 계산
+        ↓
+54번 코드
+90 / 95 / 99 Percentile 비교
+        ↓
+55번 코드
+95 Percentile 기본 Threshold 확정
+→ 약 0.067469
+→ 판정 규칙 저장(Rule Freeze)
+        ↓
+56번 코드
+Test 이미지 83장으로 정상·이상 검사
 ```
-90 Percentile
-95 Percentile
-99 Percentile
-```
-
-값을 계산하고 **Threshold 후보를 비교**합니다.
-
-`Percentile`은 **백분위수**라고 합니다.
-
-쉽게 말하면 데이터를 작은 값부터 큰 값까지 줄 세웠을 때 어느 위치의 값을 선택할 것인가입니다.
-
-예를 들어 정상 Validation Score가 여러 개 있다고 하면:
-
-```
-낮은 Score                               높은 Score
-0.03  0.04  0.04  0.05  0.05 ... 0.06  0.07
- ───────────────────────────────────────────→
-```
-
-### 90 Percentile
-
-`90 Percentile`은:
-
-> 전체 데이터의 약 90%가 이 값 이하에 오도록 하는 경계값
-
-입니다.
-
-```
-정상 Score 전체
-─────────────────────────────────────
-약 90%                         약 10%
-████████████████████████████████│████
-                                ↑
-                         90 Percentile
-```
-
-예를 들어 90 Percentile이 `0.065`라면:
-
-```
-정상 Validation Score의 약 90%
-→ 0.065 이하
-
-나머지 약 10%
-→ 0.065보다 높음
-```
-
-이라는 뜻입니다.
-
-현재 실제 데이터에서는 다음 단계에서 대략:
-
-```
-90 Percentile → 0.065345 부근
-95 Percentile → 0.067469 부근
-99 Percentile → 0.069548 부근
-```
-
-이 계산될 것입니다.
 
 따라서 흐름은 이제 아주 명확합니다.
 
@@ -3233,241 +3722,109 @@ Rule Freeze
 
 ---
 
-## 의사코드
-
-```
-1. Normal Validation 이미지가 들어 있는
-   samples/day07/validation/normal
-   경로를 지정한다.
-
-2. 앞에서 만든 Normal Reference 파일
-   normal_reference.npz의 위치를 지정한다.
-
-3. Validation 폴더와
-   Normal Reference 파일이 실제로 있는지 확인한다.
-
-4. Validation 이미지 목록을 읽는다.
-
-5. Validation 이미지가 하나도 없으면
-   실행을 중단한다.
-
-6. normal_reference.npz에서
-   reference_vector를 불러온다.
-
-7. Feature 추출용
-   Pretrained ResNet18을 준비한다.
-
-8. Validation 정상 이미지를
-   한 장씩 읽는다.
-
-9. 각 이미지에서
-   Feature Vector를 추출한다.
-
-10. Validation Feature Vector와
-    Normal Reference Vector의 거리를 계산한다.
-
-11. 계산된 거리를
-    Anomaly Score로 사용한다.
-
-12. 각 이미지에 대해
-
-    파일명
-    실제 정답 = Normal
-    Anomaly Score
-
-    를 기록한다.
-
-13. 모든 Validation 이미지의 결과를
-    day07_validation_scores.csv에 저장한다.
-
-14. 처리한 이미지 수와
-    CSV 저장 위치를 출력한다.
-```
-
-전체 흐름만 아주 간단하게 보면:
-
-```
-Normal Validation 42장
-        ↓
-각 이미지 Feature 추출
-        ↓
-Normal Reference와 비교
-        ↓
-Anomaly Score 42개 생성
-        ↓
-CSV 저장
-```
----
-
 # 27. Normal Validation의 Score 분포를 그래프로 확인합니다
 
-앞에서 정상 Validation 이미지 42장의 Anomaly Score를 계산하여 다음 파일에 저장했습니다.
+앞에서 53번 코드를 실행하여 **정상 병 이미지 42장의 Anomaly Score**를 계산했습니다.
+
+계산 결과는 다음 파일에 저장되어 있습니다.
+
+`reports/day07_validation_scores.csv`
+
+이제 이 점수들이 어느 구간에 많이 모여 있는지 그래프로 확인해 보겠습니다.
+
+### 왜 그래프를 만들까요?
+
+CSV 파일에는 42개의 점수가 숫자로 저장되어 있어 전체적인 분포를 한눈에 파악하기 어렵습니다.
+
+그래서 **Histogram(히스토그램)** 을 만들어 정상 병의 점수가 어느 범위에 많이 분포하는지 확인합니다.
 
 ```
-reports/day07_validation_scores.csv
-```
-
-먼저 일부 데이터를 확인합니다.
-
-```
-head reports/day07_validation_scores.csv
-```
-
-실제 결과는 다음과 같습니다.
-
-```
-file,actual,anomaly_score
-001.png,Normal,0.039874
-006.png,Normal,0.065865
-007.png,Normal,0.039087
-008.png,Normal,0.055498
-022.png,Normal,0.042966
-...
-```
-
-하지만 숫자를 한 줄씩 보는 것만으로는 **정상 Score가 어느 범위에 많이 모여 있는지** 파악하기 어렵습니다.
-
-그래서 Matplotlib을 이용하여 Score 분포를 그래프로 확인합니다.
-
-```
-CSV의 Score 42개
+53번 코드에서 생성한 CSV
         ↓
-Matplotlib
+Anomaly Score 42개 읽기
         ↓
-Histogram
+Matplotlib으로 Histogram 생성
         ↓
-정상 Score가
-어느 구간에 많이 모이는지 확인
+정상 Score 분포 확인
+        ↓
+다음 실습에서 Threshold 결정에 활용
 ```
 
-## Score 분포 그래프를 만듭니다
+### 그래프 생성 코드를 실행합니다
 
-다음 코드를 실행합니다.
+이번 코드는 **점수 분포를 한 번 확인하기 위한 보조 실습**이므로 별도의 `.py` 파일을 만들지 않고 VS Code 터미널에서 직접 실행합니다.
+
+`python - <<'PY'`는 Python 코드를 별도 파일로 저장하지 않고 실행하는 방식입니다. 이 명령은 Linux, macOS 또는 WSL의 Bash 터미널에서 사용할 수 있습니다.
 
 ```bash
 python - <<'PY'
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
-INPUT_CSV = Path(
+# ① 53번 코드의 결과 CSV 읽기
+df = pd.read_csv(
     "reports/day07_validation_scores.csv"
 )
 
-OUTPUT_PATH = Path(
+# ② Anomaly Score 가져오기
+scores = df["anomaly_score"]
+
+# ③ Histogram 생성
+plt.figure(figsize=(9, 5))
+plt.hist(scores, bins=10, edgecolor="black")
+
+plt.xlabel("Anomaly Score")
+plt.ylabel("Number of Normal Images")
+plt.title("Day07 Normal Validation Score Distribution")
+
+# ④ 그래프 이미지 저장
+output = Path(
     "reports/day07_validation_score_distribution.png"
 )
-
-
-df = pd.read_csv(INPUT_CSV)
-
-scores = df[
-    "anomaly_score"
-]
-
-
-plt.figure(
-    figsize=(9, 5)
-)
-
-plt.hist(
-    scores,
-    bins=10,
-    edgecolor="black",
-)
-
-plt.xlabel(
-    "Anomaly Score"
-)
-
-plt.ylabel(
-    "Number of Normal Images"
-)
-
-plt.title(
-    "Day07 Normal Validation Score Distribution"
-)
+output.parent.mkdir(parents=True, exist_ok=True)
 
 plt.tight_layout()
-
-plt.savefig(
-    OUTPUT_PATH,
-    dpi=150,
-)
-
+plt.savefig(output, dpi=150)
 plt.close()
 
-
-print(
-    "Saved:",
-    OUTPUT_PATH,
-)
+print("Saved:", output)
 PY
 ```
 
-실행이 끝나면 다음 파일이 만들어집니다.
+실행하면 다음 이미지 파일이 생성됩니다.
 
-```
-reports/day07_validation_score_distribution.png
-```
+`reports/day07_validation_score_distribution.png`
 
-VS Code에서 이미지를 열어 확인합니다.
+**Python 코드는 임시로 실행하지만, 생성된 PNG 파일은 저장되므로 이후에도 다시 확인할 수 있습니다.**
 
----
-
-### 그래프 결과를 확인합니다.
+### 3. 실제 그래프 결과를 확인합니다
 
 ![[Pasted image 20260902173016.png]]
 
-생성된 그래프를 보면 정상 Validation 42장의 Anomaly Score가 모두 같은 값이 아니라 여러 구간에 분포하고 있습니다.
+그래프는 다음과 같이 해석합니다.
 
-```
-가장 낮은 Score
-→ 0.035927
+- **가로축(X축):** Anomaly Score — 오른쪽으로 갈수록 정상 기준과 차이가 큽니다.
+    
+- **세로축(Y축):** 해당 점수 구간에 속하는 정상 이미지의 개수입니다.
+    
 
-평균 Score
-→ 약 0.050680
+실제 그래프를 보면 정상 이미지 대부분은 **0.04~0.056 부근**에 모여 있고, 일부 정상 이미지에서는 **0.065~0.071 부근**의 높은 점수도 나타납니다.
 
-가장 높은 Score
-→ 0.070818
-```
+즉, **정상 병이라고 해서 Anomaly Score가 모두 0이거나 같은 값이 되는 것은 아닙니다.**
 
-그래프의 의미는 다음과 같습니다.
+### 다음 실습으로 연결합니다
 
-```
-가로축
-→ Anomaly Score
-→ 오른쪽으로 갈수록 Normal Reference와 더 다름
+이번 그래프를 통해 정상 병에서도 점수 차이가 발생한다는 것을 확인했습니다.
 
-세로축
-→ 해당 Score 구간에 있는 정상 이미지 수
-```
+그렇다면 어느 점수까지 정상으로 인정해야 할까요?
 
-실제 그래프를 보면 많은 정상 이미지가 대략 0.04 ~ 0.056 부근에 모여 있고, 일부 정상 이미지는 0.065 ~ 0.071 정도의 높은 Score도 가지고 있습니다.
+다음 54번 코드에서는 정상 Score 42개를 바탕으로 **90·95·99 Percentile의 Threshold 후보를 비교**합니다. 이후 55번 코드에서는 **95 Percentile을 기본 Threshold로 확정**합니다.
 
-즉 중요한 점은:
-
-> 정상 이미지라고 해서 Anomaly Score가 0이 되는 것은 아니며, 정상 데이터 안에서도 Score의 차이가 존재합니다.
-
-따라서 가장 높은 정상 Score 하나만 보고 기준을 정하는 것이 아니라, 정상 Score 전체의 분포를 보고 어디까지 정상으로 허용할지 결정해야 합니다.
-
-```
-정상 Score 42개
-        ↓
-분포 확인 완료
-        ↓
-어디까지 정상으로 허용할까?
-        ↓
-다음 단계
-90 / 95 / 99 Percentile 비교
-        ↓
-Threshold 후보 결정
-```
-
-현재 단계에서는 아직 Threshold를 확정하거나 Normal / Anomaly 최종 판정을 하지 않습니다. 
-다음 단계에서 Percentile을 이용해 Threshold 후보를 비교합니다.
+> **핵심 정리:** 
+> 이번 27번 단락은 새로운 검사 모델을 만드는 실습이 아니라, 
+> 53번에서 계산한 점수를 그래프로 확인하는 보조 실습입니다. 
+> 정상 Score의 분포를 이해하고 다음 Threshold 결정 단계로 넘어가기 위한 과정입니다.
 
 ---
 
@@ -3496,6 +3853,37 @@ Threshold 후보 3개
 정상 이미지가 몇 장 넘어가는지 비교
 ```
 
+전체 흐름
+
+```
+① 필요한 라이브러리 불러오기
+        ↓
+② 입력 CSV / 결과 CSV 경로 설정
+        ↓
+③ 53번에서 계산한 Score 42개 읽기
+   → day07_validation_scores.csv
+        ↓
+④ np.percentile()로 Threshold 후보 계산
+   ├─ 90 Percentile
+   ├─ 95 Percentile
+   └─ 99 Percentile
+        ↓
+   각 기준값을 초과하는 정상 이미지 수 계산
+        ↓
+⑤ 세 가지 후보를 비교표로 정리
+   → pd.DataFrame()
+        ↓
+⑥ 비교 결과 CSV 저장
+   → day07_threshold_compare.csv
+        ↓
+⑦ 정상 Score 통계 및 비교 결과 출력
+   → 최솟값 / 평균 / 최댓값
+   → Percentile별 Threshold 확인
+
+※ 54번에서는 Threshold 후보만 비교합니다.
+   95 Percentile의 최종 확정은 55번에서 진행합니다.
+```
+
 파일:
 
 ```
@@ -3505,15 +3893,24 @@ src/54_day07_compare_thresholds.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → Path   : 입력 및 출력 파일 경로 관리
+#    → NumPy  : Percentile 계산
+#    → Pandas : CSV 읽기 및 비교표 저장
+# ==================================================
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 파일
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 파일 경로 설정
+#    → INPUT_CSV  : 53번에서 계산한 정상 Score
+#    → OUTPUT_CSV : Threshold 후보 비교 결과
+# ==================================================
 INPUT_CSV = Path(
     "reports/day07_validation_scores.csv"
 )
@@ -3523,28 +3920,57 @@ OUTPUT_CSV = Path(
 )
 
 
-# --------------------------------------------------
-# 2. Validation Score 불러오기
-# --------------------------------------------------
+# ==================================================
+# ③ 정상 Validation Score 불러오기
+#    → 53번에서 저장한 CSV 파일 읽기
+#    → anomaly_score 열의 숫자만 추출
+# ==================================================
+
+# ----------------------------------------------
+# ③-1. CSV 파일 읽기
+# ----------------------------------------------
 df = pd.read_csv(
     INPUT_CSV
 )
 
+# ----------------------------------------------
+# ③-2. Anomaly Score만 NumPy 배열로 변환
+#       → 정상 이미지 42장의 점수
+# ----------------------------------------------
 scores = df[
     "anomaly_score"
 ].to_numpy()
 
 
-# --------------------------------------------------
-# 3. Threshold 후보 계산
-# --------------------------------------------------
+# ==================================================
+# ④ Threshold 후보 계산 및 비교
+#    → 90 / 95 / 99 Percentile 계산
+#    → 기준값보다 점수가 높은 정상 이미지 수 확인
+#
+#    Threshold가 낮을수록
+#    정상 이미지를 이상으로 판단할 가능성이 커짐
+# ==================================================
+
+# 후보별 계산 결과를 저장할 리스트
 candidates = []
 
+
+# ----------------------------------------------
+# ④-1. Percentile 후보를 하나씩 계산
+# ----------------------------------------------
 for percentile in [
     90,
     95,
     99,
 ]:
+
+    # ------------------------------------------
+    # ④-2. Percentile에 해당하는 Threshold 계산
+    #
+    #       90 → 정상 Score의 90백분위수
+    #       95 → 정상 Score의 95백분위수
+    #       99 → 정상 Score의 99백분위수
+    # ------------------------------------------
     threshold = float(
         np.percentile(
             scores,
@@ -3552,7 +3978,12 @@ for percentile in [
         )
     )
 
-    # 해당 Threshold보다 높은 정상 이미지 수
+    # ------------------------------------------
+    # ④-3. Threshold를 초과하는 정상 이미지 수
+    #
+    #       정상 이미지인데 Threshold를 넘으면
+    #       이후 판정 규칙에서는 Anomaly가 됨
+    # ------------------------------------------
     normal_over = int(
         (
             scores
@@ -3560,6 +3991,10 @@ for percentile in [
         ).sum()
     )
 
+    # ------------------------------------------
+    # ④-4. 후보별 계산 결과 기록
+    #       → Percentile / Threshold / 초과 개수
+    # ------------------------------------------
     candidates.append(
         {
             "percentile": percentile,
@@ -3572,22 +4007,32 @@ for percentile in [
     )
 
 
-# --------------------------------------------------
-# 4. 결과를 표 형태로 만들기
-# --------------------------------------------------
+# ==================================================
+# ⑤ Threshold 후보를 비교표로 만들기
+#    → 리스트에 저장된 세 가지 후보를
+#      Pandas DataFrame 형태로 변환
+# ==================================================
 result = pd.DataFrame(
     candidates
 )
 
 
-# --------------------------------------------------
-# 5. CSV 저장
-# --------------------------------------------------
+# ==================================================
+# ⑥ Threshold 비교 결과를 CSV 파일로 저장
+#    → 이후 55번에서 기준값을 선택할 때 활용
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 저장 폴더 생성
+# ----------------------------------------------
 OUTPUT_CSV.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+# ----------------------------------------------
+# ⑥-2. 비교 결과 CSV 저장
+# ----------------------------------------------
 result.to_csv(
     OUTPUT_CSV,
     index=False,
@@ -3595,18 +4040,33 @@ result.to_csv(
 )
 
 
-# --------------------------------------------------
-# 6. 결과 출력
-# --------------------------------------------------
+# ==================================================
+# ⑦ 실행 결과 확인
+#    → 정상 이미지 개수 및 Score 통계 출력
+#    → 90 / 95 / 99 Percentile 비교 결과 출력
+#    → CSV 파일 저장 위치 확인
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. 결과 제목 출력
+# ----------------------------------------------
 print("=" * 70)
 print("Validation Score Summary")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑦-2. 정상 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Count:",
     len(scores),
 )
 
+
+# ----------------------------------------------
+# ⑦-3. 가장 낮은 Anomaly Score 출력
+# ----------------------------------------------
 print(
     "Min  :",
     round(
@@ -3615,6 +4075,10 @@ print(
     ),
 )
 
+
+# ----------------------------------------------
+# ⑦-4. 평균 Anomaly Score 출력
+# ----------------------------------------------
 print(
     "Mean :",
     round(
@@ -3623,6 +4087,10 @@ print(
     ),
 )
 
+
+# ----------------------------------------------
+# ⑦-5. 가장 높은 Anomaly Score 출력
+# ----------------------------------------------
 print(
     "Max  :",
     round(
@@ -3633,6 +4101,10 @@ print(
 
 print()
 
+
+# ----------------------------------------------
+# ⑦-6. Threshold 후보 비교표 출력
+# ----------------------------------------------
 print(
     result.to_string(
         index=False
@@ -3641,10 +4113,73 @@ print(
 
 print()
 
+
+# ----------------------------------------------
+# ⑦-7. 결과 CSV 저장 경로 출력
+# ----------------------------------------------
 print(
     "Saved:",
     OUTPUT_CSV,
 )
+```
+
+## 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - Path를 불러온다.
+   - NumPy를 불러온다.
+   - Pandas를 불러온다.
+
+② 입력 및 출력 경로 설정
+   - 53번에서 생성한 CSV 경로를 지정한다.
+     reports/day07_validation_scores.csv
+
+   - Threshold 비교 결과 저장 경로를 지정한다.
+     reports/day07_threshold_compare.csv
+
+③ 정상 Validation Score 불러오기
+   - Pandas로 CSV 파일을 읽는다.
+   - anomaly_score 열을 선택한다.
+   - 정상 이미지 42장의 Score를 NumPy 배열로 만든다.
+
+④ Threshold 후보 계산
+   - 계산할 Percentile을 설정한다.
+     90 / 95 / 99
+
+   - 각 Percentile에 대해 반복한다.
+
+     [Threshold 계산]
+     - np.percentile()을 실행한다.
+     - 해당 Percentile의 Threshold를 구한다.
+
+     [정상 이미지 초과 개수 계산]
+     - 정상 이미지 42장의 Score를 확인한다.
+     - Threshold보다 높은 Score 개수를 센다.
+
+     [결과 기록]
+     - Percentile을 기록한다.
+     - 계산한 Threshold를 기록한다.
+     - Threshold 초과 정상 이미지 수를 기록한다.
+
+⑤ Threshold 후보 비교표 생성
+   - 후보별 결과 리스트를 가져온다.
+   - pd.DataFrame()으로 표를 만든다.
+
+⑥ 비교 결과 CSV 저장
+   - reports 폴더가 없으면 생성한다.
+   - 비교표를 CSV 파일로 저장한다.
+
+⑦ 실행 결과 확인
+   - 정상 이미지 개수를 출력한다.
+   - Score 최솟값을 출력한다.
+   - Score 평균을 출력한다.
+   - Score 최댓값을 출력한다.
+   - Threshold 후보 비교표를 출력한다.
+   - CSV 파일 저장 경로를 출력한다.
+
+   → 90 / 95 / 99 Percentile 비교 완료
+   → Threshold 최종 확정은 아직 하지 않음
 ```
 
 실행합니다.
@@ -3693,7 +4228,8 @@ reports/day07_threshold_compare.csv
 |90 Percentile|`0.065345`|5장|
 |95 Percentile|`0.067469`|3장|
 |99 Percentile|`0.069548`|1장|
-![[Pasted image 20260902175154.png]]
+
+![[Pasted image 20261031182928.png]]
 
 예를 들어 `90 Percentile`을 기준으로 사용한다고 가정하면:
 
@@ -3737,58 +4273,6 @@ Threshold = 0.065345
 어떤 값을 Baseline으로 사용할지 선택
 ```
 
----
-
-## 의사코드
-
-```
-1. 앞에서 만든
-   day07_validation_scores.csv를 읽는다.
-
-2. CSV에서
-   anomaly_score 42개를 가져온다.
-
-3. 정상 Score의
-   최소값 / 평균값 / 최대값을 확인한다.
-
-4. Score 42개에서
-   90 Percentile 값을 계산한다.
-
-5. 그 값을 Threshold로 했을 때
-   Threshold보다 높은 정상 이미지 수를 센다.
-
-6. 같은 방법으로
-   95 Percentile을 계산한다.
-
-7. 같은 방법으로
-   99 Percentile을 계산한다.
-
-8. 세 Threshold 후보와
-   각 후보를 넘는 정상 이미지 수를 표로 만든다.
-
-9. 결과를
-   day07_threshold_compare.csv에 저장한다.
-
-10. 세 후보를 비교하고
-    다음 단계에서 사용할 Threshold를 선택할 준비를 한다.
-```
-
-핵심 흐름만 보면:
-
-```
-정상 Score 42개
-        ↓
-90 / 95 / 99 Percentile
-        ↓
-0.065345
-0.067469
-0.069548
-        ↓
-각 기준을 넘는 정상 이미지
-5장 / 3장 / 1장
-        ↓
-Threshold 후보 비교
-```
 ---
 
 # 29. 세 후보 중 95 Percentile을 Baseline으로 선택합니다
@@ -3928,6 +4412,24 @@ Rule Freeze
 이후 Test에서는 이 Rule 그대로 사용
 ```
 
+전체 흐름만 보면 더 간단합니다.
+
+```
+Validation Score 42개
+        ↓
+95 Percentile 선택
+        ↓
+Threshold = 0.067469
+        ↓
+판정 Rule 작성
+        ↓
+day07_anomaly_rules.json 저장
+        ↓
+Rule Freeze 완료
+        ↓
+이제 Test로 이동
+```
+
 > 여기서 `Freeze`란 파일을 기술적으로 수정 불가능하게 만든다는 뜻이 아닙니다. **이번 Baseline 평가가 끝날 때까지 기준을 바꾸지 않고 동일하게 사용한다는 의미**입니다.
 
 파일:
@@ -3939,6 +4441,14 @@ src/55_day07_freeze_anomaly_rule.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → json   : 판정 규칙을 JSON 파일로 저장
+#    → Path   : 입력 및 출력 파일 경로 관리
+#    → NumPy  : Percentile을 이용한 Threshold 계산
+#    → Pandas : Validation Score CSV 읽기
+# ==================================================
 import json
 from pathlib import Path
 
@@ -3946,55 +4456,93 @@ import numpy as np
 import pandas as pd
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 파일 경로 설정
+#    → 입력 : 53번에서 계산한 Validation Score
+#    → 출력 : 확정한 Threshold와 판정 규칙
+# ==================================================
+
+# 정상 Validation 이미지 42장의 Score 파일
 VALIDATION_CSV = Path(
     "reports/day07_validation_scores.csv"
 )
 
+# 최종 판정 규칙을 저장할 JSON 파일
 RULE_PATH = Path(
     "configs/day07_anomaly_rules.json"
 )
 
 
-# --------------------------------------------------
-# 2. 오늘 선택한 Threshold 기준
-# --------------------------------------------------
+# ==================================================
+# ③ 사용할 Threshold 기준 선택
+#    → 54번에서 90 / 95 / 99 Percentile 비교
+#    → 이번 Baseline에서는 95 Percentile 선택
+#
+#    주의!
+#    95는 정확도 95%를 의미하지 않습니다.
+#    정상 Score 분포의 95백분위수를 의미합니다.
+# ==================================================
 SELECTED_PERCENTILE = 95
 
 
-# --------------------------------------------------
-# 3. Validation Score 확인
-# --------------------------------------------------
+# ==================================================
+# ④ 정상 Validation Score 불러오기
+#    → CSV 파일 존재 여부 확인
+#    → anomaly_score 컬럼 확인
+#    → 정상 이미지의 Score를 NumPy 배열로 변환
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. Validation Score 파일 확인
+# ----------------------------------------------
 if not VALIDATION_CSV.exists():
     raise FileNotFoundError(
         f"Validation Score 파일을 확인하세요: {VALIDATION_CSV}"
     )
 
 
+# ----------------------------------------------
+# ④-2. CSV 파일 불러오기
+# ----------------------------------------------
 df = pd.read_csv(
     VALIDATION_CSV
 )
 
+
+# ----------------------------------------------
+# ④-3. anomaly_score 컬럼 존재 여부 확인
+# ----------------------------------------------
 if "anomaly_score" not in df.columns:
     raise RuntimeError(
         "anomaly_score 컬럼이 없습니다."
     )
 
+
+# ----------------------------------------------
+# ④-4. Anomaly Score만 NumPy 배열로 변환
+# ----------------------------------------------
 scores = df[
     "anomaly_score"
 ].to_numpy()
 
+
+# ----------------------------------------------
+# ④-5. Score가 비어 있는지 확인
+# ----------------------------------------------
 if len(scores) == 0:
     raise RuntimeError(
         "Validation Score가 없습니다."
     )
 
 
-# --------------------------------------------------
-# 4. 선택한 95 Percentile Threshold 계산
-# --------------------------------------------------
+# ==================================================
+# ⑤ 95 Percentile Threshold 계산
+#    → 정상 이미지 Score의 95백분위수 계산
+#    → 소수점 6자리로 반올림하여 저장
+#
+#    예: 0.067469
+#    실제 값은 Validation CSV에 따라 결정됩니다.
+# ==================================================
 threshold = round(
     float(
         np.percentile(
@@ -4006,32 +4554,76 @@ threshold = round(
 )
 
 
-# --------------------------------------------------
-# 5. Baseline Rule 구성
-# --------------------------------------------------
+# ==================================================
+# ⑥ Baseline 판정 규칙 구성
+#    → 어떤 모델과 정상 기준을 사용하는지 기록
+#    → 선택한 Percentile과 Threshold 기록
+#    → 정상 / 이상 판정 조건 기록
+#
+#    Score <= Threshold → Normal
+#    Score >  Threshold → Anomaly
+# ==================================================
 rules = {
+
+    # Baseline 버전
     "baseline_version": "day07-anomaly-v1.0",
+
+    # 사용 데이터셋
     "dataset": "MVTec AD bottle",
+
+    # 이미지 특징 추출에 사용할 모델
     "backbone": "resnet18_imagenet_pretrained",
+
+    # ResNet18 특징 추출 위치
     "feature_layer": "layer3",
+
+    # 정상 기준 생성 방법
     "reference": "mean_normal_feature",
+
+    # 52번 코드에서 저장한 정상 기준 파일
     "reference_path": "artifacts/day07/normal_reference.npz",
+
+    # ResNet18 입력 이미지 크기
     "image_size": 224,
+
+    # 선택한 Percentile
     "selected_percentile": SELECTED_PERCENTILE,
+
+    # Threshold 계산 방법
     "threshold_method": "normal_validation_95_percentile",
+
+    # 실제 계산된 Threshold 값
     "anomaly_threshold": threshold,
+
+    # 이상 판정 규칙
     "decision_rule": "score > threshold => Anomaly",
 }
 
 
-# --------------------------------------------------
-# 6. Rule JSON 저장
-# --------------------------------------------------
+# ==================================================
+# ⑦ 확정한 Baseline Rule을 JSON 파일로 저장
+#    → 저장 폴더가 없으면 생성
+#    → 판정 기준과 설정 정보를 JSON으로 저장
+#
+#    Rule Freeze란?
+#    → 이후 Test에서 동일한 기준을 사용하도록
+#      현재 선택한 판정 규칙을 파일로 고정하는 것
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. configs 폴더가 없으면 생성
+# ----------------------------------------------
 RULE_PATH.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+
+# ----------------------------------------------
+# ⑦-2. 판정 규칙을 JSON으로 저장
+#       → indent=2 : 읽기 쉽게 들여쓰기
+#       → ensure_ascii=False : 한글 그대로 저장
+# ----------------------------------------------
 RULE_PATH.write_text(
     json.dumps(
         rules,
@@ -4042,37 +4634,137 @@ RULE_PATH.write_text(
 )
 
 
-# --------------------------------------------------
-# 7. 결과 확인
-# --------------------------------------------------
+# ==================================================
+# ⑧ 실행 결과 확인
+#    → Baseline 버전 출력
+#    → 선택한 Percentile 출력
+#    → 확정된 Threshold 출력
+#    → 판정 규칙 및 저장 위치 출력
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. Rule Freeze 완료 메시지
+# ----------------------------------------------
 print("=" * 70)
 print("DAY07 RULE FREEZE")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑧-2. Baseline 버전 출력
+# ----------------------------------------------
 print(
     "Version   :",
     rules["baseline_version"],
 )
 
+
+# ----------------------------------------------
+# ⑧-3. 선택한 Percentile 출력
+# ----------------------------------------------
 print(
     "Percentile:",
     rules["selected_percentile"],
 )
 
+
+# ----------------------------------------------
+# ⑧-4. 확정된 Threshold 출력
+# ----------------------------------------------
 print(
     "Threshold :",
     rules["anomaly_threshold"],
 )
 
+
+# ----------------------------------------------
+# ⑧-5. 이상 판정 규칙 출력
+# ----------------------------------------------
 print(
     "Rule      :",
     rules["decision_rule"],
 )
 
+
+# ----------------------------------------------
+# ⑧-6. JSON 저장 경로 출력
+# ----------------------------------------------
 print(
     "Saved     :",
     RULE_PATH,
 )
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - json을 불러온다.
+   - Path를 불러온다.
+   - NumPy와 Pandas를 불러온다.
+
+② 입력 및 출력 파일 경로 설정
+   - 53번에서 생성한 CSV 파일을 지정한다.
+     reports/day07_validation_scores.csv
+
+   - 최종 판정 규칙을 저장할 경로를 지정한다.
+     configs/day07_anomaly_rules.json
+
+③ Threshold 기준 선택
+   - 54번에서 비교한 후보를 확인한다.
+     · 90 Percentile
+     · 95 Percentile
+     · 99 Percentile
+
+   - 교육용 Baseline 기준으로 95를 선택한다.
+   - SELECTED_PERCENTILE = 95로 설정한다.
+
+④ 정상 Validation Score 불러오기
+   - CSV 파일이 존재하는지 확인한다.
+   - Pandas로 CSV 파일을 읽는다.
+   - anomaly_score 컬럼이 있는지 확인한다.
+   - 정상 이미지 42장의 Score를 가져온다.
+   - Score가 비어 있으면 오류를 발생시킨다.
+
+⑤ 95 Percentile Threshold 계산
+   - np.percentile()을 실행한다.
+   - 정상 Score의 95백분위수를 계산한다.
+   - 소수점 6자리로 반올림한다.
+   - 계산한 Threshold를 변수에 저장한다.
+
+   예시:
+   95 Percentile → Threshold 약 0.067469
+
+⑥ Baseline 판정 규칙 구성
+   - Baseline 버전을 기록한다.
+   - 사용 데이터셋을 기록한다.
+   - 특징 추출 모델 ResNet18을 기록한다.
+   - 특징 추출 Layer를 기록한다.
+   - Normal Reference 파일 경로를 기록한다.
+   - 선택한 Percentile과 Threshold를 기록한다.
+   - 정상 / 이상 판정 규칙을 기록한다.
+
+   [판정 규칙]
+
+   Score ≤ Threshold → Normal
+   Score > Threshold → Anomaly
+
+⑦ Baseline Rule JSON 저장
+   - configs 폴더가 없으면 생성한다.
+   - 규칙 정보를 JSON 형식으로 변환한다.
+   - day07_anomaly_rules.json에 저장한다.
+
+   → Rule Freeze 완료
+   → 이후 Test에서 같은 기준 사용
+
+⑧ 실행 결과 확인
+   - Baseline 버전을 출력한다.
+   - 선택한 Percentile을 출력한다.
+   - 확정한 Threshold를 출력한다.
+   - 이상 판정 규칙을 출력한다.
+   - JSON 저장 경로를 출력한다.
+
+   → Threshold와 판정 규칙 확정 완료
 ```
 
 실행합니다.
@@ -4142,71 +4834,6 @@ Score > 0.067469
 
 으로 고정됩니다.
 
-### 의사코드
-
-```
-1. 앞에서 만든
-   Validation Score CSV의 위치를 지정한다.
-
-2. Rule을 저장할
-   JSON 파일의 위치를 지정한다.
-
-3. 앞에서 선택한
-   95 Percentile을 사용할 값으로 지정한다.
-
-4. Validation Score CSV를 읽는다.
-
-5. anomaly_score 값 42개를 가져온다.
-
-6. 42개의 Score에서
-   95 Percentile 값을 계산한다.
-
-7. 계산 결과를 소수점 6자리로 정리한다.
-
-8. 실제 Threshold인
-   0.067469를 얻는다.
-
-9. ResNet18, layer3,
-   Normal Reference,
-   Threshold 등의 정보를
-   하나의 Rule로 묶는다.
-
-10. 판정 조건도 저장한다.
-
-    Score <= Threshold
-    → Normal
-
-    Score > Threshold
-    → Anomaly
-
-11. 모든 설정을
-    day07_anomaly_rules.json에 저장한다.
-
-12. 저장한 Version과
-    Threshold를 출력한다.
-
-13. 이후 Test에서는
-    이 Rule을 다시 계산하거나 변경하지 않고
-    그대로 사용한다.
-```
-
-전체 흐름만 보면 더 간단합니다.
-
-```
-Validation Score 42개
-        ↓
-95 Percentile 선택
-        ↓
-Threshold = 0.067469
-        ↓
-판정 Rule 작성
-        ↓
-day07_anomaly_rules.json 저장
-        ↓
-Rule Freeze 완료
-        ↓
-이제 Test로 이동
-```
 ---
 
 # 31. 확정한 Rule을 그대로 Test에 적용합니다
@@ -4324,7 +4951,7 @@ day07-anomaly-v1.1
 
 쉽게 이해하면 이 흐름입니다.
 
-![[Pasted image 20260902181938.png]]
+![[Pasted image 20261031183803.png]]
 
 ```
 Validation에서
@@ -4513,6 +5140,31 @@ FP, FN → 잘못 판정
 
 즉 이번 코드는 Test 이미지를 실제로 판정하고 그 결과를 CSV로 남기는 단계입니다.
 
+전체 흐름만 보면 다음과 같습니다.
+
+```
+Test 이미지
+        ↓
+Feature Vector
+        ↓
+Normal Reference와 비교
+        ↓
+Anomaly Score
+        ↓
+Threshold = 0.067469과 비교
+        ↓
+Normal / Anomaly 예측
+        ↓
+실제 정답과 비교
+        ↓
+TP / TN / FP / FN
+        ↓
+CSV 저장
+```
+
+특히 이 단계에서는 **Threshold를 다시 계산하지 않고 `day07_anomaly_rules.json`에 Freeze한 값을 읽어서 사용한다**는 것이 핵심입니다.
+
+
 파일:
 
 ```
@@ -4522,6 +5174,14 @@ src/56_day07_test_anomaly.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#    → csv  : 검사 결과를 CSV로 저장
+#    → json : 55번에서 확정한 판정 규칙 읽기
+#    → Path : 이미지 및 파일 경로 관리
+#    → 공통 함수 : 특징 추출, 정상 기준 비교
+# ==================================================
 import csv
 import json
 from pathlib import Path
@@ -4534,33 +5194,45 @@ from day07_anomaly_core import (
 )
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#    → 정상 Test 이미지와 이상 Test 이미지 사용
+#    → 52번의 정상 기준, 55번의 판정 규칙 사용
+#    → 검사 결과는 CSV 파일로 저장
+# ==================================================
+
+# 정상 Test 이미지 폴더
 TEST_NORMAL_DIR = Path(
     "samples/day07/test/normal"
 )
 
+# 이상 Test 이미지 폴더
 TEST_ANOMALY_DIR = Path(
     "samples/day07/test/anomaly"
 )
 
+# 52번에서 생성한 Normal Reference
 REFERENCE_PATH = Path(
     "artifacts/day07/normal_reference.npz"
 )
 
+# 55번에서 확정한 Threshold와 판정 규칙
 RULE_PATH = Path(
     "configs/day07_anomaly_rules.json"
 )
 
+# Test 이미지별 검사 결과 저장 파일
 OUTPUT_CSV = Path(
     "reports/day07_anomaly_scores.csv"
 )
 
 
-# --------------------------------------------------
-# 2. 필요한 파일 / 폴더 확인
-# --------------------------------------------------
+# ==================================================
+# ③ 검사에 필요한 파일과 폴더 확인
+#    → Test 데이터가 있는지 확인
+#    → 정상 기준과 판정 규칙 파일이 있는지 확인
+#    → 없으면 오류를 발생시켜 검사 중단
+# ==================================================
 required_paths = [
     TEST_NORMAL_DIR,
     TEST_ANOMALY_DIR,
@@ -4569,86 +5241,159 @@ required_paths = [
 ]
 
 for path in required_paths:
+
     if not path.exists():
         raise FileNotFoundError(
             f"필요한 파일 또는 폴더를 확인하세요: {path}"
         )
 
 
-# --------------------------------------------------
-# 3. Freeze한 Rule 불러오기
-# --------------------------------------------------
+# ==================================================
+# ④ 55번에서 확정한 Rule 불러오기
+#    → JSON 파일에서 anomaly_threshold 읽기
+#    → Test 데이터로 Threshold를 다시 계산하지 않음
+#
+#    예: Threshold = 0.067469
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. 저장된 JSON 판정 규칙 읽기
+# ----------------------------------------------
 rules = json.loads(
     RULE_PATH.read_text(
         encoding="utf-8"
     )
 )
 
+# ----------------------------------------------
+# ④-2. 확정된 Threshold 가져오기
+# ----------------------------------------------
 threshold = float(
     rules["anomaly_threshold"]
 )
 
 
-# --------------------------------------------------
-# 4. Normal Reference와 모델 준비
-# --------------------------------------------------
+# ==================================================
+# ⑤ Normal Reference와 ResNet18 준비
+#    → 정상 기준 Feature Vector 불러오기
+#    → 사전학습된 ResNet18 특징 추출기 준비
+#    → 검사 결과를 기록할 빈 리스트 생성
+# ==================================================
+
+# ----------------------------------------------
+# ⑤-1. 정상 기준 Feature Vector 불러오기
+#       → 이번 검사는 이미지 전체 특징 비교
+#       → reference_map은 사용하지 않음
+# ----------------------------------------------
 reference_vector, _ = load_reference(
     REFERENCE_PATH
 )
 
+# ----------------------------------------------
+# ⑤-2. Feature 추출용 ResNet18 준비
+# ----------------------------------------------
 model = create_backbone()
 
+# ----------------------------------------------
+# ⑤-3. 검사 결과를 저장할 리스트 준비
+# ----------------------------------------------
 rows = []
 
 
-# --------------------------------------------------
-# 5. 이미지 한 장을 검사하는 함수
-# --------------------------------------------------
+# ==================================================
+# ⑥ 이미지 한 장을 검사하는 함수 작성
+#    → 병 이미지의 Feature Vector 추출
+#    → 정상 기준과 거리 계산
+#    → Threshold로 정상 / 이상 판정
+#    → 실제 정답과 비교하여 TP/TN/FP/FN 기록
+# ==================================================
 def inspect_image(
     image_path,
     actual,
     defect_type,
 ):
+
+    # ----------------------------------------------
+    # ⑥-1. 검사 이미지의 Feature Vector 추출
+    #       → 공통 함수 extract_features() 사용
+    # ----------------------------------------------
     vector, _ = extract_features(
         model,
         image_path,
     )
 
+    # ----------------------------------------------
+    # ⑥-2. 정상 기준과 유클리드 거리 계산
+    #       → Anomaly Score 생성
+    #
+    #       Score 낮음 : 정상 기준과 비슷함
+    #       Score 높음 : 정상 기준과 많이 다름
+    # ----------------------------------------------
     score = anomaly_score(
         vector,
         reference_vector,
     )
 
+    # ----------------------------------------------
+    # ⑥-3. Threshold와 비교하여 판정
+    #
+    #       Score >  Threshold → Anomaly
+    #       Score <= Threshold → Normal
+    # ----------------------------------------------
     predicted = (
         "Anomaly"
         if score > threshold
         else "Normal"
     )
 
+    # ----------------------------------------------
+    # ⑥-4. 실제 정답과 예측 결과 비교
+    #
+    #       TP : 실제 이상 → 이상으로 판정 (정답)
+    #       TN : 실제 정상 → 정상으로 판정 (정답)
+    #       FP : 실제 정상 → 이상으로 판정 (오탐)
+    #       FN : 실제 이상 → 정상으로 판정 (미검출)
+    #
+    #       여기서는 Anomaly를 Positive로 취급
+    # ----------------------------------------------
 
-    # TP / TN / FP / FN 구분
+    # 실제 이상을 이상으로 정확히 판정
     if (
         actual == "Anomaly"
         and predicted == "Anomaly"
     ):
         error_type = "TP"
 
+    # 실제 정상을 정상으로 정확히 판정
     elif (
         actual == "Normal"
         and predicted == "Normal"
     ):
         error_type = "TN"
 
+    # 정상 병을 이상으로 잘못 판정
     elif (
         actual == "Normal"
         and predicted == "Anomaly"
     ):
         error_type = "FP"
 
+    # 이상 병을 정상으로 잘못 판정
     else:
         error_type = "FN"
 
-
+    # ----------------------------------------------
+    # ⑥-5. 검사 결과를 리스트에 기록
+    #
+    #       file          : 이미지 경로
+    #       actual        : 실제 정답
+    #       defect_type   : 결함 종류
+    #       anomaly_score : 계산된 이상 점수
+    #       threshold     : 확정된 임계값
+    #       predicted     : 모델의 판정 결과
+    #       error_type    : TP / TN / FP / FN
+    #       correct       : 판정 정답 여부
+    # ----------------------------------------------
     rows.append(
         {
             "file": str(image_path),
@@ -4669,12 +5414,16 @@ def inspect_image(
     )
 
 
-# --------------------------------------------------
-# 6. Normal Test 검사
-# --------------------------------------------------
+# ==================================================
+# ⑦ Normal Test 이미지 검사
+#    → test/normal 폴더의 정상 이미지 검사
+#    → 실제 정답은 모두 Normal
+#    → defect_type은 good으로 기록
+# ==================================================
 for image_path in sorted(
     TEST_NORMAL_DIR.glob("*.png")
 ):
+
     inspect_image(
         image_path,
         actual="Normal",
@@ -4682,18 +5431,32 @@ for image_path in sorted(
     )
 
 
-# --------------------------------------------------
-# 7. Anomaly Test 검사
-# --------------------------------------------------
+# ==================================================
+# ⑧ Anomaly Test 이미지 검사
+#    → test/anomaly 아래 결함 종류별 폴더 순회
+#    → broken_large / broken_small / contamination
+#    → 실제 정답은 모두 Anomaly
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. 이상 종류별 폴더 순회
+# ----------------------------------------------
 for defect_dir in sorted(
     TEST_ANOMALY_DIR.iterdir()
 ):
+
+    # 폴더가 아니면 건너뛰기
     if not defect_dir.is_dir():
         continue
 
+    # ------------------------------------------
+    # ⑧-2. 결함 이미지 한 장씩 검사
+    #       → 결함 폴더명을 defect_type으로 기록
+    # ------------------------------------------
     for image_path in sorted(
         defect_dir.glob("*.png")
     ):
+
         inspect_image(
             image_path,
             actual="Anomaly",
@@ -4701,28 +5464,41 @@ for defect_dir in sorted(
         )
 
 
-# --------------------------------------------------
-# 8. 결과 확인
-# --------------------------------------------------
+# ==================================================
+# ⑨ 검사 결과 확인 및 CSV 저장
+#    → 검사 결과가 비어 있는지 확인
+#    → 이미지별 판정 결과를 CSV에 저장
+#    → 이후 57번 성능 평가에서 사용
+# ==================================================
+
+# ----------------------------------------------
+# ⑨-1. 검사 결과 존재 여부 확인
+# ----------------------------------------------
 if not rows:
     raise RuntimeError(
         "검사할 Test 이미지가 없습니다."
     )
 
 
-# --------------------------------------------------
-# 9. CSV 저장
-# --------------------------------------------------
+# ----------------------------------------------
+# ⑨-2. CSV 저장 폴더 생성
+# ----------------------------------------------
 OUTPUT_CSV.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+
+# ----------------------------------------------
+# ⑨-3. 검사 결과 CSV 저장
+# ----------------------------------------------
 with OUTPUT_CSV.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
+
+    # 저장할 CSV 컬럼 지정
     writer = csv.DictWriter(
         file,
         fieldnames=[
@@ -4737,31 +5513,151 @@ with OUTPUT_CSV.open(
         ],
     )
 
+    # CSV 컬럼명 작성
     writer.writeheader()
+
+    # 전체 검사 결과 저장
     writer.writerows(rows)
 
 
-# --------------------------------------------------
-# 10. 결과 출력
-# --------------------------------------------------
+# ==================================================
+# ⑩ 실행 결과 출력
+#    → Test 검사 완료 메시지 출력
+#    → 사용한 Threshold 확인
+#    → 검사한 이미지 개수 확인
+#    → 결과 CSV 저장 경로 확인
+# ==================================================
 print("=" * 70)
 print("DAY07 TEST COMPLETE")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑩-1. 검사에 사용한 Threshold 출력
+# ----------------------------------------------
 print(
     "Threshold:",
     threshold,
 )
 
+
+# ----------------------------------------------
+# ⑩-2. 검사한 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Images   :",
     len(rows),
 )
 
+
+# ----------------------------------------------
+# ⑩-3. 결과 CSV 저장 경로 출력
+# ----------------------------------------------
 print(
     "Saved    :",
     OUTPUT_CSV,
 )
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - csv, json, Path를 불러온다.
+   - day07_anomaly_core에서 다음 함수를 불러온다.
+     · anomaly_score()
+     · create_backbone()
+     · extract_features()
+     · load_reference()
+
+② 입력 및 출력 경로 설정
+   - 정상 Test 이미지 폴더를 지정한다.
+   - 이상 Test 이미지 폴더를 지정한다.
+   - Normal Reference 파일 경로를 지정한다.
+   - 확정된 Rule JSON 파일 경로를 지정한다.
+   - 검사 결과 CSV 저장 경로를 지정한다.
+
+③ 필요한 파일과 폴더 확인
+   - 정상 Test 폴더가 있는지 확인한다.
+   - 이상 Test 폴더가 있는지 확인한다.
+   - Normal Reference 파일이 있는지 확인한다.
+   - Rule JSON 파일이 있는지 확인한다.
+   - 필요한 파일이나 폴더가 없다면 오류를 발생시킨다.
+
+④ 55번에서 확정한 Rule 불러오기
+   - day07_anomaly_rules.json을 읽는다.
+   - anomaly_threshold 값을 가져온다.
+   - 저장된 Threshold를 검사에 사용한다.
+
+   예: Threshold = 0.067469
+
+⑤ Normal Reference와 ResNet18 준비
+   - load_reference()를 실행한다.
+   - 정상 기준 Feature Vector를 가져온다.
+   - create_backbone()으로 ResNet18을 준비한다.
+   - 결과를 기록할 빈 리스트를 만든다.
+
+⑥ 이미지 한 장을 검사하는 함수 작성
+   - inspect_image() 함수를 정의한다.
+
+   [특징 추출]
+   - 검사할 병 이미지 1장을 가져온다.
+   - extract_features()로 Feature Vector를 추출한다.
+
+   [Anomaly Score 계산]
+   - anomaly_score()를 실행한다.
+   - 검사 이미지와 정상 기준의 거리를 계산한다.
+
+   [정상 / 이상 판정]
+   - Score와 Threshold를 비교한다.
+
+     Score <= Threshold → Normal
+     Score >  Threshold → Anomaly
+
+   [실제 정답과 예측 비교]
+   - 실제 정답(actual)을 확인한다.
+   - 예측 결과(predicted)와 비교한다.
+
+     실제 이상 + 예측 이상 → TP
+     실제 정상 + 예측 정상 → TN
+     실제 정상 + 예측 이상 → FP
+     실제 이상 + 예측 정상 → FN
+
+   [결과 기록]
+   - 이미지 이름과 결함 종류를 기록한다.
+   - Anomaly Score와 Threshold를 기록한다.
+   - 예측 결과와 TP/TN/FP/FN을 기록한다.
+   - 정답 여부를 기록한다.
+
+⑦ 정상 Test 이미지 검사
+   - test/normal의 이미지 목록을 읽는다.
+   - 정상 이미지 20장을 하나씩 검사한다.
+   - inspect_image()를 실행한다.
+   - 실제 정답은 Normal로 전달한다.
+
+⑧ 이상 Test 이미지 검사
+   - test/anomaly의 결함 폴더를 확인한다.
+   - broken_large 이미지를 검사한다.
+   - broken_small 이미지를 검사한다.
+   - contamination 이미지를 검사한다.
+   - 실제 정답은 Anomaly로 전달한다.
+   - 결함 폴더 이름도 함께 기록한다.
+
+⑨ 검사 결과를 CSV 파일로 저장
+   - 검사 결과가 존재하는지 확인한다.
+   - reports 폴더가 없으면 생성한다.
+   - 이미지별 검사 결과를 CSV 파일로 저장한다.
+
+   → reports/day07_anomaly_scores.csv
+
+⑩ 실행 결과 확인
+   - 검사 완료 메시지를 출력한다.
+   - 사용한 Threshold를 출력한다.
+   - 검사한 이미지 개수를 출력한다.
+   - CSV 저장 위치를 출력한다.
+
+   → Test 이미지 83장 검사 완료
+   → 다음 57번에서 성능 평가
 ```
 
 실행합니다.
@@ -4791,97 +5687,6 @@ correct
 
 ---
 
-## 의사코드
-
-```
-1. Test Normal 폴더와
-   Test Anomaly 폴더를 지정한다.
-
-2. 앞에서 만든
-   Normal Reference를 준비한다.
-
-3. 앞에서 Freeze한
-   day07_anomaly_rules.json을 읽는다.
-
-4. JSON에서
-   Threshold = 0.067469를 가져온다.
-
-5. ResNet18 Feature Extractor를 준비한다.
-
-
-6. Normal Test 이미지를 한 장씩 읽는다.
-
-7. 이미지에서 Feature Vector를 뽑는다.
-
-8. Normal Reference와 비교하여
-   Anomaly Score를 계산한다.
-
-9. Score와 Threshold를 비교한다.
-
-   Score <= 0.067469
-   → Normal
-
-   Score > 0.067469
-   → Anomaly
-
-
-10. 실제 정답과 예측 결과를 비교한다.
-
-    실제 Anomaly
-    + 예측 Anomaly
-    → TP
-
-    실제 Normal
-    + 예측 Normal
-    → TN
-
-    실제 Normal
-    + 예측 Anomaly
-    → FP
-
-    실제 Anomaly
-    + 예측 Normal
-    → FN
-
-
-11. broken_large,
-    broken_small,
-    contamination 이미지도
-    같은 방법으로 모두 검사한다.
-
-12. 각 이미지의 결과를
-    rows에 기록한다.
-
-13. 전체 결과를
-    day07_anomaly_scores.csv에 저장한다.
-```
-
-전체 흐름만 보면 다음과 같습니다.
-
-```
-Test 이미지
-        ↓
-Feature Vector
-        ↓
-Normal Reference와 비교
-        ↓
-Anomaly Score
-        ↓
-Threshold = 0.067469과 비교
-        ↓
-Normal / Anomaly 예측
-        ↓
-실제 정답과 비교
-        ↓
-TP / TN / FP / FN
-        ↓
-CSV 저장
-```
-
-특히 이 단계에서는 **Threshold를 다시 계산하지 않고 `day07_anomaly_rules.json`에 Freeze한 값을 읽어서 사용한다**는 것이 핵심입니다.
-
----
-
 # 34. Test 결과 CSV를 읽어봅니다
 
 앞에서 Test 이미지 83장을 모두 검사하고 결과를 다음 파일에 저장했습니다.
@@ -4898,7 +5703,7 @@ head reports/day07_anomaly_scores.csv
 
 CSV의 한 행은 이미지 한 장의 검사 결과입니다.
 
-예를 들어:
+![[Pasted image 20261031185848.png]]
 
 ```
 samples/day07/test/normal/000.png,
@@ -5008,86 +5813,90 @@ FN
 
 이번 실제 Test 결과를 세어보면:
 
+| 구분     | 이미지 수   | 검사 결과              |
+| ------ | ------- | ------------------ |
+| TP     | 59장     | 이상을 정확히 검출         |
+| TN     | 18장     | 정상을 정확히 판정         |
+| FP     | 2장      | 정상인데 이상으로 오탐       |
+| FN     | 4장      | 이상인데 정상으로 미검출      |
+| **전체** | **83장** | **정답 77장 / 오답 6장** |
+
 ```
-TN = 18
-→ 정상 18장을 정상으로 맞게 판정
+Test 이미지 83장
+       ↓
+정확히 판정한 이미지 77장
+→ TP 59장 + TN 18장
 
-FP = 2
-→ 정상 2장을 이상으로 잘못 판정
-
-TP = 59
-→ 이상 59장을 이상으로 맞게 판정
-
-FN = 4
-→ 이상 4장을 정상으로 놓침
+잘못 판정한 이미지 6장
+→ FP 2장 + FN 4장
 ```
 
 전체 흐름으로 보면:
 
+![[Pasted image 20261031185617.png]]
+
+### 실제로 어떤 이미지 6장을 잘못 판정했나요?
+
+55번에서 확정한 Threshold는 `0.067469`입니다.
+
+- Score가 Threshold보다 높으면 **Anomaly(이상)**
+    
+- Score가 Threshold 이하이면 **Normal(정상)**
+    
+
+이 기준으로 검사한 결과, 다음 6장을 잘못 판정했습니다.
+
+**FP — 정상인데 이상으로 잘못 판정한 2장**
+
+|이미지|Anomaly Score|판정|
+|---|---|---|
+|good/006.png|0.069471|FP|
+|good/015.png|0.070630|FP|
+
+두 이미지는 실제 정상 병이지만, 점수가 Threshold보다 높아 이상으로 잘못 판정되었습니다.
+
+**FN — 이상인데 정상으로 놓친 4장**
+
+|이미지|Anomaly Score|판정|
+|---|---|---|
+|broken_small/000.png|0.053304|FN|
+|broken_small/007.png|0.064831|FN|
+|broken_small/009.png|0.062532|FN|
+|broken_small/011.png|0.065644|FN|
+
+네 이미지는 실제로 작은 파손이 있지만, 점수가 Threshold 이하이므로 정상으로 잘못 판정되었습니다.
+
+### 결함 종류별 결과는 어떻게 나왔나요?
+
+|이미지 종류|전체|정확한 판정|잘못된 판정|
+|---|---|---|---|
+|good(정상)|20장|18장|2장(FP)|
+|broken_large(큰 파손)|20장|20장|0장|
+|broken_small(작은 파손)|22장|18장|4장(FN)|
+|contamination(오염)|21장|21장|0장|
+|**합계**|**83장**|**77장**|**6장**|
+
+이번 Baseline에서는 **큰 파손과 오염은 모두 검출했지만, 작은 파손 4장을 놓쳤습니다.**
+
+특히 FN은 실제 불량 제품을 정상으로 통과시키는 오류이므로 산업현장 검사에서 중요하게 확인해야 합니다.
+
+### 이번 결과의 핵심 정리
+
+이번 검사 결과는 다음과 같습니다.
+
+```text
+전체 Test 83장
+      ↓
+정답 77장 / 오답 6장
+      ↓
+Accuracy = 92.77%
+      ↓
+FP 2장 → 정상인데 이상으로 오탐
+FN 4장 → 작은 파손을 정상으로 미검출
+      ↓
+다음 단계
+FP / FN 발생 원인 분석
 ```
-Test 83장
-        ↓
-┌─────────────────────┐
-│ 실제 Normal 20장     │
-└─────────────────────┘
-        ↓
-TN 18장
-FP  2장
-
-
-┌─────────────────────┐
-│ 실제 Anomaly 63장    │
-└─────────────────────┘
-        ↓
-TP 59장
-FN  4장
-```
-
-특히 이번 결과에서 눈여겨볼 부분은 `FN`입니다.
-
-```
-broken_small
-000.png
-007.png
-009.png
-011.png
-
-→ 실제로는 Anomaly
-→ 하지만 Normal로 판정
-→ FN 4장
-```
-
-즉 작은 파손 일부를 검사기가 놓쳤습니다.
-
-반면:
-
-```
-broken_large
-20장 모두 TP
-
-contamination
-21장 모두 TP
-```
-
-로 큰 파손과 오염은 이번 Baseline에서 모두 찾아냈습니다.
-
-핵심만 정리하면:
-
-```
-TP 59
-→ 이상을 맞게 잡음
-
-TN 18
-→ 정상을 맞게 통과시킴
-
-FP 2
-→ 정상인데 이상이라고 함
-
-FN 4
-→ 이상인데 정상이라고 놓침
-```
-
-> 이번 Test 결과를 통해 단순히 “잘 된다 / 안 된다”가 아니라, 어떤 종류의 이미지를 잘 찾았고 어떤 종류에서 실패했는지 확인할 수 있습니다.
 
 ---
 
@@ -5128,6 +5937,25 @@ FN 이미지 → outputs/day07/fn
 평가 결과를 Markdown Report로 저장
 ```
 
+핵심만 보면:
+
+```
+Test 결과 CSV
+        ↓
+TP 59 / TN 18
+FP 2 / FN 4
+        ↓
+성능 계산
+        ↓
+Accuracy  = 0.9277
+Precision = 0.9672
+Recall    = 0.9365
+        ↓
+FP / FN 이미지 따로 모으기
+        ↓
+왜 실패했는지 직접 확인
+```
+
 파일:
 
 ```
@@ -5137,83 +5965,144 @@ src/57_day07_evaluate.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → shutil : FP/FN 이미지 복사 및 폴더 초기화
+#    → Path   : 파일과 폴더 경로 관리
+#    → Pandas : Test 결과 분석 및 통계 계산
+# ==================================================
 import shutil
 from pathlib import Path
 
 import pandas as pd
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#    → 입력 : 56번에서 저장한 Test 검사 결과
+#    → 출력 : 성능 평가 Report
+#    → FP/FN 이미지를 저장할 폴더 준비
+# ==================================================
+
+# 56번에서 생성한 Test 결과 CSV
 INPUT_CSV = Path(
     "reports/day07_anomaly_scores.csv"
 )
 
+# 성능 평가 결과를 저장할 Markdown 파일
 REPORT_PATH = Path(
     "reports/day07_test_metrics.md"
 )
 
+# FP: 정상인데 이상으로 잘못 판정한 이미지
 FP_DIR = Path(
     "outputs/day07/fp"
 )
 
+# FN: 이상인데 정상으로 잘못 판정한 이미지
 FN_DIR = Path(
     "outputs/day07/fn"
 )
 
 
-# --------------------------------------------------
-# 2. 0으로 나누는 오류 방지
-# --------------------------------------------------
+# ==================================================
+# ③ 0으로 나누는 오류 방지 함수
+#    → Accuracy / Precision / Recall 계산에 사용
+#    → 분모가 0이면 0.0 반환
+# ==================================================
 def safe_divide(a, b):
+
     return a / b if b else 0.0
 
 
-# --------------------------------------------------
-# 3. Test 결과 CSV 확인
-# --------------------------------------------------
+# ==================================================
+# ④ Test 결과 CSV 불러오기
+#    → 56번에서 검사한 이미지 83장 결과 읽기
+#    → 파일이 없거나 비어 있으면 오류 발생
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. Test 결과 CSV 존재 여부 확인
+# ----------------------------------------------
 if not INPUT_CSV.exists():
     raise FileNotFoundError(
         f"Test 결과 CSV를 확인하세요: {INPUT_CSV}"
     )
 
 
+# ----------------------------------------------
+# ④-2. CSV 파일을 Pandas로 읽기
+# ----------------------------------------------
 df = pd.read_csv(
     INPUT_CSV
 )
 
+
+# ----------------------------------------------
+# ④-3. 검사 결과가 비어 있는지 확인
+# ----------------------------------------------
 if df.empty:
     raise RuntimeError(
         "Test 결과가 없습니다."
     )
 
 
-# --------------------------------------------------
-# 4. TP / TN / FP / FN 개수 계산
-# --------------------------------------------------
+# ==================================================
+# ⑤ TP / TN / FP / FN 개수 계산
+#    → 56번에서 기록한 error_type 컬럼 사용
+#
+#    TP : 이상을 이상으로 정확하게 판정
+#    TN : 정상을 정상으로 정확하게 판정
+#    FP : 정상인데 이상으로 잘못 판정
+#    FN : 이상인데 정상으로 잘못 판정
+# ==================================================
+
+# ----------------------------------------------
+# ⑤-1. error_type별 이미지 개수 계산
+# ----------------------------------------------
 counts = (
     df["error_type"]
     .value_counts()
     .to_dict()
 )
 
+
+# ----------------------------------------------
+# ⑤-2. TP 개수
+# ----------------------------------------------
 tp = int(
     counts.get("TP", 0)
 )
 
+
+# ----------------------------------------------
+# ⑤-3. TN 개수
+# ----------------------------------------------
 tn = int(
     counts.get("TN", 0)
 )
 
+
+# ----------------------------------------------
+# ⑤-4. FP 개수
+# ----------------------------------------------
 fp = int(
     counts.get("FP", 0)
 )
 
+
+# ----------------------------------------------
+# ⑤-5. FN 개수
+# ----------------------------------------------
 fn = int(
     counts.get("FN", 0)
 )
 
+
+# ----------------------------------------------
+# ⑤-6. 전체 검사 이미지 개수
+# ----------------------------------------------
 total = (
     tp
     + tn
@@ -5222,61 +6111,114 @@ total = (
 )
 
 
-# --------------------------------------------------
-# 5. 성능 지표 계산
-# --------------------------------------------------
+# ==================================================
+# ⑥ 성능 평가 지표 계산
+#    → Accuracy  : 전체 이미지 중 맞게 판정한 비율
+#    → Precision : 이상이라고 판정한 것 중 실제 이상 비율
+#    → Recall    : 실제 이상 중 찾아낸 비율
+#
+#    이번 수업에서는 Anomaly를 Positive로 사용
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. Accuracy (정확도)
+#
+#       (TP + TN) / 전체 이미지
+# ----------------------------------------------
 accuracy = safe_divide(
     tp + tn,
     total,
 )
 
+
+# ----------------------------------------------
+# ⑥-2. Precision (정밀도)
+#
+#       TP / (TP + FP)
+# ----------------------------------------------
 precision = safe_divide(
     tp,
     tp + fp,
 )
 
+
+# ----------------------------------------------
+# ⑥-3. Recall (재현율)
+#
+#       TP / (TP + FN)
+# ----------------------------------------------
 recall = safe_divide(
     tp,
     tp + fn,
 )
 
 
-# --------------------------------------------------
-# 6. FP / FN 폴더 준비
-# --------------------------------------------------
+# ==================================================
+# ⑦ FP / FN 이미지 저장 폴더 준비
+#    → 이전 결과 폴더를 초기화
+#    → 이번 Test에서 잘못 판정한 이미지 저장 준비
+#
+#    주의!
+#    기존 fp / fn 폴더는 삭제 후 다시 생성됩니다.
+# ==================================================
 for directory in [
     FP_DIR,
     FN_DIR,
 ]:
+
+    # 이전 검사 결과 폴더가 있으면 삭제
     if directory.exists():
         shutil.rmtree(
             directory
         )
 
+    # FP / FN 폴더 생성
     directory.mkdir(
         parents=True,
         exist_ok=True,
     )
 
 
-# --------------------------------------------------
-# 7. FP / FN 이미지 따로 복사
-# --------------------------------------------------
+# ==================================================
+# ⑧ FP / FN 이미지 별도로 복사
+#    → 잘못 판정한 이미지를 직접 확인하기 위한 작업
+#
+#    FP : 정상인데 이상으로 판정한 이미지
+#    FN : 이상인데 정상으로 판정한 이미지
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. Test 결과 CSV를 한 행씩 확인
+# ----------------------------------------------
 for _, row in df.iterrows():
+
+    # 검사한 원본 이미지 경로
     source = Path(
         row["file"]
     )
 
+    # 이미지 파일이 없다면 건너뛰기
     if not source.exists():
         continue
 
+    # ------------------------------------------
+    # ⑧-2. FP 이미지를 fp 폴더에 복사
+    # ------------------------------------------
     if row["error_type"] == "FP":
+
         shutil.copy2(
             source,
             FP_DIR / source.name,
         )
 
+    # ------------------------------------------
+    # ⑧-3. FN 이미지를 fn 폴더에 복사
+    #
+    #       결함 종류를 파일명 앞에 추가
+    #       예: broken_small_000.png
+    # ------------------------------------------
     elif row["error_type"] == "FN":
+
         defect_type = row[
             "defect_type"
         ]
@@ -5292,9 +6234,15 @@ for _, row in df.iterrows():
         )
 
 
-# --------------------------------------------------
-# 8. 이미지 종류별 정확도
-# --------------------------------------------------
+# ==================================================
+# ⑨ 이미지 종류별 정확도 계산
+#    → good / broken_large / broken_small / contamination
+#    → 각 종류에서 얼마나 정확하게 판정했는지 확인
+#
+#    correct 컬럼:
+#    True  = 판정 성공
+#    False = 판정 실패
+# ==================================================
 per_type = (
     df.groupby(
         "defect_type"
@@ -5304,9 +6252,17 @@ per_type = (
 )
 
 
-# --------------------------------------------------
-# 9. 평가 Report 작성
-# --------------------------------------------------
+# ==================================================
+# ⑩ 성능 평가 Report 작성 및 결과 출력
+#    → Confusion Matrix 작성
+#    → Accuracy / Precision / Recall 기록
+#    → 결함 종류별 정확도 기록
+#    → Markdown 파일로 저장
+# ==================================================
+
+# ----------------------------------------------
+# ⑩-1. 평가 Report 내용 준비
+# ----------------------------------------------
 report_lines = [
     "# Day07 Test Metrics",
     "",
@@ -5330,17 +6286,28 @@ report_lines = [
 ]
 
 
+# ----------------------------------------------
+# ⑩-2. 이미지 종류별 정확도 추가
+# ----------------------------------------------
 for defect_type, value in per_type.items():
+
     report_lines.append(
         f"- {defect_type}: {value:.4f}"
     )
 
 
+# ----------------------------------------------
+# ⑩-3. Report 저장 폴더 생성
+# ----------------------------------------------
 REPORT_PATH.parent.mkdir(
     parents=True,
     exist_ok=True,
 )
 
+
+# ----------------------------------------------
+# ⑩-4. Markdown Report 파일 저장
+# ----------------------------------------------
 REPORT_PATH.write_text(
     "\n".join(
         report_lines
@@ -5349,9 +6316,9 @@ REPORT_PATH.write_text(
 )
 
 
-# --------------------------------------------------
-# 10. 결과 출력
-# --------------------------------------------------
+# ----------------------------------------------
+# ⑩-5. 성능 평가 결과 출력
+# ----------------------------------------------
 print("=" * 70)
 print("DAY07 TEST EVALUATION")
 print("=" * 70)
@@ -5407,16 +6374,117 @@ print(
 
 print()
 
+# 이미지 종류별 정확도 출력
 print(
     per_type
 )
 
 print()
 
+# 평가 Report 저장 위치 출력
 print(
     "Report:",
     REPORT_PATH,
 )
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - shutil을 불러온다.
+   - Path를 불러온다.
+   - Pandas를 불러온다.
+
+② 입력 및 출력 경로 설정
+   - 56번에서 생성한 Test 결과 CSV를 지정한다.
+     reports/day07_anomaly_scores.csv
+
+   - 평가 Report 저장 경로를 지정한다.
+     reports/day07_test_metrics.md
+
+   - FP 이미지 저장 폴더를 지정한다.
+     outputs/day07/fp
+
+   - FN 이미지 저장 폴더를 지정한다.
+     outputs/day07/fn
+
+③ 0으로 나누는 오류 방지
+   - safe_divide() 함수를 정의한다.
+   - 분모가 0이면 0.0을 반환한다.
+   - 그렇지 않으면 나눗셈 결과를 반환한다.
+
+④ Test 결과 CSV 불러오기
+   - Test 결과 파일이 있는지 확인한다.
+   - Pandas로 CSV를 읽는다.
+   - 검사 결과가 비어 있으면 오류를 발생시킨다.
+
+⑤ TP / TN / FP / FN 개수 계산
+   - error_type 컬럼을 확인한다.
+   - TP 개수를 센다.
+   - TN 개수를 센다.
+   - FP 개수를 센다.
+   - FN 개수를 센다.
+   - 전체 이미지 개수를 계산한다.
+
+⑥ 성능 지표 계산
+   - Accuracy를 계산한다.
+     → 전체 이미지 중 맞게 판정한 비율
+
+   - Precision을 계산한다.
+     → 이상이라고 판정한 이미지 중
+       실제 이상인 비율
+
+   - Recall을 계산한다.
+     → 실제 이상 이미지 중
+       이상으로 찾아낸 비율
+
+⑦ FP / FN 저장 폴더 준비
+   - 기존 fp 폴더가 있으면 삭제한다.
+   - 기존 fn 폴더가 있으면 삭제한다.
+   - fp 폴더를 새로 생성한다.
+   - fn 폴더를 새로 생성한다.
+
+⑧ FP / FN 이미지 별도로 복사
+   - Test 결과를 한 행씩 확인한다.
+   - 이미지 경로를 가져온다.
+
+   [FP인 경우]
+   - 정상인데 이상으로 판정한 이미지이다.
+   - outputs/day07/fp 폴더에 복사한다.
+
+   [FN인 경우]
+   - 이상인데 정상으로 판정한 이미지이다.
+   - 결함 종류를 파일명 앞에 추가한다.
+   - outputs/day07/fn 폴더에 복사한다.
+
+   → 잘못 판정한 이미지만 따로 확인할 수 있다.
+
+⑨ 이미지 종류별 정확도 계산
+   - defect_type을 기준으로 그룹을 나눈다.
+   - good의 정확도를 계산한다.
+   - broken_large의 정확도를 계산한다.
+   - broken_small의 정확도를 계산한다.
+   - contamination의 정확도를 계산한다.
+
+   → 어느 결함 종류에서 실패했는지 확인한다.
+
+⑩ 평가 Report 작성 및 결과 출력
+   - Confusion Matrix를 작성한다.
+   - Accuracy를 기록한다.
+   - Precision을 기록한다.
+   - Recall을 기록한다.
+   - FP / FN 개수를 기록한다.
+   - 결함 종류별 정확도를 기록한다.
+
+   - day07_test_metrics.md로 저장한다.
+
+   - 전체 이미지 수를 출력한다.
+   - TP / TN / FP / FN 개수를 출력한다.
+   - 성능 지표를 출력한다.
+   - Report 저장 위치를 출력한다.
+
+   → 7일차 Baseline 성능 평가 완료
 ```
 
 실행합니다.
@@ -5468,180 +6536,87 @@ FN = 4장
 
 ---
 
-## 의사코드
+# 37. 실패한 이미지에서 무엇을 확인해야 할까요?
 
-```
-1. 앞에서 만든
-   day07_anomaly_scores.csv를 읽는다.
+앞에서 57번 코드를 실행하여 검사기가 잘못 판정한 이미지를 별도 폴더에 저장했습니다.
 
-2. 각 이미지의 error_type을 확인한다.
+이제 단순히 몇 장을 틀렸는지 확인하는 것이 아니라, **왜 잘못 판정했는지 원인을 찾아보겠습니다.**
 
-3. TP가 몇 개인지 센다.
+이미지를 확인할 때는 다음 두 가지에 집중합니다.
 
-4. TN이 몇 개인지 센다.
+|구분|확인할 내용|
+|---|---|
+|FP(오탐)|정상 병의 밝기, 위치, 표면 모양 등이 다른 정상 이미지와 차이가 있는가?|
+|FN(미검출)|작은 파손이 너무 작거나 눈에 잘 띄지 않아 특징 변화가 약하게 나타났는가?|
 
-5. FP가 몇 개인지 센다.
+여기서 주의할 점은 **이러한 원인이 실제로 확인된 것은 아니라는 점**입니다. 이미지를 직접 비교하면서 가능한 원인을 찾아보는 것입니다.
 
-6. FN이 몇 개인지 센다.
+또한 Test 결과를 확인했다고 해서 기존 Threshold를 바로 변경하지 않습니다.
 
-
-7. TP / TN / FP / FN을 이용하여
-   Accuracy를 계산한다.
-
-   전체 이미지 중
-   얼마나 많이 맞혔는가?
-
-
-8. Precision을 계산한다.
-
-   Anomaly라고 판정한 것 중
-   실제 Anomaly가 얼마나 되는가?
-
-
-9. Recall을 계산한다.
-
-   실제 Anomaly 중
-   얼마나 많이 찾아냈는가?
-
-
-10. FP 이미지를 찾는다.
-
-    실제 Normal
-    → 예측 Anomaly
-
-    해당 이미지를
-    outputs/day07/fp에 복사한다.
-
-
-11. FN 이미지를 찾는다.
-
-    실제 Anomaly
-    → 예측 Normal
-
-    해당 이미지를
-    outputs/day07/fn에 복사한다.
-
-
-12. good / broken_large /
-    broken_small / contamination별
-    정확도를 계산한다.
-
-
-13. 전체 평가 결과를
-
-    reports/day07_test_metrics.md
-
-    파일에 저장한다.
-```
-
-핵심만 보면:
-
-```
-Test 결과 CSV
-        ↓
-TP 59 / TN 18
-FP 2 / FN 4
-        ↓
-성능 계산
-        ↓
-Accuracy  = 0.9277
-Precision = 0.9672
-Recall    = 0.9365
-        ↓
-FP / FN 이미지 따로 모으기
-        ↓
-왜 실패했는지 직접 확인
-```
+> **이번 단계의 목표:** 검사기가 잘못 판정한 이미지에서 어떤 특징을 확인해야 하는지 이해하고, 이후 Heatmap 분석에 활용할 질문을 정하는 것입니다.
 
 ---
 
-# 37. 성능 숫자보다 실패한 이미지를 함께 확인합니다
+# 38. FP / FN 이미지를 직접 열어 확인합니다
 
-이번 Baseline의 결과는 다음과 같습니다.
-
-```
-TP = 59
-TN = 18
-FP = 2
-FN = 4
-```
-
-전체적으로는 많은 이미지를 맞게 판정했지만 완벽하지는 않습니다.
-
-특히 실제 결과를 보면:
+57번 코드에서는 잘못 판정한 이미지를 다음 두 폴더에 자동으로 복사했습니다.
 
 ```
-Normal 일부
-→ Score가 Threshold보다 높음
-→ FP 2장
-
-broken_small 일부
-→ Score가 Threshold보다 낮음
-→ FN 4장
+outputs/day07/
+├── fp/    ← 정상인데 이상으로 판정한 이미지
+└── fn/    ← 이상인데 정상으로 놓친 이미지
 ```
 
-이 발생했습니다.
+### FP 이미지 확인
 
-따라서 이제 중요한 질문은:
-
-```
-왜 정상 이미지가 Anomaly로 판정되었을까?
-
-왜 작은 파손은 Normal로 판정되었을까?
-```
-
-입니다.
-
-Threshold를 바로 변경하기 전에 실패한 이미지를 직접 확인하고 원인을 분석합니다.
-
----
-
-# 38. FP / FN 이미지를 직접 확인합니다
-
-평가 프로그램은 잘못 판정한 이미지를 자동으로 따로 모았습니다.
-
-FP 이미지를 확인합니다.
+터미널에서 다음 명령을 실행합니다.
 
 ```bash
-find outputs/day07/fp -maxdepth 1 -type f
+find outputs/day07/fp -maxdepth 1 -type f | sort
 ```
 
-이번 결과에서는 **정상 이미지 2장**이 들어 있어야 합니다.
+실제 결과에서는 다음 이미지 2장이 있어야 합니다.
 
 ```
-FP
-→ 실제 Normal
-→ 검사 결과 Anomaly
-→ 2장
+outputs/day07/fp/006.png
+outputs/day07/fp/015.png
 ```
 
-FN 이미지를 확인합니다.
+VS Code에서 해당 이미지를 열어 정상 병의 위치나 밝기, 병 입구 형태가 다른 정상 이미지와 차이가 있는지 관찰합니다.
+
+### FN 이미지 확인
+
+이번에는 다음 명령을 실행합니다.
 
 ```bash
-find outputs/day07/fn -maxdepth 1 -type f
+find outputs/day07/fn -maxdepth 1 -type f | sort
 ```
 
-이번 결과에서는 `broken_small` 이미지 **4장**이 들어 있어야 합니다.
+실제 결과에서는 다음 이미지 4장이 있어야 합니다.
 
 ```
-FN
-→ 실제 Anomaly
-→ 검사 결과 Normal
-→ 4장
+outputs/day07/fn/broken_small_000.png
+outputs/day07/fn/broken_small_007.png
+outputs/day07/fn/broken_small_009.png
+outputs/day07/fn/broken_small_011.png
 ```
 
-이제 이 이미지들을 직접 보면서:
+이 이미지들을 열어 작은 파손이 어디에 있는지, 육안으로도 쉽게 구별되는지 확인합니다.
 
-```
-FP 2장
-→ 정상인데 왜 Score가 높았는가?
+### 관찰한 내용을 간단히 기록합니다
 
-FN 4장
-→ 작은 파손인데 왜 Score가 낮았는가?
-```
+이미지를 보면서 다음 질문에 답해 봅니다.
 
-를 분석합니다.
+- **FP:** 정상 이미지인데 다른 정상 병과 눈에 띄게 다른 부분이 있었나요?
+    
+- **FN:** 작은 파손이 어느 위치에 있으며, 결함이 잘 보이나요?
+    
+- **공통:** 이미지 전체만 보고 잘못 판정한 원인을 확실하게 알 수 있나요?
+    
 
+육안으로 원인이 명확하게 보이지 않아도 괜찮습니다. 이미지의 어떤 부분을 추가로 살펴봐야 하는지 확인하는 것이 이번 실습의 목적입니다.
+
+> **다음 실습 연결:** 지금까지는 실패한 원본 이미지를 직접 확인했습니다. 다음 39번부터는 **Heatmap을 이용하여 검사기가 이미지의 어느 위치에서 정상과 다른 특징을 발견했는지** 확인해 보겠습니다.
 ---
 
 # PART6 — Heatmap으로 검사기가 어느 위치에 반응했는지 확인합니다 (39~45)
@@ -5963,6 +6938,26 @@ outputs/day07/heatmap/
 
 > 즉 이번 코드는 Heatmap을 보기 위한 준비만 하는 코드가 아니라, 실제 Heatmap 이미지를 생성하고 저장하는 코드입니다.
 
+전체 흐름만 보면:
+
+```
+Test 이미지
+        ↓
+Feature Map
+        ↓
+Normal Reference Map과 비교
+        ↓
+위치별 차이 계산
+        ↓
+Heatmap
+        ↓
+Overlay
+
+Anomaly 이미지
+        ↓
+Ground Truth Mask도 함께 확인
+```
+
 
 파일:
 
@@ -5973,6 +6968,14 @@ src/58_day07_make_heatmaps.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#    → shutil : 이전 Heatmap 결과 폴더 초기화
+#    → Path   : 이미지 및 파일 경로 관리
+#    → OpenCV : Heatmap / Overlay / Mask 저장
+#    → 공통 함수 : ResNet18 특징 추출 및 시각화
+# ==================================================
 import shutil
 from pathlib import Path
 
@@ -5987,33 +6990,47 @@ from day07_anomaly_core import (
 )
 
 
-# --------------------------------------------------
-# 1. 입력 / 출력 경로
-# --------------------------------------------------
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#    → 52번에서 만든 Normal Reference 사용
+#    → 정상 / 이상 Test 이미지 사용
+#    → 실제 결함 위치인 Ground Truth Mask 사용
+#    → 결과는 outputs/day07/heatmap에 저장
+# ==================================================
+
+# 정상 기준 Vector / Map이 저장된 파일
 REFERENCE_PATH = Path(
     "artifacts/day07/normal_reference.npz"
 )
 
+# 정상 Test 이미지 폴더
 TEST_NORMAL_DIR = Path(
     "samples/day07/test/normal"
 )
 
+# 이상 Test 이미지 폴더
 TEST_ANOMALY_DIR = Path(
     "samples/day07/test/anomaly"
 )
 
+# 실제 결함 위치가 표시된 Mask 폴더
 GROUND_TRUTH_DIR = Path(
     "samples/day07/ground_truth"
 )
 
+# Heatmap과 Overlay를 저장할 폴더
 OUTPUT_DIR = Path(
     "outputs/day07/heatmap"
 )
 
 
-# --------------------------------------------------
-# 2. 필요한 파일 / 폴더 확인
-# --------------------------------------------------
+# ==================================================
+# ③ 필요한 파일과 폴더 확인
+#    → Normal Reference가 있는지 확인
+#    → 정상 / 이상 Test 폴더가 있는지 확인
+#    → Ground Truth Mask 폴더가 있는지 확인
+#    → 필요한 경로가 없으면 오류 발생
+# ==================================================
 required_paths = [
     REFERENCE_PATH,
     TEST_NORMAL_DIR,
@@ -6022,52 +7039,86 @@ required_paths = [
 ]
 
 for path in required_paths:
+
     if not path.exists():
         raise FileNotFoundError(
             f"필요한 파일 또는 폴더를 확인하세요: {path}"
         )
 
 
-# --------------------------------------------------
-# 3. 이전 Heatmap 결과 초기화
-# --------------------------------------------------
+# ==================================================
+# ④ 이전 Heatmap 결과 폴더 초기화
+#    → 이전 실행 결과를 삭제
+#    → 새로운 Heatmap 저장 폴더 생성
+#
+#    주의!
+#    outputs/day07/heatmap 폴더만 초기화합니다.
+#    원본 Test 데이터는 삭제하지 않습니다.
+# ==================================================
+
+# 기존 Heatmap 결과가 있으면 삭제
 if OUTPUT_DIR.exists():
     shutil.rmtree(
         OUTPUT_DIR
     )
 
+# 결과 저장 폴더 다시 생성
 OUTPUT_DIR.mkdir(
     parents=True,
     exist_ok=True,
 )
 
 
-# --------------------------------------------------
-# 4. Normal Reference Map 불러오기
-# --------------------------------------------------
+# ==================================================
+# ⑤ Normal Reference Map 불러오기
+#    → 52번 코드에서 저장한 정상 기준 사용
+#    → 이번에는 위치별 비교용 reference_map 사용
+#    → reference_vector는 사용하지 않음
+# ==================================================
 _, reference_map = load_reference(
     REFERENCE_PATH
 )
 
 
-# --------------------------------------------------
-# 5. Feature 추출용 ResNet18 준비
-# --------------------------------------------------
+# ==================================================
+# ⑥ Feature 추출용 ResNet18 준비
+#    → 공통 함수 create_backbone() 사용
+#    → 사전학습된 ResNet18의 layer3까지 활용
+#    → 모델을 새로 학습하지 않고 특징만 추출
+# ==================================================
 model = create_backbone()
 
 
-# --------------------------------------------------
-# 6. 시각화할 대표 이미지 선택
-# --------------------------------------------------
+# ==================================================
+# ⑦ Heatmap을 만들 대표 Test 이미지 선택
+#    → 정상 이미지 2장
+#    → 큰 파손 이미지 2장
+#    → 작은 파손 이미지 2장
+#    → 오염 이미지 2장
+#
+#    전체 8장의 대표 이미지를 선택합니다.
+# ==================================================
+
+# 선택한 이미지 정보를 저장할 리스트
 samples = []
 
+
+# ----------------------------------------------
+# ⑦-1. 정상 Test 이미지 목록 가져오기
+# ----------------------------------------------
 normal_files = sorted(
     TEST_NORMAL_DIR.glob(
         "*.png"
     )
 )
 
+
+# ----------------------------------------------
+# ⑦-2. 정상 이미지 앞에서 2장 선택
+#       → defect_type = good
+# ----------------------------------------------
 for path in normal_files[:2]:
+
     samples.append(
         (
             "good",
@@ -6076,11 +7127,19 @@ for path in normal_files[:2]:
     )
 
 
+# ----------------------------------------------
+# ⑦-3. 이상 이미지 종류별로 2장씩 선택
+#       → broken_large
+#       → broken_small
+#       → contamination
+# ----------------------------------------------
 for defect_name in [
     "broken_large",
     "broken_small",
     "contamination",
 ]:
+
+    # 현재 결함 종류의 이미지 목록
     defect_files = sorted(
         (
             TEST_ANOMALY_DIR
@@ -6088,7 +7147,9 @@ for defect_name in [
         ).glob("*.png")
     )
 
+    # 앞에서 2장씩 선택
     for path in defect_files[:2]:
+
         samples.append(
             (
                 defect_name,
@@ -6097,30 +7158,53 @@ for defect_name in [
         )
 
 
+# ----------------------------------------------
+# ⑦-4. 선택한 이미지가 없으면 오류 발생
+# ----------------------------------------------
 if not samples:
     raise RuntimeError(
         "Heatmap을 만들 Test 이미지가 없습니다."
     )
 
 
-# --------------------------------------------------
-# 7. 이미지별 Heatmap 생성
-# --------------------------------------------------
+# ==================================================
+# ⑧ 이미지별 Heatmap 및 Overlay 생성
+#    → Test 이미지에서 Feature Map 추출
+#    → 정상 기준 Map과 위치별 차이 계산
+#    → 차이를 Heatmap으로 표현
+#    → 원본 이미지와 Heatmap을 합성
+# ==================================================
 for defect_type, image_path in samples:
 
-    # Test 이미지의 Feature Map 추출
+    # ----------------------------------------------
+    # ⑧-1. 검사 이미지의 Feature Map 추출
+    #       → extract_features() 사용
+    #       → 이미지 전체 Vector는 이번에 사용 안 함
+    # ----------------------------------------------
     _, spatial_map = extract_features(
         model,
         image_path,
     )
 
-    # Normal Reference Map과 위치별 차이 계산
+    # ----------------------------------------------
+    # ⑧-2. 정상 기준과 위치별 차이 계산
+    #       → anomaly_map() 사용
+    #
+    #       차이가 작은 위치 : Score가 낮음
+    #       차이가 큰 위치   : Score가 높음
+    # ----------------------------------------------
     score_map = anomaly_map(
         spatial_map,
         reference_map,
     )
 
-    # Heatmap + Overlay 생성
+    # ----------------------------------------------
+    # ⑧-3. Heatmap과 Overlay 생성
+    #       → make_heatmap_overlay() 사용
+    #
+    #       heatmap_color : 위치별 차이를 색으로 표시
+    #       overlay       : 원본 + Heatmap 합성
+    # ----------------------------------------------
     (
         _,
         heatmap_color,
@@ -6130,14 +7214,21 @@ for defect_type, image_path in samples:
         score_map,
     )
 
-
+    # ----------------------------------------------
+    # ⑧-4. 저장할 파일 이름 만들기
+    #
+    #       예: broken_small_000
+    # ----------------------------------------------
     stem = (
         f"{defect_type}_"
         f"{image_path.stem}"
     )
 
-
-    # Heatmap 저장
+    # ----------------------------------------------
+    # ⑧-5. Heatmap 이미지 저장
+    #
+    #       예: broken_small_000_heatmap.jpg
+    # ----------------------------------------------
     cv2.imwrite(
         str(
             OUTPUT_DIR
@@ -6146,8 +7237,11 @@ for defect_type, image_path in samples:
         heatmap_color,
     )
 
-
-    # 원본 + Heatmap Overlay 저장
+    # ----------------------------------------------
+    # ⑧-6. 원본 + Heatmap Overlay 저장
+    #
+    #       예: broken_small_000_overlay.jpg
+    # ----------------------------------------------
     cv2.imwrite(
         str(
             OUTPUT_DIR
@@ -6157,24 +7251,45 @@ for defect_type, image_path in samples:
     )
 
 
-    # --------------------------------------------------
-    # 8. Anomaly라면 Ground Truth Mask도 저장
-    # --------------------------------------------------
+    # ==================================================
+    # ⑨ 이상 이미지의 Ground Truth Mask 복사
+    #    → 실제 결함 위치가 표시된 정답 이미지
+    #    → Heatmap의 강조 위치와 비교하기 위해 저장
+    #
+    #    정상 이미지(good)는 Mask를 저장하지 않음
+    # ==================================================
     if defect_type != "good":
 
+        # ------------------------------------------
+        # ⑨-1. 해당 이미지의 Ground Truth 경로
+        #
+        #       예: broken_small/000_mask.png
+        # ------------------------------------------
         mask_path = (
             GROUND_TRUTH_DIR
             / defect_type
             / f"{image_path.stem}_mask.png"
         )
 
+        # ------------------------------------------
+        # ⑨-2. Mask 파일이 있는지 확인
+        # ------------------------------------------
         if mask_path.exists():
 
+            # --------------------------------------
+            # ⑨-3. Ground Truth Mask 읽기
+            #       → 흑백 이미지로 읽음
+            # --------------------------------------
             mask = cv2.imread(
                 str(mask_path),
                 cv2.IMREAD_GRAYSCALE,
             )
 
+            # --------------------------------------
+            # ⑨-4. Ground Truth Mask 저장
+            #
+            #       예: broken_small_000_gt_mask.png
+            # --------------------------------------
             cv2.imwrite(
                 str(
                     OUTPUT_DIR
@@ -6183,27 +7298,138 @@ for defect_type, image_path in samples:
                 mask,
             )
 
-
+    # ----------------------------------------------
+    # ⑨-5. 현재 이미지 저장 완료 메시지 출력
+    # ----------------------------------------------
     print(
         "Saved:",
         stem,
     )
 
 
+# ==================================================
+# ⑩ Heatmap 생성 결과 확인
+#    → 처리한 대표 이미지 개수 출력
+#    → 저장된 결과 폴더 확인
+# ==================================================
 print("=" * 70)
 print("DAY07 HEATMAP COMPLETE")
 print("=" * 70)
 
+# ----------------------------------------------
+# ⑩-1. 시각화한 이미지 개수 출력
+# ----------------------------------------------
 print(
     "Samples:",
     len(samples),
 )
 
+# ----------------------------------------------
+# ⑩-2. 결과 저장 경로 출력
+# ----------------------------------------------
 print(
     "Saved  :",
     OUTPUT_DIR,
 )
 ```
+
+## 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - shutil과 Path를 불러온다.
+   - OpenCV를 불러온다.
+   - day07_anomaly_core에서 다음 함수를 불러온다.
+
+     · anomaly_map()
+     · create_backbone()
+     · extract_features()
+     · load_reference()
+     · make_heatmap_overlay()
+
+② 입력 및 출력 경로 설정
+   - 저장된 Normal Reference 경로를 지정한다.
+   - 정상 Test 이미지 폴더를 지정한다.
+   - 이상 Test 이미지 폴더를 지정한다.
+   - Ground Truth Mask 폴더를 지정한다.
+   - Heatmap 결과를 저장할 폴더를 지정한다.
+
+③ 필요한 파일과 폴더 확인
+   - Normal Reference 파일이 있는지 확인한다.
+   - 정상 Test 폴더가 있는지 확인한다.
+   - 이상 Test 폴더가 있는지 확인한다.
+   - Ground Truth 폴더가 있는지 확인한다.
+   - 필요한 경로가 없다면 오류를 발생시킨다.
+
+④ 이전 Heatmap 결과 초기화
+   - 기존 Heatmap 결과 폴더가 있으면 삭제한다.
+   - 새로운 Heatmap 결과 폴더를 생성한다.
+   - 원본 Test 이미지는 그대로 보존한다.
+
+⑤ Normal Reference Map 불러오기
+   - load_reference()를 실행한다.
+   - reference_map을 가져온다.
+   - reference_vector는 이번에 사용하지 않는다.
+
+   → 위치별 비교에 사용할 정상 기준 준비
+
+⑥ Feature 추출용 ResNet18 준비
+   - create_backbone()을 실행한다.
+   - 사전학습된 ResNet18을 준비한다.
+   - 모델을 새로 학습하지 않는다.
+
+⑦ 대표 Test 이미지 선택
+   - 결과를 저장할 samples 리스트를 만든다.
+   - 정상 Test 이미지 2장을 선택한다.
+   - broken_large 이미지 2장을 선택한다.
+   - broken_small 이미지 2장을 선택한다.
+   - contamination 이미지 2장을 선택한다.
+   - 선택한 이미지가 없다면 오류를 발생시킨다.
+
+   → 총 8장의 대표 이미지 준비
+
+⑧ 이미지별 Heatmap 생성
+   - 선택한 이미지를 한 장씩 가져온다.
+
+   [Feature Map 추출]
+   - extract_features()를 실행한다.
+   - 검사 이미지의 spatial_map을 가져온다.
+
+   [위치별 차이 계산]
+   - anomaly_map()을 실행한다.
+   - spatial_map과 reference_map을 비교한다.
+   - 각 위치의 차이값을 score_map으로 만든다.
+
+   [Heatmap 생성]
+   - make_heatmap_overlay()를 실행한다.
+   - 차이값을 색상으로 표시한 Heatmap을 만든다.
+   - 원본 이미지와 Heatmap을 합성한다.
+
+   [결과 저장]
+   - 이미지별 파일 이름을 만든다.
+   - Heatmap 이미지를 JPG로 저장한다.
+   - Overlay 이미지를 JPG로 저장한다.
+
+⑨ Ground Truth Mask 확인 및 저장
+   - 현재 이미지가 정상(good)인지 확인한다.
+   - 정상이라면 Mask 저장을 건너뛴다.
+
+   - 이상 이미지라면 해당 Mask 경로를 만든다.
+   - Mask 파일이 있으면 흑백 이미지로 읽는다.
+   - Ground Truth Mask를 PNG로 저장한다.
+
+   → 실제 결함 위치와 Heatmap을 비교할 준비
+
+   - 현재 이미지 저장 완료 메시지를 출력한다.
+
+⑩ 실행 결과 확인
+   - DAY07 HEATMAP COMPLETE를 출력한다.
+   - 시각화한 이미지 개수를 출력한다.
+   - 결과 저장 폴더 경로를 출력한다.
+
+   → 대표 Test 이미지의 Heatmap 생성 완료
+```
+
 
 실행합니다.
 
@@ -6230,11 +7456,11 @@ Feature Map 추출
 
 ```
 필요한 파일 확인
-+
+   +
 이전 Heatmap 결과 삭제
-+
+   +
 대표 이미지가 없는 경우 확인
-+
+   +
 실행 결과 출력
 ```
 
@@ -6323,80 +7549,6 @@ GT Mask
 
 ---
 
-## 의사코드
-
-```
-1. Normal Reference 파일의 위치를 지정한다.
-
-2. Normal Test,
-   Anomaly Test,
-   Ground Truth 폴더의 위치를 지정한다.
-
-3. 필요한 파일과 폴더가 존재하는지 확인한다.
-
-4. 이전에 만든 Heatmap 결과가 있으면 삭제한다.
-
-5. normal_reference.npz에서
-   reference_map을 불러온다.
-
-6. ResNet18 Feature Extractor를 준비한다.
-
-7. Normal Test에서 대표 이미지 2장을 선택한다.
-
-8. broken_large에서 2장을 선택한다.
-
-9. broken_small에서 2장을 선택한다.
-
-10. contamination에서 2장을 선택한다.
-
-11. 선택한 이미지에서
-    Feature Map을 추출한다.
-
-12. Test Feature Map과
-    Normal Reference Map을 비교한다.
-
-13. 14 × 14 위치마다
-    정상과의 차이를 계산한다.
-
-14. 위치별 차이를 색으로 표현하여
-    Heatmap을 만든다.
-
-15. Heatmap을 원본 이미지와 겹쳐
-    Overlay를 만든다.
-
-16. Anomaly 이미지라면
-    해당 Ground Truth Mask도 찾는다.
-
-17. Heatmap,
-    Overlay,
-    Ground Truth Mask를 저장한다.
-
-18. 저장한 이미지 수와
-    저장 위치를 출력한다.
-```
-
-전체 흐름만 보면:
-
-```
-Test 이미지
-        ↓
-Feature Map
-        ↓
-Normal Reference Map과 비교
-        ↓
-위치별 차이 계산
-        ↓
-Heatmap
-        ↓
-Overlay
-
-Anomaly 이미지
-        ↓
-Ground Truth Mask도 함께 확인
-```
-
----
-
 # 42. 실제 Test 결과와 Heatmap을 함께 확인합니다
 
 VS Code에서 다음 폴더를 엽니다.
@@ -6471,46 +7623,59 @@ Heatmap의 강한 반응 위치
 
 ---
 
-# 43. Heatmap과 Ground Truth는 같은 그림이 아닙니다
+# 43. Heatmap과 Ground Truth Mask는 무엇이 다른가요?
 
-두 그림의 역할은 다릅니다.
+앞에서 실행한 `58_day07_make_heatmaps.py`는 **Heatmap과 Overlay를 새로 만들고, 데이터셋에 있던 Ground Truth Mask를 함께 저장**했습니다.
 
-```
-Ground Truth Mask
-→ 실제 결함 위치의 정답
+여기서 Ground Truth Mask는 우리가 직접 그린 이미지가 아닙니다. **MVTec AD 데이터셋에서 실제 결함이 있는 위치를 미리 표시해 제공한 정답 이미지**입니다.
 
-Heatmap
-→ 검사기가 정상 기준과
-   차이가 크다고 본 위치
-```
-
-따라서 두 모양이 정확히 일치할 필요는 없습니다.
-
-현재 `broken_large_000`에서도:
+예를 들어 `broken_large_000.png`의 결과는 다음 폴더에 저장되어 있습니다.
 
 ```
-Ground Truth
-→ 비교적 명확한 흰색 결함 영역
-
-Heatmap
-→ 결함 주변까지
-   넓게 노랑 / 빨강으로 반응
+outputs/day07/heatmap/
+│
+├── broken_large_000_heatmap.jpg
+│   → ResNet18의 특징을 정상 기준과 비교해
+│     차이가 큰 위치를 색으로 표시한 그림
+│
+├── broken_large_000_overlay.jpg
+│   → 원본 병 이미지와 Heatmap을 합친 그림
+│
+└── broken_large_000_gt_mask.png
+    → MVTec에서 제공한 실제 결함 위치 정답
 ```
 
-하는 것을 볼 수 있습니다.
+### 두 이미지를 직접 비교해 봅니다
 
-이것은 현재 Heatmap이 원본 픽셀을 직접 비교하는 것이 아니라 `14 × 14` Feature Map의 차이를 확대해서 보여주기 때문입니다.
+VS Code에서 다음 두 파일을 열어 나란히 확인합니다.
 
-또한:
+- `broken_large_000_heatmap.jpg`
+    
+- `broken_large_000_gt_mask.png`
+    
 
-```
-빨간색
-≠ 반드시 실제 결함
-```
+**Ground Truth Mask**에서 흰색은 실제 결함이 있는 위치를 나타냅니다.
 
-입니다.
+반면 **Heatmap**의 노랑·빨강은 정상 기준과 비교했을 때 특징 차이가 크게 계산된 위치를 나타냅니다.
 
-> Heatmap은 실제 결함 위치의 정답이 아니라, **정상과 Feature 차이가 크게 나타난 위치를 보여주는 분석 자료**입니다.
+즉, 두 그림은 다음처럼 역할이 다릅니다.
+
+|구분|의미|누가 만들었나요?|
+|---|---|---|
+|Ground Truth Mask|실제 결함 위치의 정답|MVTec 데이터셋에서 제공|
+|Heatmap|정상 기준과 특징 차이가 큰 위치|58번 코드에서 생성|
+
+### 왜 두 그림이 완전히 같지 않을까요?
+
+이번 Heatmap은 ResNet18에서 추출한 **14 × 14 Feature Map의 위치별 차이를 계산한 뒤 원본 이미지 크기로 확대**하여 표시합니다.
+
+그래서 실제 결함이 있는 부분뿐 아니라 주변 영역까지 넓게 강조될 수 있습니다.
+
+또한 빨간색으로 표시되었다고 해서 반드시 실제 결함이 있는 것은 아닙니다.
+
+**Heatmap은 결함 위치의 정답이 아니라, 정상 기준과 다른 특징이 나타난 위치를 분석하기 위한 그림**이기 때문입니다.
+
+> **핵심 정리:** Ground Truth는 실제 결함 위치를 알려주는 정답이고, Heatmap은 검사기가 정상과 다른 특징을 발견한 위치를 보여줍니다. 두 그림을 비교하면 검사기의 반응이 실제 결함 위치와 얼마나 일치하는지 확인할 수 있습니다.
 
 ---
 
@@ -6665,37 +7830,21 @@ Ground Truth와 비교
 
 ### 이 PART6을 왜 하는지 한 번에 정리하면
 
-앞 PART5에서 이미:
+![[Pasted image 20261031192622.png]]
 
-```
-83장 검사
-        ↓
-TP 59
-TN 18
-FP 2
-FN 4
-```
+![[Pasted image 20261031192030.png]]
 
-를 확인했습니다.
+앞의 PART5에서는 Test 이미지 83장을 검사하여 **77장은 정확히 판정하고, 6장은 잘못 판정했다**는 결과를 확인했습니다.
 
-PART6에서는 한 단계 더 들어갑니다.
+PART6에서는 단순히 정확도만 확인하는 것이 아니라, **왜 정상 병 2장을 이상으로 잘못 판정했고(FP), 왜 작은 파손 4장을 정상으로 놓쳤는지(FN)** 살펴보았습니다.
 
-```
-성능 숫자 확인
-        ↓
-어떤 이미지가 실패했는지 확인
-        ↓
-Heatmap 생성
-        ↓
-어느 위치에서
-Feature 차이가 발생했는지 확인
-        ↓
-Ground Truth와 비교
-        ↓
-왜 FP / FN이 발생할 수 있는지 분석
-```
+먼저 57번 코드로 잘못 판정한 이미지 6장을 별도 폴더에 모아 원본을 확인했습니다. 이후 58번 코드에서는 대표 이미지 8장의 Heatmap을 만들고, 실제 결함 위치가 표시된 Ground Truth Mask와 비교했습니다.
 
-즉 PART5가 “얼마나 잘 맞았는가?”를 확인하는 단계라면, PART6는 “왜 맞았고 왜 틀렸는가?”를 이미지로 분석하는 단계라고 이해하면 가장 쉽습니다.
+이 과정에서 작은 파손은 이미지 전체의 Feature 변화가 충분히 크지 않아 놓쳤을 가능성이 있다는 점을 확인했습니다. 정상 이미지의 오탐 역시 촬영 위치나 밝기 등의 영향을 받았을 가능성이 있으므로 추가 분석이 필요합니다.
+
+**이 분석을 진행한 이유는 단순히 틀린 이미지를 찾는 것이 아니라, 검사기의 약점을 파악하고 다음 버전에서 무엇을 개선해야 할지 결정하기 위해서입니다.**
+
+> **핵심 정리:** PART5는 검사기가 _얼마나 잘 맞혔는지_ 평가하는 과정이고, PART6는 _어떤 상황에서 왜 잘못 판정했는지_ 분석하여 다음 개선 방향을 찾는 과정입니다.
 
 ---
 

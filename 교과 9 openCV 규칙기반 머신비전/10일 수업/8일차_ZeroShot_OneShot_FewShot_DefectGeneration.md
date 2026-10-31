@@ -37,6 +37,8 @@ Normal / Anomaly 판정
 ---
 ### 그러면 8일차에는 무엇이 달라질까요?
 
+![[Pasted image 20261031193639.png]]
+
 오늘은 검사 방법 자체보다 먼저 **데이터 조건을 바꾸어 봅니다.**
 
 실제 제조 현장에서는 항상 많은 데이터를 가지고 검사를 시작할 수 있는 것은 아닙니다.
@@ -76,8 +78,6 @@ Normal / Anomaly 판정
 ---
 
 ## 오늘 수업은 크게 이렇게 진행합니다
-
-처음부터 모든 용어를 외울 필요는 없습니다.
 
 오늘 수업은 크게 다음 흐름으로 진행합니다.
 
@@ -178,7 +178,7 @@ samples/day07/original/bottle/
 
 먼저 전체 위치만 확인하고 실제 실습에 들어가면서 하나씩 진행합니다.
 
-![[Pasted image 20260911144942.png]]
+![[Pasted image 20261031194634.png]]
 
 ```text
 PART1
@@ -483,6 +483,8 @@ Support 수를 바꾸면 결과가 어떻게 변했는가?
 
 대신 다음 질문에 답할 수 있으면 됩니다.
 
+![[Pasted image 20261031195212.png]]
+
 ```
 정상 데이터가 충분하다면?
         ↓
@@ -518,7 +520,8 @@ Defect Generation도 고려
 
 ---
 
-7일차에서 만든 `train / validation / test / challenge` 결과 폴더를 8일차의 원본처럼 다시 사용하지 않습니다.
+7일차에서 만든 `train / validation / test / challenge` 결과 폴더를 
+8일차의 원본처럼 다시 사용하지 않습니다.
 
 8일차는 7일차에서 보존한 원본 위치에서 필요한 이미지만 다시 선택합니다.
 
@@ -632,10 +635,13 @@ Few-shot      Query           Cut-Paste
 
 Query는 기준을 만든 뒤 **처음 보는 이미지처럼 넣어서 결과를 확인하는 평가용 데이터**입니다.
 
-따라서 오늘 데이터 준비의 핵심은 같은 Dataset의 이미지를 기준을 만드는 데이터, 평가하는 데이터, 합성에 사용하는 데이터로 서로 겹치지 않게 나누어 사용하는 것입니다.
+따라서 오늘 데이터 준비의 핵심은 같은 Dataset의 이미지를 기준을 만드는 데이터, 
+평가하는 데이터, 합성에 사용하는 데이터로 서로 겹치지 않게 나누어 사용하는 것입니다.
 
 오늘 사용할 데이터는 이미 처음부터 상태별로 폴더가 나뉘어져 있는 것으로 실습을 하나 
 실제 현업에서는 예를 들어 공장에서 직접 촬영한 원본 사진만 있다면 사람이 먼저 확인하여 정상인지, 작은 파손인지, 오염인지 라벨을 붙이거나 검수해야 합니다.
+
+![[Pasted image 20261031195628.png]]
 
 ```
 현업에서 직접 수집한 원본 이미지
@@ -747,9 +753,11 @@ VAE, GAN, Diffusion과 같은 생성모델을 이용한 본격적인 합성데�
 | 공통 함수 모듈 | `day08_cutpaste_core.py`           | 합성 불량 생성과 Mini Challenge에서 재사용하는 기능     |
 | 추가 실습 파일 | `day08_support_count_challenge.py` | 학생이 Support 수를 바꾸어 비교하는 실습              |
 | 추가 실습 파일 | `day08_mini_challenge.py`          | 학생이 스스로 실습 과정을 응용하는 Challenge           |
-![[Pasted image 20261020093654.png]]
 
-![[Pasted image 20261020094015.png]]
+![[Pasted image 20261031200321.png]]
+
+![[Pasted image 20261031200626.png]]
+
 
 ---
 # 5. 오늘 추가되는 프로젝트 구조
@@ -861,6 +869,8 @@ subject9_machinevision/
 ② 기준을 만드는 사진과 시험해 보는 사진은 서로 달라야 한다.  
 ③ One-shot과 Few-shot을 비교할 때는 똑같은 시험 사진을 사용한다.
 ```
+
+![[Pasted image 20261031201149.png]]
 
 ### 실습 데이터를 왜 나누어 사용할까요?
 
@@ -1114,6 +1124,82 @@ Day08 Environment OK
 이 프로그램은 아직 One-shot이나 Few-shot을 실행하는 코드가 아닙니다.  
 오늘 실습을 시작하기 전에 필요한 환경과 데이터를 점검하는 준비 코드입니다.
 
+### 전체 코드의 흐름
+
+```
+프로그램 시작
+        ↓
+필요한 Python 라이브러리 불러오기
+        ↓
+MVTec bottle 원본 경로 지정
+        ↓
+오늘 필요한 Dataset 폴더 목록 지정
+        ↓
+라이브러리 버전 출력
+        ↓
+CUDA 사용 가능 여부 확인
+        ↓
+GPU 사용 가능하면 GPU 이름 출력
+        ↓
+필요한 Dataset 폴더 존재 여부 확인
+        ↓
+폴더가 하나라도 없음?
+   ┌────┴────┐
+  YES        NO
+   ↓          ↓
+오류 발생    계속 진행
+             ↓
+각 폴더의 PNG 이미지 수 계산
+             ↓
+현재 이미지 수 출력
+             ↓
+오늘 필요한 최소 이미지 수와 비교
+             ↓
+이미지가 부족한가?
+   ┌─────────┴─────────┐
+  YES                  NO
+   ↓                    ↓
+오류 발생        Day08 Environment OK
+                        ↓
+                  다음 실습 진행
+```
+
+```
+① 필요한 라이브러리 불러오기
+   → OpenCV, NumPy, Pandas, PyTorch 등
+                 ↓
+② MVTec bottle 원본 데이터 경로 설정
+   → samples/day07/original/bottle
+                 ↓
+③ 실습에 필요한 데이터 폴더 목록 설정
+   → 정상 / 작은 파손 / 오염 / 결함 Mask
+                 ↓
+④ 라이브러리 버전과 GPU 확인
+   → 설치된 버전 출력
+   → CUDA 사용 가능 여부 확인
+                 ↓
+⑤ 원본 데이터 폴더 존재 여부 확인
+   → 폴더가 없으면 오류 발생
+                 ↓
+⑥ 원본 이미지 개수 확인
+   → 정상 Train 이미지
+   → 정상 Test 이미지
+   → 작은 파손 이미지
+   → 오염 이미지
+                 ↓
+⑦ 8일차 실습에 필요한 최소 수량 확인
+   → train_good       41장 이상
+   → test_good        10장 이상
+   → broken_small     17장 이상
+   → contamination     2장 이상
+                 ↓
+⑧ 모든 확인을 통과하면
+   → Day08 Environment OK
+
+※ 이 코드는 환경과 원본 데이터를 점검합니다.
+   실제 데이터 복사·분리는 63번에서 진행합니다.
+```
+
 파일을 만듭니다
 
 ```text
@@ -1123,6 +1209,20 @@ src/62_day08_check_lowdata_env.py
 다음 코드를 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → Path        : 파일과 폴더 경로 관리
+#    → OpenCV      : 이미지 처리 라이브러리
+#    → NumPy       : 숫자 및 배열 계산
+#    → Pandas      : 데이터 분석
+#    → PyTorch     : 딥러닝 모델 실행
+#    → Torchvision : ResNet18 모델 사용
+#    → Pillow      : 이미지 읽기 및 변환
+#
+#    이번 코드에서는 라이브러리의 설치 여부와
+#    버전을 확인하는 데 주로 사용합니다.
+# ==================================================
 from pathlib import Path
 
 import cv2
@@ -1134,71 +1234,331 @@ import PIL
 from PIL import Image
 
 
-ROOT = Path("samples/day07/original/bottle")
+# ==================================================
+# ② MVTec bottle 원본 데이터 경로 설정
+#    → 7일차에서 사용한 원본 데이터를 재사용
+#    → 원본 데이터 자체는 변경하지 않음
+#
+#    8일차 실습용 데이터는 이후 63번 코드에서
+#    필요한 이미지들만 복사하여 준비합니다.
+# ==================================================
+ROOT = Path(
+    "samples/day07/original/bottle"
+)
 
+
+# ==================================================
+# ③ 실습에 필요한 원본 폴더 목록 설정
+#    → 정상 이미지
+#    → 작은 파손 이미지
+#    → 오염 이미지
+#    → 실제 결함 위치가 표시된 Mask 폴더
+#
+#    이후 One-shot / Few-shot / 불량 합성
+#    실습에 필요한 데이터가 있는지 확인합니다.
+# ==================================================
 required_dirs = [
+
+    # 정상 학습 이미지
     ROOT / "train/good",
+
+    # 정상 Test 이미지
     ROOT / "test/good",
+
+    # 작은 파손 Test 이미지
     ROOT / "test/broken_small",
+
+    # 오염 Test 이미지
     ROOT / "test/contamination",
+
+    # 작은 파손의 실제 결함 위치 Mask
     ROOT / "ground_truth/broken_small",
+
+    # 오염의 실제 결함 위치 Mask
     ROOT / "ground_truth/contamination",
 ]
 
 
+# ==================================================
+# ④ AI 실행 환경 확인
+#    → 설치된 라이브러리 버전을 출력
+#    → CUDA 사용 가능 여부 확인
+#    → GPU를 사용할 수 있으면 GPU 이름 출력
+#
+#    CUDA = False여도 CPU로 실행할 수 있습니다.
+#    단, 처리 속도가 느릴 수 있습니다.
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. 환경 점검 시작 메시지
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 LOW-DATA ENV CHECK")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ④-2. 라이브러리 버전 확인
+# ----------------------------------------------
 print("Torch      :", torch.__version__)
 print("Torchvision:", torchvision.__version__)
 print("OpenCV     :", cv2.__version__)
 print("NumPy      :", np.__version__)
 print("Pandas     :", pd.__version__)
 print("Pillow     :", PIL.__version__)
-print("CUDA       :", torch.cuda.is_available())
 
+
+# ----------------------------------------------
+# ④-3. CUDA 사용 가능 여부 확인
+# ----------------------------------------------
+print(
+    "CUDA       :",
+    torch.cuda.is_available()
+)
+
+
+# ----------------------------------------------
+# ④-4. CUDA 사용이 가능하면 GPU 이름 출력
+# ----------------------------------------------
 if torch.cuda.is_available():
-    print("GPU        :", torch.cuda.get_device_name(0))
 
+    print(
+        "GPU        :",
+        torch.cuda.get_device_name(0)
+    )
+
+
+# ==================================================
+# ⑤ 필요한 원본 데이터 폴더 확인
+#    → ③에서 지정한 폴더를 하나씩 검사
+#    → 존재하면 [OK] 출력
+#    → 없으면 FileNotFoundError 발생
+#
+#    주의!
+#    여기서는 폴더가 있는지만 확인합니다.
+#    이미지 수량은 다음 단계에서 확인합니다.
+# ==================================================
 print()
-print("Dataset    :", ROOT)
 
+print(
+    "Dataset    :",
+    ROOT
+)
+
+
+# ----------------------------------------------
+# ⑤-1. 필요한 폴더를 하나씩 확인
+# ----------------------------------------------
 for directory in required_dirs:
+
+    # 폴더가 없으면 오류 발생
     if not directory.exists():
-        raise FileNotFoundError(directory)
-    print("[OK]", directory)
+
+        raise FileNotFoundError(
+            directory
+        )
+
+    # 경로가 존재하면 확인 메시지 출력
+    print(
+        "[OK]",
+        directory
+    )
 
 
+# ==================================================
+# ⑥ 원본 이미지 개수 확인
+#    → 정상 Train 이미지 수
+#    → 정상 Test 이미지 수
+#    → 작은 파손 이미지 수
+#    → 오염 이미지 수
+#
+#    glob("*.png")으로 PNG 이미지를 찾고
+#    len()으로 파일 개수를 계산합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 이미지 종류별 개수 계산
+# ----------------------------------------------
 counts = {
-    "train_good": len(list((ROOT / "train/good").glob("*.png"))),
-    "test_good": len(list((ROOT / "test/good").glob("*.png"))),
-    "broken_small": len(list((ROOT / "test/broken_small").glob("*.png"))),
-    "contamination": len(list((ROOT / "test/contamination").glob("*.png"))),
+
+    # 정상 Train 이미지
+    "train_good": len(
+        list(
+            (ROOT / "train/good").glob("*.png")
+        )
+    ),
+
+    # 정상 Test 이미지
+    "test_good": len(
+        list(
+            (ROOT / "test/good").glob("*.png")
+        )
+    ),
+
+    # 작은 파손 Test 이미지
+    "broken_small": len(
+        list(
+            (ROOT / "test/broken_small").glob("*.png")
+        )
+    ),
+
+    # 오염 Test 이미지
+    "contamination": len(
+        list(
+            (ROOT / "test/contamination").glob("*.png")
+        )
+    ),
 }
 
+
+# ----------------------------------------------
+# ⑥-2. 이미지 종류별 개수 출력
+# ----------------------------------------------
 print()
+
 for name, count in counts.items():
-    print(f"{name:15s}: {count}")
+
+    print(
+        f"{name:15s}: {count}"
+    )
 
 
+# ==================================================
+# ⑦ 실습에 필요한 최소 이미지 수량 검사
+#    → 8일차의 데이터 분리 작업에 필요한
+#      최소 이미지 개수를 확인
+#
+#    주의!
+#    이것은 모델 학습에 필요한 일반적인
+#    최소 이미지 수가 아닙니다.
+#
+#    이번 8일차 실습을 위한 준비 조건입니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. 종류별 최소 필요 이미지 개수 설정
+# ----------------------------------------------
 minimum_required = {
+
+    # 정상 원본 Train 이미지
     "train_good": 41,
+
+    # 정상 원본 Test 이미지
     "test_good": 10,
+
+    # 작은 파손 원본 Test 이미지
     "broken_small": 17,
+
+    # 오염 원본 Test 이미지
     "contamination": 2,
 }
 
+
+# ----------------------------------------------
+# ⑦-2. 최소 필요 수량과 실제 이미지 수 비교
+# ----------------------------------------------
 for name, minimum in minimum_required.items():
+
+    # 실제 이미지 수가 부족하면 오류 발생
     if counts[name] < minimum:
+
         raise RuntimeError(
             f"{name} 이미지가 부족합니다. "
             f"필요: {minimum}, 현재: {counts[name]}"
         )
 
+
+# ==================================================
+# ⑧ 환경 및 원본 데이터 점검 완료
+#    → 필요한 라이브러리 Import 성공
+#    → 필요한 원본 경로 확인
+#    → 최소 이미지 수량 조건 충족
+#
+#    다음 63번 코드에서
+#    실제 Day08 데이터를 역할별로 분리합니다.
+# ==================================================
 print()
-print("Day08 Environment OK")
+
+print(
+    "Day08 Environment OK"
+)
 ```
+
+### 의사코드
+
+```text
+① 필요한 라이브러리 불러오기
+   - Path를 불러온다.
+   - OpenCV를 불러온다.
+   - NumPy와 Pandas를 불러온다.
+   - PyTorch와 Torchvision을 불러온다.
+   - Pillow를 불러온다.
+
+② 원본 데이터 경로 설정
+   - 7일차에서 사용했던 MVTec bottle
+     원본 폴더를 지정한다.
+
+   samples/day07/original/bottle
+
+   - 원본 데이터를 변경하지 않는다.
+
+③ 필요한 원본 폴더 목록 설정
+   - 정상 Train 폴더를 지정한다.
+   - 정상 Test 폴더를 지정한다.
+   - 작은 파손 Test 폴더를 지정한다.
+   - 오염 Test 폴더를 지정한다.
+   - 작은 파손 Ground Truth 폴더를 지정한다.
+   - 오염 Ground Truth 폴더를 지정한다.
+
+④ AI 실행 환경 확인
+   - 라이브러리 버전을 출력한다.
+   - CUDA 사용 가능 여부를 확인한다.
+
+   [CUDA 사용 가능]
+   → True 출력
+   → GPU 이름 출력
+
+   [CUDA 사용 불가능]
+   → False 출력
+   → GPU 이름은 출력하지 않음
+
+⑤ 필요한 원본 폴더 확인
+   - 필요한 폴더를 하나씩 검사한다.
+   - 폴더가 존재하면 [OK]를 출력한다.
+   - 폴더가 없으면 오류를 발생시킨다.
+
+⑥ 이미지 종류별 개수 확인
+   - 정상 Train PNG 개수를 계산한다.
+   - 정상 Test PNG 개수를 계산한다.
+   - 작은 파손 PNG 개수를 계산한다.
+   - 오염 PNG 개수를 계산한다.
+   - 이미지 종류와 개수를 출력한다.
+
+⑦ 최소 이미지 수량 확인
+   - 실습에 필요한 최소 수량을 설정한다.
+
+     train_good      : 41장
+     test_good       : 10장
+     broken_small    : 17장
+     contamination   :  2장
+
+   - 실제 이미지 수와 최소 수량을 비교한다.
+
+   [최소 수량 미달]
+   → RuntimeError 발생
+   → 프로그램 중단
+
+   [최소 수량 충족]
+   → 다음 데이터 종류 확인
+   → 모두 충족하면 다음 단계로 이동
+
+⑧ 환경 점검 완료
+   - Day08 Environment OK를 출력한다.
+
+   → 원본 데이터와 실행 환경 확인 완료
+   → 63번 데이터 분리 실습으로 이동
+```
+
 
 실행합니다.
 
@@ -1262,7 +1622,7 @@ Mini Challenge Normal       5장
 
 따라서 정상 Train 이미지는 최소 41장이 필요합니다.
 
-#### ### `test_good` — 최소 10장
+####  `test_good` — 최소 10장
 
 ```
 Common Query Normal
@@ -1271,7 +1631,7 @@ Common Query Normal
 
 One-shot과 Few-shot을 같은 정상 이미지에서 비교하기 위한 평가 데이터입니다.
 
-#### ### `broken_small` — 최소 17장
+#### `broken_small` — 최소 17장
 
 ```
 Few-shot Anomaly Support     5장
@@ -1283,7 +1643,7 @@ Cut-Paste Defect Source      2장
 
 따라서 `broken_small`은 최소 17장이 필요합니다.
 
-#### ### `contamination` — 최소 2장
+####  `contamination` — 최소 2장
 
 ```
 Mini Challenge
@@ -1293,137 +1653,9 @@ Defect Source
 
 `contamination`은 뒤의 Mini Challenge에서 사용할 결함 원본입니다.
 
-#### 만약에 이미지가 부족하면 프로그램을 중단합니다.
+원본 이미지 개수를 확인한 결과, 8일차 실습에 필요한 데이터가 모두 준비되어 있습니다.
 
-다음 코드는 실제 이미지 수와 필요한 최소 이미지 수를 비교합니다.
-
-```python
-for name, minimum in minimum_required.items():
-    if counts[name] < minimum:
-        raise RuntimeError(
-            f"{name} 이미지가 부족합니다. "
-            f"필요: {minimum}, 현재: {counts[name]}"
-        )
-```
-
-예를 들어 `broken_small`이 17장 필요한데 실제로 10장밖에 없다면:
-
-```
-필요: 17
-현재: 10
-```
-
-이므로 프로그램을 중단합니다.
-
-### 전체 코드의 흐름
-
-```
-프로그램 시작
-        ↓
-필요한 Python 라이브러리 불러오기
-        ↓
-MVTec bottle 원본 경로 지정
-        ↓
-오늘 필요한 Dataset 폴더 목록 지정
-        ↓
-라이브러리 버전 출력
-        ↓
-CUDA 사용 가능 여부 확인
-        ↓
-GPU 사용 가능하면 GPU 이름 출력
-        ↓
-필요한 Dataset 폴더 존재 여부 확인
-        ↓
-폴더가 하나라도 없음?
-   ┌────┴────┐
-  YES        NO
-   ↓          ↓
-오류 발생    계속 진행
-             ↓
-각 폴더의 PNG 이미지 수 계산
-             ↓
-현재 이미지 수 출력
-             ↓
-오늘 필요한 최소 이미지 수와 비교
-             ↓
-이미지가 부족한가?
-   ┌─────────┴─────────┐
-  YES                  NO
-   ↓                    ↓
-오류 발생        Day08 Environment OK
-                        ↓
-                  다음 실습 진행
-```
-
-### 의사코드
-
-```text
-1. 오늘 실습에 필요한 라이브러리를 불러온다.
-
-2. 7일차에서 보존한
-   MVTec bottle 원본 폴더를 ROOT로 지정한다.
-
-3. 오늘 사용할 폴더를 목록으로 만든다.
-
-   - 정상 Train
-   - 정상 Test
-   - broken_small
-   - contamination
-   - broken_small의 Ground Truth
-   - contamination의 Ground Truth
-
-4. 현재 설치된 라이브러리 버전을 출력한다.
-
-   - PyTorch
-   - Torchvision
-   - OpenCV
-   - NumPy
-   - Pandas
-   - Pillow
-
-5. CUDA를 사용할 수 있는지 확인한다.
-
-6. CUDA를 사용할 수 있다면
-   현재 사용 가능한 GPU 이름도 출력한다.
-
-7. 필요한 Dataset 폴더를 하나씩 확인한다.
-
-8. 폴더가 존재하면 [OK]를 출력한다.
-
-9. 필요한 폴더가 하나라도 없다면
-   FileNotFoundError를 발생시키고 실행을 중단한다.
-
-10. 각 데이터 폴더 안에 있는
-    PNG 이미지 수를 센다.
-
-11. 확인한 이미지 수를
-    counts에 저장한다.
-
-12. 각 Dataset의 현재 이미지 수를 출력한다.
-
-13. 오늘 전체 실습에 필요한
-    최소 이미지 수를 정의한다.
-
-    train_good     → 41장
-    test_good      → 10장
-    broken_small   → 17장
-    contamination  → 2장
-
-14. 실제 이미지 수와
-    최소 필요 이미지 수를 하나씩 비교한다.
-
-15. 이미지 수가 부족하다면
-    필요한 수량과 현재 수량을 출력하고
-    RuntimeError를 발생시킨다.
-
-16. 모든 폴더와 이미지 수가 정상이라면
-
-    Day08 Environment OK
-
-    를 출력한다.
-
-17. 다음 데이터 분리 실습으로 진행한다.
-```
+마지막에 `Day08 Environment OK`가 출력되었으므로 환경 점검을 마쳤습니다. 이제 63번 코드에서 실습용 데이터를 분리합니다.
 
 ---
 
@@ -1508,7 +1740,7 @@ Mini Challenge용
 samples/day08에 복사
 ```
 
-### 왜 이미지는 썩은 뒤 나눌까요?
+### 왜 이미지는 섞은 뒤 나눌까요?
 
 원본 파일 이름 순서대로 앞에서부터 계속 고르면 특정한 순서가 그대로 반영될 수 있습니다.
 
@@ -1524,7 +1756,7 @@ samples/day08에 복사
 역할별 분리
 ```
 
-그런데 실행할 때마다 다른 이미지가 선택되면 학생마다 결과가 달라질 수 있습니다.
+그런데 실행할 때마다 다른 이미지가 선택되면 결과가 달라질 수 있습니다.
 
 그래서 다음 값을 사용합니다.
 
@@ -1555,6 +1787,50 @@ SEED = 42
 > Seed의 숫자 `42` 자체가 중요한 것은 아닙니다.  
 > 같은 값을 사용하여 수업에서 같은 데이터가 선택되도록 하는 것이 중요합니다.
 
+### 전체 코드 흐름
+
+```
+① 라이브러리와 데이터 경로 설정
+        ↓
+② 8일차 실습 폴더 초기화
+   → 기존 samples/day08 삭제
+   → 원본 samples/day07/original은 보존
+        ↓
+③ 데이터 복사용 공통 함수 작성
+   → copy_files()
+   → copy_defect_sources()
+        ↓
+④ MVTec bottle 원본 이미지 목록 준비
+   → 정상 / 작은 파손 / 오염
+   → SEED = 42로 재현 가능한 순서 만들기
+        ↓
+⑤ 정상 이미지 역할 분리
+   ├─ One-shot Reference 1장
+   ├─ One-shot Calibration 20장
+   ├─ Few-shot Normal Support 5장
+   ├─ Cut-Paste Normal 10장
+   ├─ Mini Challenge Normal 5장
+   └─ Common Normal Query 10장
+        ↓
+⑥ 불량 이미지 역할 분리
+   ├─ broken_small Support 5장
+   ├─ broken_small Query 10장
+   ├─ broken_small 합성 원본 2장
+   └─ contamination 합성 원본 2장
+        ↓
+⑦ 같은 이미지가 여러 역할에 겹치는지 검사
+   → 중복이 발견되면 오류 발생
+        ↓
+⑧ 역할별 폴더에 이미지 복사
+   → samples/day08/
+   → 결함 원본은 Ground Truth Mask도 복사
+        ↓
+⑨ 데이터 구성 요약 보고서 저장
+   → reports/day08_dataset_summary.md
+        ↓
+⑩ 이미지 개수 및 결과 출력
+   → Data Leakage Check : PASS
+```
 
 파일:
 
@@ -1565,40 +1841,138 @@ src/63_day08_prepare_dataset.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 라이브러리 불러오기 및 기본 경로 설정
+#    → random : 이미지 선택 순서를 무작위로 섞기
+#    → shutil : 원본 이미지를 실습 폴더에 복사
+#    → Path   : 파일과 폴더 경로 관리
+#
+#    SEED = 42
+#    → 다시 실행해도 동일한 이미지가 선택되도록 설정
+# ==================================================
 import random
 import shutil
 from pathlib import Path
 
 
-RAW_ROOT = Path("samples/day07/original/bottle")
-DAY08_ROOT = Path("samples/day08")
-REPORT_PATH = Path("reports/day08_dataset_summary.md")
+# 7일차에서 보존한 MVTec bottle 원본
+RAW_ROOT = Path(
+    "samples/day07/original/bottle"
+)
 
+# 8일차 실습용 데이터 저장 폴더
+DAY08_ROOT = Path(
+    "samples/day08"
+)
+
+# 데이터 구성 결과를 기록할 보고서
+REPORT_PATH = Path(
+    "reports/day08_dataset_summary.md"
+)
+
+# 이미지 선택 결과를 동일하게 유지하는 값
 SEED = 42
 
 
-# --------------------------------------------------
-# 1. Day08 폴더를 새로 준비
-# --------------------------------------------------
+# ==================================================
+# ② Day08 실습 폴더 초기화
+#    → 이전에 생성한 samples/day08 폴더를 삭제
+#    → 새 실습 데이터를 만들 준비
+#
+#    주의!
+#    DAY08_ROOT 안의 기존 파일은 모두 삭제됩니다.
+#    원본 RAW_ROOT는 삭제하지 않습니다.
+# ==================================================
 if DAY08_ROOT.exists():
-    shutil.rmtree(DAY08_ROOT)
+
+    shutil.rmtree(
+        DAY08_ROOT
+    )
 
 
+# ==================================================
+# ③ 데이터를 복사하는 공통 함수 작성
+#    → 여러 종류의 데이터 복사 작업에서 재사용
+#
+#    copy_files()
+#    → 일반 이미지 복사
+#
+#    copy_defect_sources()
+#    → 불량 이미지와 해당 Ground Truth Mask 복사
+# ==================================================
+
+
+# --------------------------------------------------
+# ③-1. 일반 이미지를 복사하는 함수
+#
+#      files       : 복사할 이미지 목록
+#      destination : 저장할 폴더
+# --------------------------------------------------
 def copy_files(files, destination):
-    destination.mkdir(parents=True, exist_ok=True)
 
+    # 저장할 폴더가 없으면 생성
+    destination.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    # 이미지 목록을 한 장씩 복사
     for path in files:
-        shutil.copy2(path, destination / path.name)
+
+        shutil.copy2(
+            path,
+            destination / path.name
+        )
 
 
-def copy_defect_sources(files, defect_type, destination_root):
-    image_dir = destination_root / defect_type / "images"
-    mask_dir = destination_root / defect_type / "masks"
+# --------------------------------------------------
+# ③-2. 불량 이미지와 Mask를 함께 복사하는 함수
+#
+#      defect_type : broken_small / contamination
+#
+#      images 폴더 : 실제 결함 이미지
+#      masks 폴더  : 실제 결함 위치 정답 이미지
+# --------------------------------------------------
+def copy_defect_sources(
+    files,
+    defect_type,
+    destination_root
+):
 
-    image_dir.mkdir(parents=True, exist_ok=True)
-    mask_dir.mkdir(parents=True, exist_ok=True)
+    # 불량 이미지 저장 폴더
+    image_dir = (
+        destination_root
+        / defect_type
+        / "images"
+    )
 
+    # Ground Truth Mask 저장 폴더
+    mask_dir = (
+        destination_root
+        / defect_type
+        / "masks"
+    )
+
+    # 이미지와 Mask 폴더 생성
+    image_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    mask_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    # 불량 이미지를 한 장씩 처리
     for image_path in files:
+
+        # 해당 불량 이미지와 짝이 되는 Mask 경로
+        #
+        # 예:
+        # 이미지 000.png
+        # Mask   000_mask.png
         mask_path = (
             RAW_ROOT
             / "ground_truth"
@@ -1606,59 +1980,202 @@ def copy_defect_sources(files, defect_type, destination_root):
             / f"{image_path.stem}_mask.png"
         )
 
+        # Mask 파일이 없으면 오류 발생
         if not mask_path.exists():
-            raise FileNotFoundError(mask_path)
 
-        shutil.copy2(image_path, image_dir / image_path.name)
-        shutil.copy2(mask_path, mask_dir / mask_path.name)
+            raise FileNotFoundError(
+                mask_path
+            )
+
+        # 불량 원본 이미지 복사
+        shutil.copy2(
+            image_path,
+            image_dir / image_path.name
+        )
+
+        # 실제 결함 위치 Mask 복사
+        shutil.copy2(
+            mask_path,
+            mask_dir / mask_path.name
+        )
+
+
+# ==================================================
+# ④ MVTec bottle 원본 이미지 목록 준비
+#    → 정상 Train / 정상 Test 이미지 가져오기
+#    → 작은 파손 / 오염 이미지 가져오기
+#    → 무작위로 섞어 선택 순서를 결정
+#
+#    같은 SEED를 사용하면 동일한 분할 재현 가능
+# ==================================================
 
 
 # --------------------------------------------------
-# 2. 원본 목록
+# ④-1. 원본 이미지 목록 불러오기
 # --------------------------------------------------
-normal_train = sorted((RAW_ROOT / "train/good").glob("*.png"))
-normal_test = sorted((RAW_ROOT / "test/good").glob("*.png"))
-broken_small = sorted((RAW_ROOT / "test/broken_small").glob("*.png"))
-contamination = sorted((RAW_ROOT / "test/contamination").glob("*.png"))
+
+# 정상 Train 이미지
+normal_train = sorted(
+    (RAW_ROOT / "train/good").glob("*.png")
+)
+
+# 정상 Test 이미지
+normal_test = sorted(
+    (RAW_ROOT / "test/good").glob("*.png")
+)
+
+# 작은 파손 이미지
+broken_small = sorted(
+    (RAW_ROOT / "test/broken_small").glob("*.png")
+)
+
+# 오염 이미지
+contamination = sorted(
+    (RAW_ROOT / "test/contamination").glob("*.png")
+)
 
 
+# --------------------------------------------------
+# ④-2. 종류별 무작위 선택 도구 준비
+#
+#       각각 다른 Seed를 사용
+#       → 이미지 선택 순서는 매번 동일하게 재현
+# --------------------------------------------------
 rng_normal = random.Random(SEED)
-rng_broken = random.Random(SEED + 1)
-rng_contamination = random.Random(SEED + 2)
 
-rng_normal.shuffle(normal_train)
-rng_broken.shuffle(broken_small)
-rng_contamination.shuffle(contamination)
+rng_broken = random.Random(
+    SEED + 1
+)
+
+rng_contamination = random.Random(
+    SEED + 2
+)
 
 
 # --------------------------------------------------
-# 3. Normal 데이터 역할 분리
+# ④-3. 이미지 목록의 순서 섞기
+#
+#       원본 파일을 수정하지 않고
+#       Python 리스트의 순서만 변경
+# --------------------------------------------------
+rng_normal.shuffle(
+    normal_train
+)
+
+rng_broken.shuffle(
+    broken_small
+)
+
+rng_contamination.shuffle(
+    contamination
+)
+
+
+# ==================================================
+# ⑤ 정상 이미지 역할 분리
+#    → One-shot / Few-shot / 불량 합성 / Challenge
+#      용도별로 서로 다른 정상 이미지를 선택
+#
+#    정상 Train 원본에서 총 41장 선택
+#    정상 Test 원본에서 Query 10장 선택
+# ==================================================
+
+
+# --------------------------------------------------
+# ⑤-1. One-shot 정상 기준 이미지 1장
+#       → 새로운 이미지를 비교할 Reference
 # --------------------------------------------------
 one_reference = normal_train[0:1]
+
+
+# --------------------------------------------------
+# ⑤-2. One-shot Calibration 정상 이미지 20장
+#       → Similarity Threshold를 정하는 데 사용
+# --------------------------------------------------
 one_calibration = normal_train[1:21]
+
+
+# --------------------------------------------------
+# ⑤-3. Few-shot 정상 Support 5장
+#       → Normal Prototype 생성에 사용
+# --------------------------------------------------
 few_normal_support = normal_train[21:26]
+
+
+# --------------------------------------------------
+# ⑤-4. Cut-Paste 합성 대상 정상 이미지 10장
+#       → 실제 결함 Patch를 붙일 정상 이미지
+# --------------------------------------------------
 cutpaste_normal = normal_train[26:36]
+
+
+# --------------------------------------------------
+# ⑤-5. Mini Challenge용 정상 이미지 5장
+#       → 새로운 결함 합성 실험에 사용
+# --------------------------------------------------
 mini_normal = normal_train[36:41]
 
+
+# --------------------------------------------------
+# ⑤-6. Common Query 정상 이미지 10장
+#       → One-shot과 Few-shot에서 동일하게 검사
+#       → 정상 Train이 아닌 Test 원본에서 선택
+# --------------------------------------------------
 common_normal_query = normal_test[:10]
 
 
+# ==================================================
+# ⑥ 불량 이미지 역할 분리
+#    → broken_small은 Few-shot과 공통 Query,
+#      불량 합성에 각각 사용
+#
+#    → contamination은 Mini Challenge에서 사용
+# ==================================================
+
+
 # --------------------------------------------------
-# 4. broken_small 역할 분리
+# ⑥-1. Few-shot 불량 Support 5장
+#       → Anomaly Prototype 생성에 사용
 # --------------------------------------------------
 few_anomaly_support = broken_small[0:5]
+
+
+# --------------------------------------------------
+# ⑥-2. Common Query 불량 이미지 10장
+#       → One-shot / Few-shot에서 동일하게 검사
+# --------------------------------------------------
 common_anomaly_query = broken_small[5:15]
+
+
+# --------------------------------------------------
+# ⑥-3. Cut-Paste 불량 원본 이미지 2장
+#       → 실제 작은 파손 Patch 추출에 사용
+# --------------------------------------------------
 cutpaste_defect_source = broken_small[15:17]
 
 
 # --------------------------------------------------
-# 5. contamination은 Mini Challenge용
+# ⑥-4. Mini Challenge 오염 이미지 2장
+#       → 새로운 결함 유형 합성에 사용
 # --------------------------------------------------
 mini_defect_source = contamination[:2]
 
 
+# ==================================================
+# ⑦ 데이터 중복 검사
+#    → 기준 생성용 이미지와 평가용 이미지 등이
+#      서로 겹치지 않는지 확인
+#
+#    같은 이미지를 여러 역할에 사용하면
+#    실험 결과가 실제보다 좋아 보일 수 있음
+#
+#    이 코드는 아래 Normal Train 역할들과
+#    broken_small 역할들 사이의 중복을 검사
+# ==================================================
+
+
 # --------------------------------------------------
-# 6. 중복 검사
+# ⑦-1. 정상 Train 데이터의 역할별 목록
 # --------------------------------------------------
 normal_groups = [
     set(one_reference),
@@ -1668,72 +2185,154 @@ normal_groups = [
     set(mini_normal),
 ]
 
-for i in range(len(normal_groups)):
-    for j in range(i + 1, len(normal_groups)):
-        if normal_groups[i] & normal_groups[j]:
-            raise RuntimeError("Normal Train 역할 간 데이터가 겹칩니다.")
 
+# --------------------------------------------------
+# ⑦-2. 정상 Train 역할 간 이미지 중복 확인
+# --------------------------------------------------
+for i in range(
+    len(normal_groups)
+):
+
+    for j in range(
+        i + 1,
+        len(normal_groups)
+    ):
+
+        # 두 역할의 이미지가 겹치면 오류 발생
+        if normal_groups[i] & normal_groups[j]:
+
+            raise RuntimeError(
+                "Normal Train 역할 간 데이터가 겹칩니다."
+            )
+
+
+# --------------------------------------------------
+# ⑦-3. broken_small 역할별 목록
+# --------------------------------------------------
 broken_groups = [
     set(few_anomaly_support),
     set(common_anomaly_query),
     set(cutpaste_defect_source),
 ]
 
-for i in range(len(broken_groups)):
-    for j in range(i + 1, len(broken_groups)):
+
+# --------------------------------------------------
+# ⑦-4. broken_small 역할 간 이미지 중복 확인
+# --------------------------------------------------
+for i in range(
+    len(broken_groups)
+):
+
+    for j in range(
+        i + 1,
+        len(broken_groups)
+    ):
+
+        # 같은 불량 이미지가 겹치면 오류 발생
         if broken_groups[i] & broken_groups[j]:
-            raise RuntimeError("broken_small 역할 간 데이터가 겹칩니다.")
+
+            raise RuntimeError(
+                "broken_small 역할 간 데이터가 겹칩니다."
+            )
+
+
+# ==================================================
+# ⑧ 역할별 실습 폴더로 이미지 복사
+#    → ⑤, ⑥에서 선택한 이미지를 실제 폴더에 저장
+#    → 원본 데이터는 변경하지 않음
+#
+#    각 역할을 나누어 두면
+#    이후 64~69번 코드에서 바로 사용할 수 있음
+# ==================================================
 
 
 # --------------------------------------------------
-# 7. 복사
+# ⑧-1. One-shot Reference 1장 복사
 # --------------------------------------------------
 copy_files(
     one_reference,
     DAY08_ROOT / "one_shot/reference",
 )
 
+
+# --------------------------------------------------
+# ⑧-2. One-shot Calibration 20장 복사
+# --------------------------------------------------
 copy_files(
     one_calibration,
     DAY08_ROOT / "one_shot/calibration/normal",
 )
 
+
+# --------------------------------------------------
+# ⑧-3. Few-shot 정상 Support 5장 복사
+# --------------------------------------------------
 copy_files(
     few_normal_support,
     DAY08_ROOT / "few_shot/support/normal",
 )
 
+
+# --------------------------------------------------
+# ⑧-4. Few-shot 불량 Support 5장 복사
+# --------------------------------------------------
 copy_files(
     few_anomaly_support,
     DAY08_ROOT / "few_shot/support/anomaly",
 )
 
+
+# --------------------------------------------------
+# ⑧-5. 공통 평가용 정상 Query 10장 복사
+# --------------------------------------------------
 copy_files(
     common_normal_query,
     DAY08_ROOT / "common_query/normal",
 )
 
+
+# --------------------------------------------------
+# ⑧-6. 공통 평가용 불량 Query 10장 복사
+# --------------------------------------------------
 copy_files(
     common_anomaly_query,
     DAY08_ROOT / "common_query/anomaly/broken_small",
 )
 
+
+# --------------------------------------------------
+# ⑧-7. Cut-Paste 합성 대상 정상 이미지 10장
+# --------------------------------------------------
 copy_files(
     cutpaste_normal,
     DAY08_ROOT / "cutpaste/normal",
 )
 
+
+# --------------------------------------------------
+# ⑧-8. 작은 파손 원본 2장과 Mask 함께 복사
+#       → Cut-Paste에서 실제 결함 영역 추출
+# --------------------------------------------------
 copy_defect_sources(
     cutpaste_defect_source,
     "broken_small",
     DAY08_ROOT / "cutpaste/defect_source",
 )
 
+
+# --------------------------------------------------
+# ⑧-9. Mini Challenge 정상 이미지 5장 복사
+# --------------------------------------------------
 copy_files(
     mini_normal,
     DAY08_ROOT / "mini_challenge/normal",
 )
 
+
+# --------------------------------------------------
+# ⑧-10. 오염 원본 2장과 Mask 함께 복사
+#        → Mini Challenge에서 오염 결함 합성
+# --------------------------------------------------
 copy_defect_sources(
     mini_defect_source,
     "contamination",
@@ -1741,8 +2340,19 @@ copy_defect_sources(
 )
 
 
+# ==================================================
+# ⑨ 데이터 구성 요약 보고서 작성
+#    → 각 실습에서 사용할 이미지 개수 기록
+#    → 중복 검사 통과 여부 기록
+#    → Markdown 파일로 저장
+#
+#    보고서 위치:
+#    reports/day08_dataset_summary.md
+# ==================================================
+
+
 # --------------------------------------------------
-# 8. Summary 저장
+# ⑨-1. 데이터 구성 내용을 Markdown으로 정리
 # --------------------------------------------------
 summary = f"""# Day08 Dataset Summary
 
@@ -1778,78 +2388,186 @@ Seed: {SEED}
 PASS
 """
 
-REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-REPORT_PATH.write_text(summary, encoding="utf-8")
+
+# --------------------------------------------------
+# ⑨-2. reports 폴더가 없으면 생성
+# --------------------------------------------------
+REPORT_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 
+# --------------------------------------------------
+# ⑨-3. Markdown 보고서 저장
+# --------------------------------------------------
+REPORT_PATH.write_text(
+    summary,
+    encoding="utf-8"
+)
+
+
+# ==================================================
+# ⑩ 실행 결과 출력
+#    → 각 실습별 데이터 개수 출력
+#    → 중복 검사 결과 출력
+#    → Summary 보고서 저장 위치 확인
+# ==================================================
 print("=" * 70)
 print("DAY08 DATASET PREPARE")
 print("=" * 70)
-print("One-shot Reference        :", len(one_reference))
-print("One-shot Calibration      :", len(one_calibration))
-print("Few-shot Normal Support   :", len(few_normal_support))
-print("Few-shot Anomaly Support  :", len(few_anomaly_support))
-print("Common Query Normal       :", len(common_normal_query))
-print("Common Query Anomaly      :", len(common_anomaly_query))
-print("Cut-Paste Normal          :", len(cutpaste_normal))
-print("Cut-Paste Defect Source   :", len(cutpaste_defect_source))
-print("Mini Defect Source        :", len(mini_defect_source))
-print("Data Leakage Check        : PASS")
-print("Saved                     :", REPORT_PATH)
+
+print(
+    "One-shot Reference        :",
+    len(one_reference)
+)
+
+print(
+    "One-shot Calibration      :",
+    len(one_calibration)
+)
+
+print(
+    "Few-shot Normal Support   :",
+    len(few_normal_support)
+)
+
+print(
+    "Few-shot Anomaly Support  :",
+    len(few_anomaly_support)
+)
+
+print(
+    "Common Query Normal       :",
+    len(common_normal_query)
+)
+
+print(
+    "Common Query Anomaly      :",
+    len(common_anomaly_query)
+)
+
+print(
+    "Cut-Paste Normal          :",
+    len(cutpaste_normal)
+)
+
+print(
+    "Cut-Paste Defect Source   :",
+    len(cutpaste_defect_source)
+)
+
+print(
+    "Mini Defect Source        :",
+    len(mini_defect_source)
+)
+
+print(
+    "Data Leakage Check        : PASS"
+)
+
+print(
+    "Saved                     :",
+    REPORT_PATH
+)
 ```
 
-### 전체 코드 흐름
+### 의사코드
 
 ```
-프로그램 시작
-        ↓
-MVTec bottle 원본 이미지 목록 읽기
-        ↓
-정상 / broken_small / contamination 준비
-        ↓
-Seed를 이용하여
-항상 같은 순서로 이미지 섞기
-        ↓
-정상 train/good 분리
-        ↓
-One-shot Reference
-One-shot Calibration
-Few-shot Normal Support
-Cut-Paste Normal
-Mini Challenge Normal
-        ↓
-test/good에서
-Common Query Normal 선택
-        ↓
-broken_small 분리
-        ↓
-Few-shot Anomaly Support
-Common Query Anomaly
-Cut-Paste Defect Source
-        ↓
-contamination에서
-Mini Challenge Defect Source 선택
-        ↓
-역할별 이미지가 서로 겹치는지 검사
-        ↓
-겹침?
-   ┌────┴────┐
-  YES        NO
-   ↓          ↓
-실행 중단    계속 진행
-             ↓
-samples/day08에 역할별 복사
-             ↓
-결함 Source는
-이미지 + Mask 함께 복사
-             ↓
-사용 수량을
-day08_dataset_summary.md에 저장
-             ↓
-Data Leakage Check = PASS
-             ↓
-8일차 실습용 데이터 준비 완료
+① 라이브러리와 경로 설정
+   - random, shutil, Path를 불러온다.
+   - MVTec bottle 원본 폴더를 지정한다.
+   - Day08 실습용 폴더를 지정한다.
+   - 결과 보고서 경로를 지정한다.
+   - SEED를 42로 설정한다.
+
+② Day08 실습 폴더 초기화
+   - samples/day08 폴더가 있는지 확인한다.
+   - 이미 존재하면 삭제한다.
+   - 7일차 원본은 그대로 보존한다.
+
+③ 복사용 공통 함수 작성
+
+   [copy_files()]
+   - 복사할 이미지 목록을 전달받는다.
+   - 저장 폴더를 생성한다.
+   - 이미지를 한 장씩 복사한다.
+
+   [copy_defect_sources()]
+   - 불량 이미지 목록과 결함 종류를 받는다.
+   - images 폴더와 masks 폴더를 생성한다.
+   - 각 불량 이미지와 짝이 되는 Mask를 찾는다.
+   - 이미지와 Mask를 각각 복사한다.
+
+④ 원본 이미지 목록 준비
+   - 정상 Train 이미지를 가져온다.
+   - 정상 Test 이미지를 가져온다.
+   - broken_small 이미지를 가져온다.
+   - contamination 이미지를 가져온다.
+   - 정해진 SEED로 목록의 순서를 섞는다.
+
+⑤ 정상 이미지 역할 분리
+
+   [정상 Train 원본]
+   - 첫 1장   → One-shot Reference
+   - 다음 20장 → One-shot Calibration
+   - 다음 5장  → Few-shot Normal Support
+   - 다음 10장 → Cut-Paste 정상 이미지
+   - 다음 5장  → Mini Challenge 정상 이미지
+
+   [정상 Test 원본]
+   - 10장 → Common Normal Query
+
+⑥ 불량 이미지 역할 분리
+
+   [broken_small]
+   - 첫 5장   → Few-shot Anomaly Support
+   - 다음 10장 → Common Anomaly Query
+   - 다음 2장  → Cut-Paste 결함 원본
+
+   [contamination]
+   - 첫 2장   → Mini Challenge 결함 원본
+
+⑦ 데이터 중복 검사
+   - 정상 Train의 역할별 이미지 목록을 비교한다.
+   - 같은 이미지가 서로 다른 역할에 있으면 중단한다.
+
+   - broken_small의 역할별 이미지 목록을 비교한다.
+   - 같은 이미지가 겹치면 중단한다.
+
+   - 중복이 없으면 다음 단계로 진행한다.
+
+⑧ 실습용 폴더에 이미지 복사
+   - One-shot Reference를 복사한다.
+   - One-shot Calibration을 복사한다.
+   - Few-shot Normal Support를 복사한다.
+   - Few-shot Anomaly Support를 복사한다.
+   - Common Normal Query를 복사한다.
+   - Common Anomaly Query를 복사한다.
+   - Cut-Paste 정상 이미지를 복사한다.
+   - 작은 파손 원본과 Mask를 복사한다.
+   - Mini Challenge 정상 이미지를 복사한다.
+   - 오염 원본과 Mask를 복사한다.
+
+⑨ 데이터 구성 보고서 저장
+   - 역할별 이미지 개수를 정리한다.
+   - 중복 검사 결과를 기록한다.
+   - day08_dataset_summary.md로 저장한다.
+
+⑩ 실행 결과 확인
+   - One-shot 데이터 개수를 출력한다.
+   - Few-shot 데이터 개수를 출력한다.
+   - Common Query 개수를 출력한다.
+   - Cut-Paste 데이터 개수를 출력한다.
+   - Mini Challenge 데이터 개수를 출력한다.
+   - Data Leakage Check: PASS를 출력한다.
+   - 보고서 저장 경로를 출력한다.
+
+   → Day08 실습용 데이터 준비 완료
+   → 다음 64번 One-shot 기준 생성 실습으로 이동
 ```
+
 
 실행합니다.
 
@@ -1879,90 +2597,6 @@ Data Leakage Check : PASS
 ```
 
 이는 역할이 다른 데이터 사이에 잘못 겹친 이미지가 발견되지 않았다는 뜻입니다.
-
-### 의사코드
-
-```text
-1. 7일차에서 보관한
-   MVTec bottle 원본 위치를 지정한다.
-
-2. 8일차 실습용 데이터를 저장할
-   samples/day08 위치를 지정한다.
-
-3. 이전에 만들어진 samples/day08이 있다면
-   새로 분리하기 위해 초기화한다.
-
-4. 원본에서 다음 이미지 목록을 읽는다.
-
-   - train/good
-   - test/good
-   - test/broken_small
-   - test/contamination
-
-5. Seed 값을 고정한다.
-
-6. 정상 이미지와 불량 이미지의 순서를 섞는다.
-
-7. train/good 정상 이미지에서
-   서로 다른 이미지를 다음 역할로 나눈다.
-
-   - One-shot Reference 1장
-   - One-shot Calibration 20장
-   - Few-shot Normal Support 5장
-   - Cut-Paste Normal 10장
-   - Mini Challenge Normal 5장
-
-8. test/good에서
-   Common Query Normal 10장을 선택한다.
-
-9. broken_small에서
-   서로 다른 이미지를 다음 역할로 나눈다.
-
-   - Few-shot Anomaly Support 5장
-   - Common Query Anomaly 10장
-   - Cut-Paste Defect Source 2장
-
-10. contamination에서
-    Mini Challenge Defect Source 2장을 선택한다.
-
-11. 정상 Train에서 나눈 역할들 사이에
-    같은 이미지가 중복되어 있는지 검사한다.
-
-12. broken_small에서 나눈 역할들 사이에도
-    같은 이미지가 중복되어 있는지 검사한다.
-
-13. 중복이 발견되면
-    프로그램을 중단한다.
-
-14. 중복이 없다면
-    선택한 이미지를 samples/day08의
-    역할별 폴더에 복사한다.
-
-15. Cut-Paste에 사용할 결함 이미지는
-    해당 Ground Truth Mask도 함께 찾는다.
-
-16. 결함 이미지와 Mask를
-    각각 images / masks 폴더에 복사한다.
-
-17. Mini Challenge용 contamination도
-    이미지와 Mask를 함께 복사한다.
-
-18. 각 역할에 몇 장이 배정되었는지 계산한다.
-
-19. 결과를
-    reports/day08_dataset_summary.md
-    파일에 저장한다.
-
-20. 모든 역할 분리가 정상적으로 끝나면
-
-    Data Leakage Check = PASS
-
-    를 출력한다.
-
-21. 8일차 One-shot / Few-shot /
-    Cut-Paste 실습에 사용할
-    데이터 준비를 완료한다.
-```
 
 ---
 
@@ -2205,6 +2839,8 @@ Query
 
 ### One-shot과 Few-shot은 어떻게 비교하나요?
 
+![[Pasted image 20261031202906.png]]
+
 두 방법을 한꺼번에 하나의 코드에서 실행하는 것은 아닙니다.
 
 오늘 수업에서는 순서대로 진행합니다.
@@ -2445,176 +3081,6 @@ Similarity             평균하여 Prototype
                        Query와 Similarity 비교
 ```
 
-파일:
-
-```text
-src/day08_feature_core.py
-```
-
-작성합니다.
-
-```python
-import numpy as np
-import torch
-import torch.nn.functional as F
-from PIL import Image
-from torchvision import transforms
-from torchvision.models import resnet18, ResNet18_Weights
-
-
-DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
-)
-
-
-PREPROCESS = transforms.Compose(
-    [
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-    ]
-)
-
-
-def create_feature_model():
-    model = resnet18(
-        weights=ResNet18_Weights.DEFAULT
-    )
-
-    feature_model = torch.nn.Sequential(
-        *list(model.children())[:-1]
-    )
-
-    feature_model.eval()
-    feature_model.to(DEVICE)
-
-    return feature_model
-
-
-@torch.no_grad()
-def extract_feature(model, image_path):
-    image = Image.open(image_path).convert("RGB")
-
-    tensor = (
-        PREPROCESS(image)
-        .unsqueeze(0)
-        .to(DEVICE)
-    )
-
-    feature = model(tensor).flatten(1)
-
-    feature = F.normalize(
-        feature,
-        p=2,
-        dim=1,
-    )
-
-    return feature[0].cpu().numpy()
-
-
-def cosine_similarity(feature_a, feature_b):
-    return float(
-        np.dot(feature_a, feature_b)
-    )
-
-
-def build_prototype(features):
-    stacked = np.stack(features)
-    prototype = stacked.mean(axis=0)
-
-    norm = np.linalg.norm(prototype)
-
-    if norm == 0:
-        raise RuntimeError("Prototype norm이 0입니다.")
-
-    return prototype / norm
-```
-
-## 코드가 만든 기능을 확인합니다
-
-### `create_feature_model()`
-
-```
-Pretrained ResNet18 준비
-        ↓
-최종 분류 결과는 사용하지 않음
-        ↓
-이미지 특징을 꺼내는 용도로 사용
-```
-
-뒤의 One-shot과 Few-shot이 모두 이 모델을 사용합니다.
-
----
-
-### `extract_feature()`
-
-이미지 한 장을 받아 Feature로 바꿉니다.
-
-```
-이미지
-        ↓
-크기와 형식 정리
-        ↓
-ResNet18
-        ↓
-Feature
-        ↓
-512개의 숫자
-```
-
-즉 컴퓨터가 이미지끼리 비교할 수 있도록 **이미지를 숫자로 바꾸어 주는 기능**입니다.
-
----
-
-### `cosine_similarity()`
-
-Feature 두 개가 얼마나 비슷한지 계산합니다.
-
-```
-Feature A
-        +
-Feature B
-        ↓
-Similarity
-```
-
-오늘은 다음 방향만 기억합니다.
-
-```
-Similarity 높음
-→ 서로 비슷함
-
-Similarity 낮음
-→ 서로 다름
-```
-
-One-shot과 Few-shot 모두 이 비교 기능을 사용합니다.
-
----
-
-### `build_prototype()`
-
-이 기능은 주로 Few-shot에서 사용합니다.
-
-```
-Feature 1
-Feature 2
-Feature 3
-Feature 4
-Feature 5
-        ↓
-평균
-        ↓
-대표 Feature
-```
-
-여러 예제의 특징을 평균하여 하나의 대표 기준을 만듭니다.
-
-이 값을 뒤에서 `Prototype`이라고 사용합니다.
-
 ### 전체 코드 흐름
 
 ```
@@ -2649,114 +3115,453 @@ Reference 비교   Query 비교       Support 평균
 Similarity      Similarity         Prototype
 ```
 
+파일:
+
+```text
+src/day08_feature_core.py
+```
+
+작성합니다.
+
+```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#    → NumPy       : Feature 계산 및 배열 처리
+#    → PyTorch     : 사전학습된 ResNet18 실행
+#    → F           : Feature Vector 정규화
+#    → Pillow      : 이미지 읽기 및 RGB 변환
+#    → transforms  : ResNet18 입력 이미지 전처리
+# ==================================================
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from PIL import Image
+
+from torchvision import transforms
+
+from torchvision.models import (
+    resnet18,
+    ResNet18_Weights,
+)
+
+
+# ==================================================
+# ② 실행 장치 설정
+#    → CUDA 사용 가능 : GPU 사용
+#    → CUDA 사용 불가 : CPU 사용
+#
+#    GPU가 없어도 실행할 수 있습니다.
+# ==================================================
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+
+# ==================================================
+# ③ ResNet18 입력 이미지 전처리 설정
+#    → 병 이미지 크기를 224 × 224로 변경
+#    → 이미지를 PyTorch Tensor로 변환
+#    → ImageNet 기준 평균과 표준편차로 정규화
+#
+#    왜 전처리할까요?
+#    → 사전학습된 ResNet18이 사용할 수 있는
+#      일정한 입력 형태로 이미지를 맞추기 위해서입니다.
+# ==================================================
+PREPROCESS = transforms.Compose(
+    [
+        # ------------------------------------------
+        # ③-1. 이미지 크기를 224 × 224로 변경
+        # ------------------------------------------
+        transforms.Resize(
+            (224, 224)
+        ),
+
+        # ------------------------------------------
+        # ③-2. 이미지를 Tensor로 변환
+        #       → RGB 픽셀값을 0~1 범위로 변환
+        # ------------------------------------------
+        transforms.ToTensor(),
+
+        # ------------------------------------------
+        # ③-3. ImageNet 기준으로 정규화
+        #       → RGB 채널별 평균과 표준편차 사용
+        # ------------------------------------------
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+    ]
+)
+
+
+# ==================================================
+# ④ Feature 추출용 ResNet18 모델 생성
+#
+#    함수: create_feature_model()
+#
+#    → ImageNet 사전학습 ResNet18 불러오기
+#    → 마지막 분류층(fc) 제외
+#    → 이미지 특징 추출용 모델로 사용
+#
+#    이번에는 새로운 모델을 학습하지 않습니다.
+# ==================================================
+def create_feature_model():
+
+    # ----------------------------------------------
+    # ④-1. 사전학습된 ResNet18 불러오기
+    # ----------------------------------------------
+    model = resnet18(
+        weights=ResNet18_Weights.DEFAULT
+    )
+
+    # ----------------------------------------------
+    # ④-2. 마지막 분류층을 제외하고 구성
+    #
+    #       ResNet18 특징 추출부
+    #       → Average Pooling까지 사용
+    #       → 마지막 fc 분류층은 사용하지 않음
+    #
+    #       출력 특징 수: 512개
+    # ----------------------------------------------
+    feature_model = torch.nn.Sequential(
+        *list(model.children())[:-1]
+    )
+
+    # ----------------------------------------------
+    # ④-3. 평가 모드로 설정
+    #       → BatchNorm 등 평가 방식 적용
+    # ----------------------------------------------
+    feature_model.eval()
+
+    # ----------------------------------------------
+    # ④-4. GPU 또는 CPU로 모델 이동
+    # ----------------------------------------------
+    feature_model.to(
+        DEVICE
+    )
+
+    # ----------------------------------------------
+    # ④-5. 특징 추출 모델 반환
+    # ----------------------------------------------
+    return feature_model
+
+
+# ==================================================
+# ⑤ 병 이미지에서 Feature Vector 추출
+#
+#    함수: extract_feature()
+#
+#    → 이미지 읽기
+#    → 전처리
+#    → ResNet18 실행
+#    → 512차원 Feature Vector 생성
+#    → L2 정규화
+#
+#    @torch.no_grad()
+#    → 특징 추출 중 기울기를 계산하지 않음
+#    → 모델 학습은 수행하지 않음
+# ==================================================
+@torch.no_grad()
+def extract_feature(
+    model,
+    image_path
+):
+
+    # ----------------------------------------------
+    # ⑤-1. 병 이미지 읽기
+    #       → RGB 3채널 이미지로 변환
+    # ----------------------------------------------
+    image = Image.open(
+        image_path
+    ).convert("RGB")
+
+    # ----------------------------------------------
+    # ⑤-2. 이미지 전처리
+    #
+    #       PREPROCESS(image)
+    #       → 이미지 크기 및 픽셀값 정규화
+    #
+    #       unsqueeze(0)
+    #       → Batch 차원 추가
+    #
+    #       to(DEVICE)
+    #       → GPU 또는 CPU로 이동
+    # ----------------------------------------------
+    tensor = (
+        PREPROCESS(image)
+        .unsqueeze(0)
+        .to(DEVICE)
+    )
+
+    # ----------------------------------------------
+    # ⑤-3. ResNet18로 특징 추출
+    #
+    #       Feature Model 출력
+    #       → (1, 512, 1, 1)
+    #
+    #       flatten(1)
+    #       → (1, 512)
+    #
+    #       이미지 1장당 특징값 512개 생성
+    # ----------------------------------------------
+    feature = model(
+        tensor
+    ).flatten(1)
+
+    # ----------------------------------------------
+    # ⑤-4. Feature Vector L2 정규화
+    #
+    #       벡터의 길이를 1로 맞춤
+    #
+    #       이후 코사인 유사도를
+    #       내적으로 계산할 수 있도록 준비
+    # ----------------------------------------------
+    feature = F.normalize(
+        feature,
+        p=2,
+        dim=1,
+    )
+
+    # ----------------------------------------------
+    # ⑤-5. Feature Vector 반환
+    #
+    #       feature[0] : 첫 번째 이미지 특징
+    #       cpu()      : CPU로 이동
+    #       numpy()    : NumPy 배열로 변환
+    #
+    #       최종 형태: (512,)
+    # ----------------------------------------------
+    return (
+        feature[0]
+        .cpu()
+        .numpy()
+    )
+
+
+# ==================================================
+# ⑥ 두 이미지 특징의 Cosine Similarity 계산
+#
+#    함수: cosine_similarity()
+#
+#    → Feature Vector 두 개를 비교
+#    → 얼마나 비슷한 방향인지 숫자로 계산
+#
+#    이 함수의 입력은 L2 정규화된 Vector입니다.
+#
+#    유사도 높음 → 특징이 서로 비슷함
+#    유사도 낮음 → 특징 차이가 상대적으로 큼
+# ==================================================
+def cosine_similarity(
+    feature_a,
+    feature_b
+):
+
+    # ----------------------------------------------
+    # ⑥-1. 정규화된 두 Feature Vector의 내적 계산
+    #
+    #       np.dot()으로 계산
+    #
+    #       두 벡터의 길이가 1이므로
+    #       내적값이 코사인 유사도에 해당
+    # ----------------------------------------------
+    return float(
+        np.dot(
+            feature_a,
+            feature_b
+        )
+    )
+
+
+# ==================================================
+# ⑦ 여러 이미지의 대표 특징 Prototype 생성
+#
+#    함수: build_prototype()
+#
+#    → Support 이미지들의 Feature Vector를 받음
+#    → 여러 Vector의 평균 계산
+#    → 평균 Vector의 길이를 1로 정규화
+#    → 대표 특징(Prototype) 반환
+#
+#    Few-shot에서는 정상 Support와 불량 Support로
+#    각각 별도의 Prototype을 생성합니다.
+# ==================================================
+def build_prototype(
+    features
+):
+
+    # ----------------------------------------------
+    # ⑦-1. 여러 이미지의 특징을 하나로 묶기
+    #
+    #       예: 정상 Support 5장의 특징
+    #       → (5, 512)
+    # ----------------------------------------------
+    stacked = np.stack(
+        features
+    )
+
+    # ----------------------------------------------
+    # ⑦-2. 특징별 평균값 계산
+    #
+    #       5장의 특징을 평균
+    #       → (512,)
+    #
+    #       이 평균 특징이 Prototype의 기본 형태
+    # ----------------------------------------------
+    prototype = stacked.mean(
+        axis=0
+    )
+
+    # ----------------------------------------------
+    # ⑦-3. 평균 Feature Vector의 길이 계산
+    #       → L2 Norm 계산
+    # ----------------------------------------------
+    norm = np.linalg.norm(
+        prototype
+    )
+
+    # ----------------------------------------------
+    # ⑦-4. 벡터 길이가 0이면 오류 발생
+    #
+    #       길이가 0이면 정규화할 수 없음
+    # ----------------------------------------------
+    if norm == 0:
+
+        raise RuntimeError(
+            "Prototype norm이 0입니다."
+        )
+
+    # ----------------------------------------------
+    # ⑦-5. Prototype을 정규화하여 반환
+    #
+    #       최종 형태: (512,)
+    #
+    #       Query와 Cosine Similarity 비교에 사용
+    # ----------------------------------------------
+    return (
+        prototype / norm
+    )
+
+
+# ==================================================
+# ⑧ 공통 함수 모듈 작성 완료
+#
+#    이 파일에는 다음 세 가지 주요 함수가 있습니다.
+#
+#    create_feature_model()
+#    → 특징 추출용 ResNet18 준비
+#
+#    extract_feature()
+#    → 이미지 1장의 512차원 특징 추출
+#
+#    cosine_similarity()
+#    → 두 특징의 유사도 계산
+#
+#    build_prototype()
+#    → 여러 Support 특징의 대표값 생성
+#
+#    이후 64~67번 파일에서 import하여 사용합니다.
+#
+#    이 파일만 실행하면 검사 결과는 출력되지 않습니다.
+# ==================================================
+```
 
 ### 의사코드
 
 ```
-1. NumPy, PyTorch, Pillow,
-   Torchvision 등 필요한 라이브러리를 불러온다.
+① 필요한 라이브러리 불러오기
+   - NumPy와 PyTorch를 불러온다.
+   - Pillow를 불러온다.
+   - Torchvision과 ResNet18을 불러온다.
 
-2. 현재 컴퓨터에서 CUDA를 사용할 수 있는지 확인한다.
+② 실행 장치 설정
+   - CUDA 사용 가능 여부를 확인한다.
+   - GPU가 있으면 CUDA를 사용한다.
+   - GPU가 없으면 CPU를 사용한다.
 
-3. CUDA를 사용할 수 있다면 GPU를 사용하고,
-   사용할 수 없다면 CPU를 사용하도록 설정한다.
+③ 이미지 전처리 설정
+   - 이미지 크기를 224 × 224로 변경한다.
+   - 이미지를 Tensor로 변환한다.
+   - RGB 픽셀값을 ImageNet 기준으로 정규화한다.
 
-4. ResNet18에 이미지를 넣기 전에 사용할
-   공통 이미지 전처리 방법을 준비한다.
+④ create_feature_model() 작성
+   - 사전학습된 ResNet18을 불러온다.
+   - 마지막 분류층을 제외한다.
+   - 평가 모드로 설정한다.
+   - GPU 또는 CPU로 이동한다.
+   - 특징 추출 모델을 반환한다.
 
-5. 이미지 크기를 224 × 224로 맞춘다.
+⑤ extract_feature() 작성
+   - 병 이미지 1장을 읽는다.
+   - RGB 이미지로 변환한다.
+   - PREPROCESS를 적용한다.
+   - Batch 차원을 추가한다.
+   - ResNet18에 이미지를 입력한다.
+   - 512개의 특징값을 추출한다.
+   - L2 정규화를 적용한다.
+   - NumPy 배열로 변환하여 반환한다.
 
-6. 이미지를 PyTorch가 처리할 수 있는
-   Tensor 형태로 바꾼다.
+   결과:
+   병 이미지 1장
+      ↓
+   Feature Vector 512개
 
-7. ResNet18이 사용하던 기준에 맞게
-   이미지 값을 정리한다.
+⑥ cosine_similarity() 작성
+   - 정규화된 Feature Vector 두 개를 받는다.
+   - np.dot()으로 내적을 계산한다.
+   - 계산한 유사도를 반환한다.
 
-8. ImageNet으로 미리 학습된
-   ResNet18을 불러온다.
+   결과:
+   Feature A + Feature B
+      ↓
+   Cosine Similarity
 
-9. ResNet18의 마지막 분류 결과는 사용하지 않고
-   이미지 특징을 얻을 수 있는 부분까지 사용한다.
+⑦ build_prototype() 작성
+   - 여러 Support 이미지의 Feature를 받는다.
+   - np.stack()으로 하나의 배열로 묶는다.
+   - 각 특징값의 평균을 계산한다.
+   - Prototype의 길이를 계산한다.
+   - 길이가 0이면 오류를 발생시킨다.
+   - Prototype을 L2 정규화한다.
+   - 대표 Feature Vector를 반환한다.
 
-10. 만든 ResNet18을
-    Feature 추출용 모델로 준비한다.
+   결과:
+   Support Feature 여러 개
+      ↓
+   특징별 평균 계산
+      ↓
+   Prototype 1개
 
-11. 이미지 경로가 들어오면
-    해당 이미지를 RGB로 읽는다.
-
-12. 앞에서 만든 공통 전처리를 적용한다.
-
-13. 이미지를 ResNet18에 넣는다.
-
-14. ResNet18이 만든 Feature를
-    한 줄의 숫자 형태로 정리한다.
-
-15. Feature를 서로 비교하기 좋은 형태로
-    정규화한다.
-
-16. 최종 Feature를 NumPy 배열로 반환한다.
-
-17. Feature 두 개가 들어오면
-    Cosine Similarity를 계산한다.
-
-18. Similarity 값으로
-    두 Feature가 얼마나 비슷한지 비교할 수 있게 한다.
-
-19. 여러 개의 Feature가 들어오면
-    하나의 배열로 모은다.
-
-20. 여러 Feature의 평균을 계산한다.
-
-21. 평균 Feature를 다시 정규화한다.
-
-22. Few-shot에서 사용할
-    Prototype을 반환한다.
-
-23. 뒤의 One-shot 프로그램에서는
-
-    Feature 추출
-        +
-    Similarity 계산
-
-    기능을 가져다 사용한다.
-
-24. 뒤의 Few-shot 프로그램에서는
-
-    Feature 추출
-        +
-    Prototype 생성
-        +
-    Similarity 계산
-
-    기능을 가져다 사용한다.
+⑧ 공통 함수 작성 완료
+   - One-shot에서 Feature와 유사도 계산에 사용한다.
+   - Few-shot에서 Feature와 Prototype 생성에 사용한다.
+   - 이후 검사 코드가 이 모듈을 불러와 실행한다.
 ```
 
+---
+## 이 공통 함수는 어디에서 사용하나요?
 
-### 지금 단계에서 꼭 이해할 것
+|함수|One-shot|Few-shot|
+|---|---|---|
+|`create_feature_model()`|ResNet18 준비|ResNet18 준비|
+|`extract_feature()`|기준 이미지와 Query 특징 추출|Support와 Query 특징 추출|
+|`cosine_similarity()`|기준 이미지와 Query 비교|두 Prototype과 Query 비교|
+|`build_prototype()`|사용하지 않음|정상·불량 Prototype 생성|
 
-지금 가장 중요한 것은 다음 구조입니다.
+### 7일차와 무엇이 다른가요?
 
-```
-이미지
-        ↓
-공통 함수
-        ↓
-Feature
-```
+7일차에서는 ResNet18의 `layer3`까지 사용하여 256차원 Feature Vector와 위치별 Feature Map을 생성했습니다.
 
-그리고 이 Feature를:
+8일차에서는 ResNet18의 마지막 분류층 직전까지 사용하여 512차원 Feature Vector를 추출합니다. 이번 수업에서는 이 특징을 코사인 유사도로 비교합니다.
 
-```
-One-shot
-→ 한 장의 기준 Feature와 비교
+두 수업 모두 사전학습된 ResNet18을 특징 추출기로 사용하며, 별도의 재학습은 하지 않습니다.
 
-Few-shot
-→ 여러 Feature로 대표 기준을 만든 뒤 비교
-```
+### 이번 코드의 핵심 정리
 
-한다는 차이입니다.
+`day08_feature_core.py`는 정상·이상을 직접 판정하는 코드가 아니라, 이미지 특징 추출과 유사도 비교에 필요한 기능을 미리 만들어 두는 공통 함수 모듈입니다.
 
-> One-shot과 Few-shot은 판정 방식은 다르지만, 이미지를 Feature로 바꾸는 과정은 같기 때문에 공통 함수로 만들어 재사용합니다.
+따라서 이 파일을 단독 실행하더라도 별도의 검사 결과나 CSV 파일은 생성되지 않습니다.
 
 ---
 
@@ -2873,6 +3678,8 @@ One-shot 판정 Rule 저장
 
 ## 왜 Calibration 이미지가 필요한가요?
 
+Calibration(보정) 은 정상 이미지의 유사도를 측정하여 정상과 이상을 구분할 기준값(Threshold)을 정하는 과정입니다.
+
 Reference는 한 장뿐입니다.
 
 예를 들어 Reference와 다른 정상 이미지를 비교했을 때:
@@ -2959,6 +3766,19 @@ src/64_day08_calibrate_one_shot.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#    → csv   : Calibration 결과 CSV 저장
+#    → json  : 확정한 판정 규칙 JSON 저장
+#    → Path  : 파일과 폴더 경로 관리
+#    → NumPy : 5 Percentile Threshold 계산
+#
+#    day08_feature_core에서 다음 함수를 사용합니다.
+#    → create_feature_model() : ResNet18 준비
+#    → extract_feature()      : 이미지 특징 추출
+#    → cosine_similarity()    : 두 특징의 유사도 계산
+# ==================================================
 import csv
 import json
 from pathlib import Path
@@ -2972,57 +3792,233 @@ from day08_feature_core import (
 )
 
 
-REFERENCE_DIR = Path("samples/day08/one_shot/reference")
-CALIBRATION_DIR = Path("samples/day08/one_shot/calibration/normal")
+# ==================================================
+# ② 입력 / 출력 경로 및 Percentile 설정
+#
+#    Reference  : 정상 기준 이미지 1장
+#    Calibration: Threshold 계산용 정상 이미지 20장
+#
+#    출력 파일:
+#    → 정상 기준 Feature Vector (NPY)
+#    → 판정 규칙 (JSON)
+#    → Calibration 유사도 기록 (CSV)
+# ==================================================
 
-ARTIFACT_PATH = Path("artifacts/day08/one_shot_reference.npy")
-RULE_PATH = Path("configs/day08_one_shot_rules.json")
-CSV_PATH = Path("reports/day08_one_shot_calibration.csv")
+# ----------------------------------------------
+# ②-1. One-shot 정상 Reference 이미지 경로
+# ----------------------------------------------
+REFERENCE_DIR = Path(
+    "samples/day08/one_shot/reference"
+)
 
+# ----------------------------------------------
+# ②-2. 정상 Calibration 이미지 경로
+# ----------------------------------------------
+CALIBRATION_DIR = Path(
+    "samples/day08/one_shot/calibration/normal"
+)
+
+# ----------------------------------------------
+# ②-3. 정상 기준 Feature Vector 저장 경로
+# ----------------------------------------------
+ARTIFACT_PATH = Path(
+    "artifacts/day08/one_shot_reference.npy"
+)
+
+# ----------------------------------------------
+# ②-4. 확정한 판정 규칙 JSON 저장 경로
+# ----------------------------------------------
+RULE_PATH = Path(
+    "configs/day08_one_shot_rules.json"
+)
+
+# ----------------------------------------------
+# ②-5. 이미지별 유사도 CSV 저장 경로
+# ----------------------------------------------
+CSV_PATH = Path(
+    "reports/day08_one_shot_calibration.csv"
+)
+
+# ----------------------------------------------
+# ②-6. Threshold 기준 설정
+#
+#       유사도가 낮을수록 정상 기준과 다름
+#       → 정상 유사도 분포의 하위 5% 경계값 사용
+# ----------------------------------------------
 PERCENTILE = 5
 
 
-reference_files = sorted(REFERENCE_DIR.glob("*.png"))
+# ==================================================
+# ③ Reference / Calibration 이미지 확인
+#    → Reference가 정확히 1장인지 확인
+#    → Calibration 이미지가 있는지 확인
+#    → 필요한 데이터가 없으면 오류 발생
+# ==================================================
 
+# ----------------------------------------------
+# ③-1. Reference 이미지 목록 가져오기
+# ----------------------------------------------
+reference_files = sorted(
+    REFERENCE_DIR.glob("*.png")
+)
+
+# ----------------------------------------------
+# ③-2. Reference가 정확히 1장인지 확인
+#
+#       One-shot이므로 기준 이미지는 1장입니다.
+# ----------------------------------------------
 if len(reference_files) != 1:
     raise RuntimeError(
         f"Reference는 1장이어야 합니다. 현재: {len(reference_files)}"
     )
 
+# ----------------------------------------------
+# ③-3. 정상 Reference 이미지 선택
+# ----------------------------------------------
 reference_path = reference_files[0]
-calibration_files = sorted(CALIBRATION_DIR.glob("*.png"))
 
+# ----------------------------------------------
+# ③-4. Calibration 정상 이미지 목록 가져오기
+# ----------------------------------------------
+calibration_files = sorted(
+    CALIBRATION_DIR.glob("*.png")
+)
+
+# ----------------------------------------------
+# ③-5. Calibration 이미지 존재 여부 확인
+#
+#       63번에서 정상 20장을 준비했습니다.
+# ----------------------------------------------
 if not calibration_files:
-    raise RuntimeError("Calibration 이미지가 없습니다.")
+    raise RuntimeError(
+        "Calibration 이미지가 없습니다."
+    )
 
 
+# ==================================================
+# ④ ResNet18 모델과 정상 기준 Feature 준비
+#
+#    → 사전학습된 ResNet18 특징 추출기 생성
+#    → Reference 이미지 1장에서 특징 추출
+#    → 512차원 Feature Vector를 NPY로 저장
+#
+#    이 과정은 새로운 모델을 학습하지 않습니다.
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. ResNet18 특징 추출 모델 생성
+# ----------------------------------------------
 model = create_feature_model()
-reference_feature = extract_feature(model, reference_path)
 
-ARTIFACT_PATH.parent.mkdir(parents=True, exist_ok=True)
-np.save(ARTIFACT_PATH, reference_feature)
+# ----------------------------------------------
+# ④-2. Reference 이미지의 특징 추출
+#
+#       정상 이미지 1장
+#           ↓
+#       ResNet18
+#           ↓
+#       Feature Vector (512,)
+# ----------------------------------------------
+reference_feature = extract_feature(
+    model,
+    reference_path
+)
+
+# ----------------------------------------------
+# ④-3. 정상 기준 저장 폴더 생성
+# ----------------------------------------------
+ARTIFACT_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ④-4. 정상 기준 Feature Vector 저장
+#
+#       이후 65번 검사에서 재사용합니다.
+# ----------------------------------------------
+np.save(
+    ARTIFACT_PATH,
+    reference_feature
+)
 
 
+# ==================================================
+# ⑤ Calibration 이미지의 Cosine Similarity 계산
+#
+#    → 정상 Calibration 이미지를 한 장씩 읽기
+#    → 이미지마다 512차원 Feature 추출
+#    → Reference 특징과 유사도 계산
+#    → 계산 결과를 리스트에 저장
+#
+#    정상 이미지라도 유사도는 서로 다를 수 있습니다.
+# ==================================================
+
+# 이미지별 파일명과 유사도를 저장할 리스트
 rows = []
+
+# Threshold 계산에 사용할 유사도 리스트
 similarities = []
 
+# ----------------------------------------------
+# ⑤-1. 정상 Calibration 이미지 반복
+# ----------------------------------------------
 for image_path in calibration_files:
-    feature = extract_feature(model, image_path)
+
+    # ------------------------------------------
+    # ⑤-2. 현재 이미지에서 Feature 추출
+    # ------------------------------------------
+    feature = extract_feature(
+        model,
+        image_path
+    )
+
+    # ------------------------------------------
+    # ⑤-3. Reference와 코사인 유사도 계산
+    #
+    #       유사도 높음 → 정상 기준과 비슷함
+    #       유사도 낮음 → 정상 기준과 다름
+    # ------------------------------------------
     similarity = cosine_similarity(
         reference_feature,
         feature,
     )
 
-    similarities.append(similarity)
+    # ------------------------------------------
+    # ⑤-4. Threshold 계산용 유사도 저장
+    # ------------------------------------------
+    similarities.append(
+        similarity
+    )
 
+    # ------------------------------------------
+    # ⑤-5. 파일명과 유사도를 CSV용으로 기록
+    #       → 표시할 값은 소수점 6자리
+    # ------------------------------------------
     rows.append(
         {
             "file": image_path.name,
-            "similarity": round(similarity, 6),
+            "similarity": round(
+                similarity,
+                6
+            ),
         }
     )
 
 
+# ==================================================
+# ⑥ 5 Percentile Threshold 계산
+#
+#    → 정상 Calibration 유사도들의 분포 사용
+#    → 하위 5% 경계에 해당하는 값 계산
+#
+#    이 기준보다 유사도가 낮으면 Anomaly
+#    이 기준 이상이면 Normal로 판정합니다.
+#
+#    주의!
+#    Threshold는 실제 Calibration 결과로 계산하며,
+#    여기서 임의의 숫자를 지정하지 않습니다.
+# ==================================================
 threshold = float(
     np.percentile(
         similarities,
@@ -3031,36 +4027,118 @@ threshold = float(
 )
 
 
-CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ==================================================
+# ⑦ 이미지별 Calibration 결과 CSV 저장
+#
+#    → 파일명과 코사인 유사도를 기록
+#    → 이후 정상 유사도 분포를 확인할 수 있음
+# ==================================================
 
+# ----------------------------------------------
+# ⑦-1. reports 폴더가 없으면 생성
+# ----------------------------------------------
+CSV_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ⑦-2. CSV 파일 열기
+# ----------------------------------------------
 with CSV_PATH.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
+
+    # ------------------------------------------
+    # ⑦-3. CSV 컬럼명 설정
+    # ------------------------------------------
     writer = csv.DictWriter(
         file,
-        fieldnames=["file", "similarity"],
+        fieldnames=[
+            "file",
+            "similarity",
+        ],
     )
+
+    # ------------------------------------------
+    # ⑦-4. CSV 컬럼명 작성
+    # ------------------------------------------
     writer.writeheader()
-    writer.writerows(rows)
+
+    # ------------------------------------------
+    # ⑦-5. 이미지별 유사도 기록
+    # ------------------------------------------
+    writer.writerows(
+        rows
+    )
 
 
+# ==================================================
+# ⑧ One-shot 판정 규칙 구성 및 JSON 저장
+#
+#    → 기준 이미지 정보 기록
+#    → 모델과 검사 방법 기록
+#    → Calibration 이미지 수 기록
+#    → Threshold와 판정 규칙 기록
+#
+#    Rule Freeze:
+#    → Query 검사 전에 판정 기준을 저장하여 고정
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. One-shot Rule 정보 구성
+# ----------------------------------------------
 rules = {
+
+    # One-shot Baseline 버전
     "baseline_version": "day08-one-shot-v1.0",
+
+    # 사용 데이터셋
     "dataset": "MVTec AD bottle",
+
+    # 검사 방법
     "method": "one_reference_cosine_similarity",
+
+    # 특징 추출 모델
     "backbone": "resnet18_imagenet_pretrained",
+
+    # 정상 Reference 이미지 수
     "reference_count": 1,
+
+    # Reference 이미지 파일명
     "reference_file": reference_path.name,
+
+    # 저장된 Reference Feature 경로
     "reference_path": str(ARTIFACT_PATH),
+
+    # Calibration 이미지 개수
     "calibration_count": len(calibration_files),
+
+    # Threshold 계산 방법
     "threshold_method": "normal_calibration_5_percentile",
+
+    # 실제 계산된 유사도 Threshold
     "similarity_threshold": threshold,
+
+    # 정상 / 이상 판정 규칙
     "decision_rule": "similarity >= threshold => Normal",
 }
 
-RULE_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ----------------------------------------------
+# ⑧-2. configs 폴더가 없으면 생성
+# ----------------------------------------------
+RULE_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ⑧-3. Rule을 JSON 파일로 저장
+#
+#       이후 65번 검사에서 그대로 사용합니다.
+# ----------------------------------------------
 RULE_PATH.write_text(
     json.dumps(
         rules,
@@ -3071,18 +4149,170 @@ RULE_PATH.write_text(
 )
 
 
+# ==================================================
+# ⑨ 실행 결과 확인
+#
+#    → Reference 파일명 출력
+#    → Calibration 이미지 개수 출력
+#    → 유사도 최솟값 / 평균 / 최댓값 출력
+#    → Threshold 및 판정 규칙 출력
+#    → 저장한 Rule JSON 경로 출력
+#
+#    아직 Common Query 검사는 하지 않습니다.
+# ==================================================
 print("=" * 70)
 print("DAY08 ONE-SHOT CALIBRATION")
 print("=" * 70)
-print("Reference          :", reference_path.name)
-print("Calibration Images :", len(calibration_files))
-print("Similarity Min     :", round(min(similarities), 6))
-print("Similarity Mean    :", round(float(np.mean(similarities)), 6))
-print("Similarity Max     :", round(max(similarities), 6))
-print("5 Percentile       :", round(threshold, 6))
-print("Rule               : similarity >= threshold => Normal")
-print("Saved Rule         :", RULE_PATH)
+
+# ----------------------------------------------
+# ⑨-1. 사용한 Reference 파일명
+# ----------------------------------------------
+print(
+    "Reference          :",
+    reference_path.name
+)
+
+# ----------------------------------------------
+# ⑨-2. Calibration 이미지 개수
+# ----------------------------------------------
+print(
+    "Calibration Images :",
+    len(calibration_files)
+)
+
+# ----------------------------------------------
+# ⑨-3. Calibration 유사도 최솟값
+# ----------------------------------------------
+print(
+    "Similarity Min     :",
+    round(min(similarities), 6)
+)
+
+# ----------------------------------------------
+# ⑨-4. Calibration 유사도 평균
+# ----------------------------------------------
+print(
+    "Similarity Mean    :",
+    round(float(np.mean(similarities)), 6)
+)
+
+# ----------------------------------------------
+# ⑨-5. Calibration 유사도 최댓값
+# ----------------------------------------------
+print(
+    "Similarity Max     :",
+    round(max(similarities), 6)
+)
+
+# ----------------------------------------------
+# ⑨-6. 5 Percentile Threshold 출력
+# ----------------------------------------------
+print(
+    "5 Percentile       :",
+    round(threshold, 6)
+)
+
+# ----------------------------------------------
+# ⑨-7. 확정된 판정 규칙 출력
+# ----------------------------------------------
+print(
+    "Rule               : similarity >= threshold => Normal"
+)
+
+# ----------------------------------------------
+# ⑨-8. Rule JSON 저장 경로 출력
+# ----------------------------------------------
+print(
+    "Saved Rule         :",
+    RULE_PATH
+)
 ```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - csv, json, Path, NumPy를 불러온다.
+   - day08_feature_core에서 함수를 불러온다.
+     · create_feature_model()
+     · extract_feature()
+     · cosine_similarity()
+
+② 입력 / 출력 경로 설정
+   - Reference 이미지 폴더를 지정한다.
+   - Calibration 이미지 폴더를 지정한다.
+   - 정상 기준 Feature 저장 경로를 지정한다.
+   - Rule JSON 저장 경로를 지정한다.
+   - Calibration CSV 저장 경로를 지정한다.
+   - PERCENTILE을 5로 설정한다.
+
+③ Reference / Calibration 이미지 확인
+   - Reference 이미지 목록을 읽는다.
+   - Reference가 정확히 1장인지 확인한다.
+   - Calibration 이미지 목록을 읽는다.
+   - 이미지가 없으면 오류를 발생시킨다.
+
+④ ResNet18과 정상 기준 Feature 준비
+   - create_feature_model()로 ResNet18을 준비한다.
+   - 정상 Reference 이미지 1장을 읽는다.
+   - extract_feature()로 512개 특징값을 추출한다.
+   - 추출한 특징을 NPY 파일로 저장한다.
+
+   → one_shot_reference.npy
+
+⑤ Calibration 이미지마다 유사도 계산
+   - 정상 Calibration 이미지를 하나씩 읽는다.
+   - extract_feature()로 특징을 추출한다.
+   - cosine_similarity()로 Reference와 비교한다.
+   - 계산한 유사도를 리스트에 저장한다.
+   - 이미지 이름과 유사도를 기록한다.
+
+   결과:
+   정상 Calibration 20장
+          ↓
+   Cosine Similarity 20개
+
+⑥ Threshold 계산
+   - 정상 이미지의 유사도 20개를 가져온다.
+   - np.percentile()을 실행한다.
+   - 5 Percentile에 해당하는 값을 계산한다.
+   - 계산한 값을 Threshold로 사용한다.
+
+   판정 기준:
+   Similarity >= Threshold → Normal
+   Similarity <  Threshold → Anomaly
+
+⑦ Calibration 결과 CSV 저장
+   - reports 폴더를 생성한다.
+   - file, similarity 컬럼을 작성한다.
+   - 이미지 20장의 유사도를 저장한다.
+
+   → day08_one_shot_calibration.csv
+
+⑧ One-shot Rule JSON 저장
+   - Baseline 버전을 기록한다.
+   - Reference 이미지와 Feature 경로를 기록한다.
+   - Calibration 이미지 개수를 기록한다.
+   - 5 Percentile Threshold를 기록한다.
+   - Normal / Anomaly 판정 규칙을 기록한다.
+   - JSON 파일로 저장한다.
+
+   → day08_one_shot_rules.json
+   → Rule Freeze 완료
+
+⑨ 실행 결과 확인
+   - Reference 파일명을 출력한다.
+   - Calibration 이미지 개수를 출력한다.
+   - 유사도 최솟값을 출력한다.
+   - 유사도 평균을 출력한다.
+   - 유사도 최댓값을 출력한다.
+   - Threshold와 판정 규칙을 출력한다.
+   - Rule 저장 경로를 출력한다.
+
+   → One-shot 판정 기준 생성 완료
+   → 다음 65번에서 Common Query 20장 검사
+```
+
 
 실행합니다.
 
@@ -3169,47 +4399,76 @@ Calibration Images : 20
 
 ## 이번 Threshold는 `0.982113`입니다
 
-정상 Calibration 결과의 낮은 쪽을 기준으로 `5 Percentile`을 계산한 결과:
+![[Pasted image 20261031204422.png]]
+
+## 실제 실행 결과 — 왜 Threshold가 0.982113인가요?
+
+64번 코드를 실행하면 다음과 같은 결과가 나옵니다.
 
 ```
-Threshold
-= 0.982113
+Reference          : 037.png
+Calibration Images : 20
+Similarity Min     : 0.980010
+Similarity Mean    : 0.987521
+Similarity Max     : 0.992414
+5 Percentile       : 0.982113
 ```
 
-이 나왔습니다.
+### 먼저 정상 이미지끼리 얼마나 비슷한지 확인했습니다
 
-따라서 앞으로 사용할 One-shot 판정 Rule은:
+정상 병 `037.png`를 기준 이미지(Reference)로 선택하고, 다른 정상 이미지 20장과 각각 비교했습니다.
+
+그 결과 정상 이미지들의 Similarity(유사도)는 **0.980010~0.992414**로 나타났습니다.
+
+유사도는 1에 가까울수록 특징이 비슷하다는 의미입니다. 즉, 정상 병끼리도 유사도가 모두 같지는 않습니다.
+
+### 왜 5 Percentile을 선택했나요?
+
+새로운 병을 검사할 때 정상 이미지인데도 유사도가 조금 낮다는 이유만으로 불량이라고 판단하면 문제가 됩니다.
+
+그래서 이번 실습에서는 **정상 유사도 중 낮은 쪽 5%에 해당하는 경계값**을 판정 기준으로 사용하기로 정했습니다.
+
+이를 `5 Percentile(5백분위수)`이라고 합니다.
 
 ```
-Similarity >= 0.982113
-→ Normal
+정상 이미지 20장의 유사도
+        ↓
+작은 값부터 큰 값까지 정렬
+        ↓
+낮은 쪽 5% 지점 계산
+        ↓
+Threshold = 0.982113
+```
+
+20개 점수의 5 Percentile은 정렬된 가장 작은 값과 두 번째 값 사이를 보간하여 계산합니다. 실제 코드의 `np.percentile(similarities, 5)`가 이 계산을 수행합니다.
+
+따라서 **5%라는 기준은 미리 선택했고, 0.982113이라는 숫자는 실제 데이터로 계산한 결과**입니다.
+
+### 이제 어떤 기준으로 검사하나요?
+
+확정한 Threshold는 `0.982113`입니다.
+
+```
+새로운 병 이미지
+        ↓
+Reference 037.png와 특징 비교
+        ↓
+Cosine Similarity 계산
+        ↓
+Similarity ≥ 0.982113
+→ Normal (정상)
 
 Similarity < 0.982113
-→ Anomaly
+→ Anomaly (이상)
 ```
 
-가 됩니다.
+예를 들어 새로운 병의 유사도가 `0.990`이면 정상, `0.975`이면 이상으로 판정합니다. 이 두 값은 판정 방법을 이해하기 위한 예시입니다.
 
-쉽게 말하면:
+### 핵심 정리
 
-```
-새 이미지
-        ↓
-Reference 037.png와 비교
-        ↓
-Similarity 계산
-        ↓
+**64번 코드는 정상 이미지 20장의 유사도를 계산한 뒤, 정상 유사도 분포의 하위 5% 경계값인** `**0.982113**`**을 One-shot의 검사 기준으로 확정하는 프로그램입니다.**
 
-0.982113 이상
-→ Reference와 충분히 비슷함
-→ Normal
-
-0.982113 미만
-→ Reference와 상대적으로 덜 비슷함
-→ Anomaly
-```
-
-로 판단합니다.
+여기서 5 Percentile은 정확도 95%를 보장한다는 뜻이 아닙니다. 실제 검사가 얼마나 정확한지는 다음 65번 코드에서 새로운 Query 20장을 검사하여 확인합니다.
 
 ---
 
@@ -3304,110 +4563,6 @@ One-shot 기준 준비 완료
               ↓
 다음 단계
 Common Query Test
-```
-
----
-
-# 의사코드
-
-```
-1. One-shot Reference 이미지가 들어 있는
-   폴더 위치를 지정한다.
-
-2. 정상 Calibration 이미지가 들어 있는
-   폴더 위치를 지정한다.
-
-3. Reference Feature,
-   Calibration 결과,
-   판정 Rule을 저장할 위치를 지정한다.
-
-4. Reference 폴더의 PNG 이미지를 확인한다.
-
-5. Reference가 정확히 1장이 아니라면
-   One-shot 조건과 맞지 않으므로
-   실행을 중단한다.
-
-6. Reference 이미지 1장을 선택한다.
-
-7. Calibration 폴더의
-   정상 이미지 목록을 읽는다.
-
-8. Calibration 이미지가 없다면
-   판정 기준을 만들 수 없으므로
-   실행을 중단한다.
-
-9. 앞에서 만든 공통 함수를 이용하여
-   Pretrained ResNet18 Feature 모델을 준비한다.
-
-10. Reference 이미지를
-    ResNet18 Feature로 변환한다.
-
-11. 만들어진 Reference Feature를
-    one_shot_reference.npy에 저장한다.
-
-12. Calibration 정상 이미지 20장을
-    한 장씩 읽는다.
-
-13. 각 Calibration 이미지를
-    같은 ResNet18을 이용하여
-    Feature로 변환한다.
-
-14. 각 Calibration Feature와
-    Reference Feature의
-    Cosine Similarity를 계산한다.
-
-15. 계산된 Similarity 20개를
-    목록에 모은다.
-
-16. 각 이미지의 파일명과 Similarity를
-    CSV에 기록할 수 있도록 정리한다.
-
-17. 정상 Similarity 20개의
-    최소값을 확인한다.
-
-18. 정상 Similarity 20개의
-    평균값을 확인한다.
-
-19. 정상 Similarity 20개의
-    최대값을 확인한다.
-
-20. 정상 Similarity의
-    5 Percentile 값을 계산한다.
-
-21. 계산된 5 Percentile을
-    One-shot의 Similarity Threshold로 사용한다.
-
-22. 판정 조건을 다음과 같이 정한다.
-
-    Similarity >= Threshold
-    → Normal
-
-    Similarity < Threshold
-    → Anomaly
-
-23. Calibration 이미지 20장의
-    Similarity 결과를
-
-    reports/day08_one_shot_calibration.csv
-
-    에 저장한다.
-
-24. Reference 파일,
-    사용한 Calibration 수,
-    Threshold,
-    판정 조건 등의 정보를
-
-    configs/day08_one_shot_rules.json
-
-    에 저장한다.
-
-25. 이렇게 정한 Threshold를
-    다음 Common Query Test에서
-    다시 계산하거나 임의로 바꾸지 않는다.
-
-26. 다음 실습에서는 처음 보는
-    Normal / Anomaly Query 이미지를 넣어
-    이 Rule이 실제로 얼마나 잘 작동하는지 확인한다.
 ```
 
 ---
@@ -3530,253 +4685,84 @@ Query를 보기 전에 판정 기준을 정하고 고정해야, 처음 보는 �
 
 ---
 
-# 22. 저장된 One-shot Rule을 확인합니다
+# 22. 저장된 One-shot 판정 규칙(JSON)을 확인합니다
 
-20번에서 Reference 1장과 정상 Calibration 20장을 이용하여 One-shot 판정 기준을 만들었습니다.
+앞에서 실행한 **`64_day08_calibrate_one_shot.py`**는 정상 Reference 1장과 Calibration 20장을 이용하여 One-shot의 판정 기준을 만들었습니다.
 
-그 기준은 다음 파일에 저장되어 있습니다.
+이때 계산한 Threshold와 검사 조건은 다음 JSON 파일에 저장되었습니다.
 
 ```
 configs/day08_one_shot_rules.json
 ```
 
-이 파일은 단순한 실행 결과가 아니라,
+**JSON은 프로그램에서 사용할 설정값을 저장하는 파일 형식**입니다.
 
-> **앞으로 새로운 이미지를 검사할 때 사용할 One-shot의 기준과 조건을 기록해 둔 설정 파일입니다.**
+이번 JSON에는 앞으로 새로운 병을 검사할 때 사용할 기준과 조건이 기록되어 있습니다.
 
-확인합니다.
+###  JSON 파일을 확인합니다
 
-```bash
+VS Code 터미널에서 실행합니다.
+
+```
 cat configs/day08_one_shot_rules.json
 ```
 
-이번 실습에서는 다음과 같이 저장되었습니다.
+실제 출력된 JSON에서 중요한 항목만 확인하겠습니다.
 
-```json
-{
-  "baseline_version": "day08-one-shot-v1.0",
-  "dataset": "MVTec AD bottle",
-  "method": "one_reference_cosine_similarity",
-  "backbone": "resnet18_imagenet_pretrained",
-  "reference_count": 1,
-  "reference_file": "037.png",
-  "reference_path": "artifacts/day08/one_shot_reference.npy",
-  "calibration_count": 20,
-  "threshold_method": "normal_calibration_5_percentile",
-  "similarity_threshold": 0.9821131706237793,
-  "decision_rule": "similarity >= threshold => Normal"
-}
-```
-
-## 이 파일은 무엇을 기록하고 있나요?
-
-이번 One-shot 실험에서 사용한 조건을 다시 확인해 보겠습니다.
-
-|항목|이번 결과|의미|
+|항목|실제 결과|의미|
 |---|---|---|
-|`baseline_version`|`day08-one-shot-v1.0`|이번 One-shot 기준의 버전|
-|`dataset`|`MVTec AD bottle`|사용한 Dataset|
-|`method`|`one_reference_cosine_similarity`|Reference 1장과 Similarity를 비교하는 방식|
-|`backbone`|`resnet18_imagenet_pretrained`|Feature 추출에 사용한 Pretrained ResNet18|
-|`reference_count`|`1`|정상 Reference를 정확히 1장 사용|
-|`reference_file`|`037.png`|기준으로 사용한 정상 이미지|
-|`reference_path`|`one_shot_reference.npy`|`037.png`에서 추출한 Feature를 저장한 파일|
-|`calibration_count`|`20`|Threshold를 정할 때 사용한 정상 이미지 수|
-|`threshold_method`|`normal_calibration_5_percentile`|정상 Calibration의 5 Percentile을 기준으로 사용|
-|`similarity_threshold`|`0.982113...`|실제 계산된 판정 기준값|
-|`decision_rule`|`similarity >= threshold => Normal`|최종 판정 방법|
-## 가장 먼저 확인할 것은 Reference입니다
+|`reference_file`|`037.png`|정상 기준 이미지 1장|
+|`reference_path`|`artifacts/day08/one_shot_reference.npy`|ResNet18로 추출하여 저장한 정상 특징값|
+|`calibration_count`|`20`|Threshold 계산에 사용한 정상 이미지 수|
+|`threshold_method`|`normal_calibration_5_percentile`|정상 유사도의 5백분위수를 사용|
+|`similarity_threshold`|`0.9821131706237793`|계산된 최종 기준값|
+|`decision_rule`|`similarity >= threshold => Normal`|정상·이상 판정 규칙|
+
+###  이 JSON으로 어떻게 검사하나요?
+
+이번 One-shot의 기준은 다음과 같이 확정되었습니다.
 
 ```
-reference_count : 1
-reference_file  : 037.png
-```
-
-이 결과는 이번 실험이 실제로:
-
-```
-정상 이미지 037.png
+정상 Reference : 037.png
         ↓
-Reference 1장
+저장된 Feature 불러오기
+(one_shot_reference.npy)
         ↓
-One-shot 기준
-```
-
-으로 만들어졌다는 뜻입니다.
-
-즉 이름만 One-shot인 것이 아니라, **실제로 정상 Reference 한 장을 기준으로 사용했다는 것을 기록으로 확인할 수 있습니다.**
-
----
-
-## Reference 이미지는 Feature로 저장되어 있습니다
-
-다음 항목도 확인합니다.
-
-```
-reference_path
-→ artifacts/day08/one_shot_reference.npy
-```
-
-여기에는 `037.png` 이미지 자체가 저장된 것이 아닙니다.
-
-앞의 공통 Feature 함수에서 `037.png`를 ResNet18에 넣어 만든 **숫자 Feature**가 저장되어 있습니다.
-
-```
-037.png
-        ↓
-Pretrained ResNet18
-        ↓
-Reference Feature
-        ↓
-one_shot_reference.npy
-```
-
-다음 Query 검사에서는 이미지를 다시 기준으로 만드는 것이 아니라, **이 저장된 Reference Feature를 불러와 사용합니다.**
-
----
-
-## Threshold도 함께 저장되어 있습니다
-
-이번 결과에서 가장 중요한 값 중 하나는 다음입니다.
-
-```
-similarity_threshold
-→ 0.9821131706237793
-```
-
-20번 실행 화면에서는 보기 쉽게:
-
-```
-0.982113
-```
-
-으로 반올림해서 출력했지만, JSON에는 계산된 값이 더 정밀하게 저장되어 있습니다.
-
-둘은 같은 Threshold입니다.
-
-```
-실행 화면
-0.982113
-
-JSON
-0.9821131706237793
-```
-
-이 값을 이용하여 다음과 같이 판정합니다.
-
-```
-새 이미지
-        ↓
-Reference와 Similarity 계산
-        ↓
-
-Similarity >= 0.982113...
-        ↓
-Normal
-
-Similarity < 0.982113...
-        ↓
-Anomaly
-```
-
----
-
-## 이 Threshold는 어떻게 만든 값인가요?
-
-JSON에도 다음 내용이 기록되어 있습니다.
-
-```
-calibration_count
-→ 20
-
-threshold_method
-→ normal_calibration_5_percentile
-```
-
-즉:
-
-```
-정상 Calibration 20장
-        ↓
-Reference와 각각 Similarity 계산
-        ↓
-정상 Similarity 분포 확인
-        ↓
-5 Percentile
+새로운 병 이미지와 유사도 비교
         ↓
 Threshold = 0.982113...
-```
-
-과정을 거쳐 만들어진 값이라는 뜻입니다.
-
-따라서 `0.982113`이라는 숫자를 사람이 임의로 입력한 것이 아닙니다.
-
-> **정상 Calibration 데이터를 이용하여 프로그램이 계산한 값입니다.**
-
----
-
-## 마지막으로 판정 Rule을 확인합니다
-
-```
-decision_rule
-→ similarity >= threshold => Normal
-```
-
-뜻은 간단합니다.
-
-```
-Reference와 충분히 비슷하다
         ↓
-Similarity가 Threshold 이상
-        ↓
-Normal
-
-
-Reference와 덜 비슷하다
-        ↓
-Similarity가 Threshold 미만
-        ↓
-Anomaly
+유사도 ≥ Threshold → Normal
+유사도 < Threshold → Anomaly
 ```
 
-입니다.
+즉, **새로운 병이 정상 기준과 충분히 비슷한지 확인하여 정상 또는 이상으로 판정**하는 것입니다.
 
----
+여기서 `0.982113...`은 사람이 임의로 정한 숫자가 아니라, 64번 코드가 정상 Calibration 20장의 유사도를 이용하여 계산한 값입니다.
 
-## 왜 이 파일을 저장해 둘까요?
+###  왜 JSON 파일로 저장하나요?
 
-이제 One-shot의 기준은 다음과 같이 모두 정해졌습니다.
+65번 코드에서는 새로운 Common Query 이미지 20장을 검사합니다.
 
-```
-Reference
-→ 037.png
+이때 Threshold를 다시 계산하면 검사 기준이 달라질 수 있습니다.
 
-Reference Feature
-→ one_shot_reference.npy
+그래서 **64번에서 정한 기준을 JSON에 저장하고, 65번에서 그대로 불러와 사용합니다.**
 
-Calibration
-→ 정상 20장
-
-Threshold
-→ 0.982113...
-
-판정 Rule
-→ Threshold 이상이면 Normal
-```
-
-이 값을 다음 Query 검사에서 다시 계산하거나 임의로 바꾸지 않습니다.
+이것을 **Rule Freeze(판정 규칙 고정)** 라고 합니다.
 
 ```
-기준 생성 완료
+64번 코드
+One-shot 판정 기준 계산
         ↓
-Rule 저장
+day08_one_shot_rules.json 저장
         ↓
-Rule Freeze
+65번 코드
+저장된 기준을 불러와 검사
         ↓
-처음 보는 Common Query에 적용
+Common Query 20장 판정
 ```
 
-> **이 JSON 파일은 “이번 One-shot 검사를 어떤 조건으로 만들었는가?”를 기록하고, 다음 검사에서도 같은 기준을 그대로 사용할 수 있게 해주는 파일입니다.**
+> **핵심 정리:** `day08_one_shot_rules.json`은 **64번 코드에서 생성한 One-shot 검사 설정 파일**입니다. 이 파일에 저장된 Threshold와 판정 규칙을 65번 코드에서 그대로 사용하여 새로운 병 이미지를 검사합니다.
 
 ---
 
@@ -3979,6 +4965,19 @@ src/65_day08_test_one_shot.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#    → csv   : 이미지별 검사 결과 CSV 저장
+#    → json  : 64번에서 확정한 판정 규칙 읽기
+#    → Path  : 파일과 폴더 경로 관리
+#    → NumPy : 저장된 Reference Feature 불러오기
+#
+#    day08_feature_core의 공통 함수 사용
+#    → create_feature_model() : ResNet18 준비
+#    → extract_feature()      : 이미지 특징 추출
+#    → cosine_similarity()    : 유사도 계산
+# ==================================================
 import csv
 import json
 from pathlib import Path
@@ -3992,54 +4991,236 @@ from day08_feature_core import (
 )
 
 
-QUERY_ROOT = Path("samples/day08/common_query")
-REFERENCE_PATH = Path("artifacts/day08/one_shot_reference.npy")
-RULE_PATH = Path("configs/day08_one_shot_rules.json")
-CSV_PATH = Path("reports/day08_one_shot_results.csv")
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#
+#    → 63번에서 준비한 Common Query 사용
+#    → 64번에서 저장한 Reference와 Rule 사용
+#    → 검사 결과를 CSV 파일로 저장
+# ==================================================
 
-
-reference_feature = np.load(REFERENCE_PATH)
-
-rules = json.loads(
-    RULE_PATH.read_text(encoding="utf-8")
+# ----------------------------------------------
+# ②-1. 검사할 Common Query 폴더
+#       → 정상 10장 + 작은 파손 10장
+# ----------------------------------------------
+QUERY_ROOT = Path(
+    "samples/day08/common_query"
 )
 
-threshold = float(rules["similarity_threshold"])
+
+# ----------------------------------------------
+# ②-2. 저장된 정상 Reference Feature
+#       → 64번에서 037.png의 특징을 저장한 파일
+# ----------------------------------------------
+REFERENCE_PATH = Path(
+    "artifacts/day08/one_shot_reference.npy"
+)
+
+
+# ----------------------------------------------
+# ②-3. 확정된 One-shot 판정 규칙 JSON
+#       → Similarity Threshold가 저장되어 있음
+# ----------------------------------------------
+RULE_PATH = Path(
+    "configs/day08_one_shot_rules.json"
+)
+
+
+# ----------------------------------------------
+# ②-4. 검사 결과 CSV 저장 경로
+# ----------------------------------------------
+CSV_PATH = Path(
+    "reports/day08_one_shot_results.csv"
+)
+
+
+# ==================================================
+# ③ 64번에서 확정한 One-shot 검사 기준 불러오기
+#
+#    → Reference Feature를 NPY에서 읽기
+#    → Rule JSON에서 Threshold 가져오기
+#
+#    중요한 점!
+#    이번 코드에서 Threshold를 새로 계산하지 않고,
+#    저장된 값을 그대로 사용합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ③-1. 정상 Reference Feature 불러오기
+#
+#       Reference 037.png에서 추출한
+#       512차원 Feature Vector입니다.
+# ----------------------------------------------
+reference_feature = np.load(
+    REFERENCE_PATH
+)
+
+
+# ----------------------------------------------
+# ③-2. JSON에 저장된 판정 규칙 불러오기
+# ----------------------------------------------
+rules = json.loads(
+    RULE_PATH.read_text(
+        encoding="utf-8"
+    )
+)
+
+
+# ----------------------------------------------
+# ③-3. Similarity Threshold 가져오기
+#
+#       앞선 실습 결과:
+#       Threshold 약 0.982113
+#
+#       실제 판정에는 JSON의 정밀한 값을 사용
+# ----------------------------------------------
+threshold = float(
+    rules["similarity_threshold"]
+)
+
+
+# ==================================================
+# ④ Feature 추출용 ResNet18과 결과 리스트 준비
+#
+#    → 사전학습된 ResNet18 사용
+#    → 새로운 모델 학습은 하지 않음
+#    → 검사 결과를 저장할 빈 리스트 생성
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. ResNet18 특징 추출 모델 준비
+# ----------------------------------------------
 model = create_feature_model()
 
+
+# ----------------------------------------------
+# ④-2. 이미지별 검사 결과를 저장할 리스트
+# ----------------------------------------------
 rows = []
 
 
-def inspect(image_path, actual, sample_id):
-    feature = extract_feature(model, image_path)
+# ==================================================
+# ⑤ 이미지 한 장을 검사하는 함수 작성
+#
+#    함수: inspect()
+#
+#    → 이미지의 Feature 추출
+#    → Reference와 유사도 계산
+#    → Threshold로 정상 / 이상 판정
+#    → 실제 정답과 예측을 비교하여 기록
+#
+#    이 함수를 정상과 불량 검사에 공통 사용합니다.
+# ==================================================
+def inspect(
+    image_path,
+    actual,
+    sample_id
+):
 
+    # ------------------------------------------
+    # ⑤-1. 검사 이미지에서 Feature 추출
+    #
+    #       새로운 병 이미지 1장
+    #                ↓
+    #       사전학습된 ResNet18
+    #                ↓
+    #       Feature Vector 512개
+    # ------------------------------------------
+    feature = extract_feature(
+        model,
+        image_path
+    )
+
+
+    # ------------------------------------------
+    # ⑤-2. 정상 Reference와 유사도 계산
+    #
+    #       Reference Feature
+    #                 +
+    #       새로운 병의 Feature
+    #                 ↓
+    #       Cosine Similarity
+    #
+    #       유사도 높음 → 정상 기준과 비슷함
+    #       유사도 낮음 → 정상 기준과 차이가 큼
+    # ------------------------------------------
     similarity = cosine_similarity(
         reference_feature,
         feature,
     )
 
+
+    # ------------------------------------------
+    # ⑤-3. Threshold로 Normal / Anomaly 판정
+    #
+    #       Similarity >= Threshold → Normal
+    #       Similarity <  Threshold → Anomaly
+    #
+    #       예: Threshold 약 0.982113
+    # ------------------------------------------
     predicted = (
         "Normal"
         if similarity >= threshold
         else "Anomaly"
     )
 
+
+    # ------------------------------------------
+    # ⑤-4. 검사 결과를 리스트에 기록
+    #
+    #       sample_id : 이미지 구분용 경로
+    #       file      : 이미지 파일명
+    #       actual    : 실제 정답
+    #       similarity: 계산된 유사도
+    #       threshold : 판정 기준값
+    #       predicted : 검사기의 예측 결과
+    #       correct   : 정답 여부
+    #
+    #       correct = True  → 정확히 판정
+    #       correct = False → 잘못 판정
+    # ------------------------------------------
     rows.append(
         {
             "sample_id": sample_id,
             "file": image_path.name,
             "actual": actual,
-            "similarity": round(similarity, 6),
-            "threshold": round(threshold, 6),
+            "similarity": round(
+                similarity,
+                6
+            ),
+            "threshold": round(
+                threshold,
+                6
+            ),
             "predicted": predicted,
             "correct": predicted == actual,
         }
     )
 
 
+# ==================================================
+# ⑥ 정상 Common Query 이미지 10장 검사
+#
+#    → common_query/normal 폴더의 이미지 사용
+#    → 실제 정답은 모두 Normal
+#    → inspect() 함수를 이용하여 검사
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 정상 Query 이미지를 한 장씩 가져오기
+# ----------------------------------------------
 for image_path in sorted(
     (QUERY_ROOT / "normal").glob("*.png")
 ):
+
+    # ------------------------------------------
+    # ⑥-2. 정상 이미지 검사
+    #
+    #       actual = Normal
+    #
+    #       sample_id에 normal/을 붙여
+    #       불량 이미지와 구분합니다.
+    # ------------------------------------------
     inspect(
         image_path,
         "Normal",
@@ -4047,13 +5228,42 @@ for image_path in sorted(
     )
 
 
+# ==================================================
+# ⑦ 작은 파손 Common Query 이미지 10장 검사
+#
+#    → common_query/anomaly/broken_small 사용
+#    → 실제 정답은 모두 Anomaly
+#    → 정상 검사와 동일한 inspect() 함수 사용
+#
+#    One-shot은 결함 이미지를 기준으로
+#    학습한 것이 아니라 정상 기준과 비교합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. 작은 파손 Query 폴더 설정
+# ----------------------------------------------
 anomaly_dir = (
     QUERY_ROOT
     / "anomaly"
     / "broken_small"
 )
 
-for image_path in sorted(anomaly_dir.glob("*.png")):
+
+# ----------------------------------------------
+# ⑦-2. 작은 파손 이미지를 한 장씩 검사
+# ----------------------------------------------
+for image_path in sorted(
+    anomaly_dir.glob("*.png")
+):
+
+    # ------------------------------------------
+    # ⑦-3. 이상 이미지 검사
+    #
+    #       actual = Anomaly
+    #
+    #       sample_id에 결함 종류를 기록하여
+    #       정상 이미지와 구분합니다.
+    # ------------------------------------------
     inspect(
         image_path,
         "Anomaly",
@@ -4061,28 +5271,97 @@ for image_path in sorted(anomaly_dir.glob("*.png")):
     )
 
 
-CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ==================================================
+# ⑧ 전체 검사 결과를 CSV로 저장
+#
+#    → 정상과 불량 Query의 판정 결과 기록
+#    → 이후 Few-shot 결과와 비교할 때 사용
+#
+#    저장 파일:
+#    reports/day08_one_shot_results.csv
+# ==================================================
 
+# ----------------------------------------------
+# ⑧-1. CSV 저장 폴더 생성
+# ----------------------------------------------
+CSV_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+# ----------------------------------------------
+# ⑧-2. CSV 파일 열기
+# ----------------------------------------------
 with CSV_PATH.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
+
+    # ------------------------------------------
+    # ⑧-3. CSV 컬럼명 설정
+    #
+    #       rows[0].keys()
+    #       → 첫 번째 결과의 항목 이름 사용
+    # ------------------------------------------
     writer = csv.DictWriter(
         file,
         fieldnames=rows[0].keys(),
     )
+
+    # ------------------------------------------
+    # ⑧-4. CSV 컬럼명 작성
+    # ------------------------------------------
     writer.writeheader()
-    writer.writerows(rows)
+
+    # ------------------------------------------
+    # ⑧-5. 이미지별 판정 결과 저장
+    # ------------------------------------------
+    writer.writerows(
+        rows
+    )
 
 
+# ==================================================
+# ⑨ 검사 결과 출력
+#
+#    → 사용한 Threshold 확인
+#    → 이미지별 실제 정답과 예측 결과 출력
+#    → Similarity와 정답 여부 확인
+#    → 결과 CSV 저장 경로 확인
+# ==================================================
+
+# ----------------------------------------------
+# ⑨-1. 검사 완료 제목 출력
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 ONE-SHOT TEST")
 print("=" * 70)
-print("Threshold:", round(threshold, 6))
+
+
+# ----------------------------------------------
+# ⑨-2. 검사에 사용한 Threshold 출력
+# ----------------------------------------------
+print(
+    "Threshold:",
+    round(threshold, 6)
+)
+
 print()
 
+
+# ----------------------------------------------
+# ⑨-3. 이미지별 검사 결과 출력
+#
+#       sample_id  : 이미지 구분
+#       actual     : 실제 정답
+#       predicted  : 예측 결과
+#       similarity : 정상 기준과의 유사도
+#       correct    : 정답 여부
+# ----------------------------------------------
 for row in rows:
+
     print(
         row["sample_id"],
         "actual=",
@@ -4095,8 +5374,109 @@ for row in rows:
         row["correct"],
     )
 
+
+# ----------------------------------------------
+# ⑨-4. 결과 CSV 저장 경로 출력
+# ----------------------------------------------
 print()
-print("Saved:", CSV_PATH)
+
+print(
+    "Saved:",
+    CSV_PATH
+)
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - csv, json, Path를 불러온다.
+   - NumPy를 불러온다.
+   - day08_feature_core의 공통 함수를 불러온다.
+
+     · create_feature_model()
+     · extract_feature()
+     · cosine_similarity()
+
+② 입력 / 출력 경로 설정
+   - Common Query 폴더를 지정한다.
+   - 저장된 Reference Feature 파일을 지정한다.
+   - 확정된 Rule JSON 파일을 지정한다.
+   - 결과 CSV 파일 경로를 지정한다.
+
+③ One-shot 검사 기준 불러오기
+   - one_shot_reference.npy를 읽는다.
+   - 037.png의 Feature Vector를 가져온다.
+   - day08_one_shot_rules.json을 읽는다.
+   - similarity_threshold 값을 가져온다.
+
+   → 저장된 Reference와 Threshold 준비
+
+④ ResNet18 및 결과 리스트 준비
+   - create_feature_model()을 실행한다.
+   - 사전학습된 ResNet18을 준비한다.
+   - 검사 결과를 기록할 빈 리스트를 만든다.
+
+⑤ inspect() 검사 함수 작성
+
+   [Feature 추출]
+   - 검사할 이미지 1장을 받는다.
+   - extract_feature()로 특징을 추출한다.
+
+   [Similarity 계산]
+   - 정상 Reference Feature를 가져온다.
+   - 새로운 이미지 Feature와 비교한다.
+   - cosine_similarity()로 유사도를 계산한다.
+
+   [정상 / 이상 판정]
+   - Similarity와 Threshold를 비교한다.
+
+     Similarity >= Threshold → Normal
+     Similarity <  Threshold → Anomaly
+
+   [정답 여부 확인]
+   - 실제 정답(actual)을 확인한다.
+   - 예측 결과(predicted)와 비교한다.
+
+     같으면 → correct = True
+     다르면 → correct = False
+
+   [결과 기록]
+   - sample_id와 파일명을 기록한다.
+   - 실제 정답과 예측 결과를 기록한다.
+   - Similarity와 Threshold를 기록한다.
+   - 정답 여부를 기록한다.
+
+⑥ 정상 Common Query 검사
+   - common_query/normal 폴더를 읽는다.
+   - 정상 이미지 10장을 하나씩 가져온다.
+   - inspect()를 실행한다.
+   - 실제 정답은 Normal로 전달한다.
+
+⑦ 작은 파손 Common Query 검사
+   - common_query/anomaly/broken_small 폴더를 읽는다.
+   - 작은 파손 이미지 10장을 하나씩 가져온다.
+   - inspect()를 실행한다.
+   - 실제 정답은 Anomaly로 전달한다.
+
+⑧ 검사 결과 CSV 저장
+   - reports 폴더를 생성한다.
+   - CSV 파일을 연다.
+   - 결과 항목을 컬럼명으로 작성한다.
+   - 정상 / 이상 이미지의 검사 결과를 저장한다.
+
+   → reports/day08_one_shot_results.csv
+
+⑨ 실행 결과 확인
+   - DAY08 ONE-SHOT TEST를 출력한다.
+   - 사용한 Threshold를 출력한다.
+   - 각 이미지의 실제 정답을 출력한다.
+   - 각 이미지의 예측 결과를 출력한다.
+   - Similarity와 정답 여부를 출력한다.
+   - CSV 저장 경로를 출력한다.
+
+   → One-shot Query 검사 완료
+   → 다음 Few-shot 실습에서 결과 비교
 ```
 
 실행합니다.
@@ -4105,478 +5485,120 @@ print("Saved:", CSV_PATH)
 python src/65_day08_test_one_shot.py
 ```
 
-### 실행 결과를 해석합니다
+### One-shot 실제 실행 결과를 해석합니다
 
-이번 One-shot 검사는:
+앞에서 실행한 `65_day08_test_one_shot.py`는 **64번 코드에서 확정한 Threshold** `**0.982113**`**을 사용하여 새로운 병 이미지 20장을 검사**했습니다.
 
-```
-Normal Query  10장
-Anomaly Query 10장
-총 20장
-```
+이번 검사에서는 정상 이미지 10장과 작은 파손 이미지 10장을 사용했습니다.
 
-을 검사했습니다.
+### 검사 결과는 어떻게 나왔나요?
 
-결과를 정리하면 다음과 같습니다.
+|검사 구분|전체 이미지|정확한 판정|잘못된 판정|
+|---|---|---|---|
+|정상(Normal)|10장|9장|1장(FP)|
+|작은 파손(Anomaly)|10장|8장|2장(FN)|
+|**합계**|**20장**|**17장**|**3장**|
 
-|구분|결과|
-|---|---|
-|Normal 정답|9 / 10|
-|Anomaly 정답|8 / 10|
-|전체 정답|17 / 20|
-|Accuracy|**85%**|
-|FP|1건|
-|FN|2건|
-
-즉 총 20장 중 **17장은 올바르게 판정했고 3장은 잘못 판정**했습니다.
-
----
-
-## 오판이 나온 경우 어떻게 확인할까요?
-
-검사 결과가 100%가 아니라고 해서 바로 코드를 수정하거나 Threshold를 바꾸지는 않습니다.
-
-먼저 어떤 종류의 오판이 발생했는지 확인합니다.
+따라서 이번 One-shot의 **Accuracy(정확도)는 85%**입니다.
 
 ```
-FP
-→ 실제 Normal인데 Anomaly로 판정
+전체 검사 20장
+       ↓
+정답 17장 → 85%
+오답  3장 → 15%
 
-FN
-→ 실제 Anomaly인데 Normal로 판정
+오답 3장
+├─ FP 1장 : 정상인데 이상으로 판정
+└─ FN 2장 : 불량인데 정상으로 판정
 ```
 
-이번 결과에서는:
+### 왜 3장을 잘못 판정했나요?
+
+One-shot은 새로운 병 이미지와 **정상 Reference `037.png`**의 특징을 비교하여 유사도(Similarity)를 계산합니다.
+
+이번 판정 기준은 다음과 같습니다.
 
 ```
-FP 1건
-FN 2건
+Similarity ≥ 0.982113 → Normal
+Similarity < 0.982113 → Anomaly
 ```
 
-이 발생했습니다.
+실제로 잘못 판정된 이미지 3장을 확인해 보겠습니다.
 
----
+|실제 이미지|실제 정답|Similarity|검사 결과|오류|
+|---|---|---|---|---|
+|normal/006.png|정상|0.959170|이상|FP|
+|broken_small/007.png|이상|0.984909|정상|FN|
+|broken_small/016.png|이상|0.982900|정상|FN|
 
-## 대표 오판을 확인합니다
+**첫 번째는 FP(오탐)입니다.**
 
-정상 이미지 중 한 장은:
+`normal/006.png`는 실제로 정상 병이지만, 유사도가 `0.959170`으로 Threshold보다 낮았습니다.
+
+따라서 검사기는 정상 병을 이상으로 잘못 판정했습니다.
+
+**두 번째와 세 번째는 FN(미검출)입니다.**
+
+두 이미지는 실제 작은 파손이 있지만, 유사도가 Threshold보다 높았습니다.
+
+따라서 검사기는 불량 병을 정상으로 잘못 판정했습니다.
+
+즉, **정상인데 기준 이미지와 덜 비슷한 경우도 있고, 불량인데 기준 이미지와 매우 비슷한 경우도 있다는 것**을 확인했습니다.
+
+### 오판이 발생하면 어떻게 하나요?
+
+잘못 판정한 이미지 3장을 직접 열어 다음 사항을 확인합니다.
+
+- **FP:** 정상 병의 밝기, 위치, 반사 등이 기준 이미지와 다른가?
+    
+- **FN:** 작은 파손이 너무 작거나 특징 차이가 약하게 나타났을 가능성이 있는가?
+    
+
+이것들은 가능한 원인이지, 실제 원인이 확인된 것은 아닙니다.
+
+또한 **Test 결과를 보고 Threshold를 바로 변경하지 않습니다.** 이미 Calibration 데이터로 확정한 기준이기 때문입니다.
 
 ```
-normal/006.png
-
-Actual     = Normal
-Predicted  = Anomaly
-Similarity = 0.959170
-Threshold  = 0.982113
+오판 3장 확인
+       ↓
+이미지를 직접 비교
+       ↓
+가능한 원인 기록
+       ↓
+현재 Threshold 유지
+       ↓
+다음 실험에서 다른 검사 방법과 비교
 ```
 
-이었습니다.
+### 이번 결과에서 무엇을 배웠나요?
 
-실제로는 정상인데 Reference와의 Similarity가 Threshold보다 낮아 `Anomaly`로 판정되었습니다.
+이번 One-shot은 **정상 Reference 1장만으로도 20장 중 17장을 정확하게 판정**했습니다.
+
+하지만 정상 병을 이상으로 잘못 판단하거나, 작은 파손을 놓치는 문제도 발생했습니다.
+
+이는 Reference 한 장만으로 다양한 정상 모습과 작은 결함을 구분하기 어려울 가능성을 보여줍니다.
+
+따라서 다음 Few-shot 실습에서는 다음과 같이 기준 데이터를 변경합니다.
 
 ```
-실제 Normal
+이번 One-shot
+정상 Reference 1장
         ↓
-Similarity 0.959170
-        <
-Threshold 0.982113
-        ↓
-Anomaly로 오탐
-```
+Accuracy 85%
 
-반대로 다음 두 이미지는 실제 불량이지만:
+          VS
 
-```
-broken_small/007.png
-Similarity = 0.984909
-
-broken_small/016.png
-Similarity = 0.982900
-```
-
-Threshold보다 높게 나와 `Normal`로 판정되었습니다.
-
-```
-실제 Anomaly
-        ↓
-Similarity가 Threshold 이상
-        ↓
-Normal로 판정
-        ↓
-불량을 놓침
-```
-
----
-
-## 오판이 나오면 바로 원인을 단정하지 않습니다
-
-Similarity 값만 보고:
-
-```
-이미지가 작아서 그렇다
-Threshold가 잘못되었다
-Reference가 잘못되었다
-```
-
-라고 바로 결론 내리지는 않습니다.
-
-먼저 대표 실패 이미지를 몇 장만 직접 열어 확인합니다.
-
-```
-Reference 037.png
-        VS
-Normal 오판 이미지
-
-확인할 것
-→ 제품 위치
-→ 크기
-→ 밝기
-→ 반사
-→ 기울기
-→ 전체적인 모양 차이
-```
-
-불량을 놓친 경우에는:
-
-```
-Reference 037.png
-        VS
-broken_small 오판 이미지
-
-확인할 것
-→ 결함 위치
-→ 결함 크기
-→ 결함이 전체 이미지에서 얼마나 작은가?
-→ 전체적인 병 모양은 정상과 얼마나 비슷한가?
-```
-
-를 살펴봅니다.
-
----
-
-## 모든 오판의 원인을 지금 완전히 증명할 필요는 없습니다
-
-이번 실습의 목적은 오판 3장의 원인을 모두 완벽하게 밝혀내는 것이 아닙니다.
-
-대표적인 실패를 확인하고 **가능한 원인 후보를 세우는 것**이 중요합니다.
-
-예를 들어:
-
-```
-가능한 원인 ①
-Reference 한 장이
-모든 정상 모습을 대표하지 못했을 수 있음
-
-가능한 원인 ②
-조명·반사·위치 차이가
-Feature에 영향을 주었을 수 있음
-
-가능한 원인 ③
-broken_small 결함이 작아서
-전체 이미지 Feature에서는
-차이가 충분히 크게 나타나지 않았을 수 있음
-
-가능한 원인 ④
-일부 이미지는 Threshold 경계에
-매우 가까운 사례일 수 있음
-```
-
-처럼 기록합니다.
-
-> **오판이 발생하면 먼저 대표 사례를 확인하고, 원인 가설을 세운 뒤 다음 실험에서 검증합니다.**
-
----
-
-## 지금 Threshold를 다시 바꾸지는 않습니다
-
-이번 Threshold `0.982113`은 이미 Calibration 데이터에서 결정했습니다.
-
-따라서 Query 결과를 본 뒤:
-
-```
-006.png를 Normal로 만들기 위해
-Threshold를 낮춰볼까?
-```
-
-처럼 바로 수정하지 않습니다.
-
-그렇게 하면 **평가 결과를 본 뒤 판정 기준을 맞추는 것**이 되어 공정한 Test가 되지 않습니다.
-
-```
-Calibration
-        ↓
-Threshold 결정
-        ↓
-Rule Freeze
-        ↓
-Query Test
-        ↓
-결과 확인
-
-오판 발생
-        ↓
-원인 후보 기록
-        ↓
-Threshold는 그대로 유지
-```
-
-합니다.
-
-Threshold를 다시 검토해야 한다면 Query가 아니라 **별도의 Calibration 또는 Validation 데이터에서 다시 결정**해야 합니다.
-
----
-
-## 이번 결과에서 무엇을 배울 수 있을까요?
-
-이번 결과의 핵심은 `85%`라는 숫자 자체가 아닙니다.
-
-```
-Reference 1장
-        ↓
-대부분의 이미지는 구분 가능
-        ↓
-하지만 일부 Normal 오탐
-일부 Anomaly 미검출 발생
-        ↓
-한 장의 Reference만으로는
-모든 변화를 표현하기 어려울 수 있음
-```
-
-이라는 점을 확인한 것입니다.
-
-> **One-shot은 적은 데이터로 빠르게 시작할 수 있지만, Reference 한 장의 대표성에 크게 영향을 받을 수 있습니다.**
-
-이제 이 결과를 억지로 100%로 만들지 않고 그대로 유지합니다.
-
-다음 Few-shot 실습에서는:
-
-```
-One-shot
-Reference 1장
-
-        VS
-
-Few-shot
-Normal Support 5장
+다음 Few-shot
+정상 Support 5장
 +
-Anomaly Support 5장
-```
-
-을 사용한 뒤, **같은 Common Query에서 결과가 어떻게 달라지는지 비교**합니다.
-
----
-
-### 오판이 발생했을 때의 실무적인 대응 흐름
-
-```
-오판 발생
+불량 Support 5장
         ↓
-FP / FN 종류 확인
-        ↓
-대표 실패 이미지 1~2장 확인
-        ↓
-가능한 원인 가설 작성
-        ↓
-
-Reference 문제?
-촬영 조건 문제?
-Threshold 경계 문제?
-작은 결함 문제?
-데이터 수 부족 문제?
-
-        ↓
-현재 Test에서는 기준 수정하지 않음
-        ↓
-다음 실험에서 한 가지 조건을 바꾸어 검증
+같은 Common Query 20장 검사
         ↓
 결과 비교
 ```
 
-> 중요한 것은 오판을 없애는 것이 아니라, 왜 오판이 발생했는지 합리적인 가설을 세우고 다음 실험으로 연결하는 것입니다.
-
-
-### 이코드의 전체 흐름
-
-```
-프로그램 시작
-        ↓
-저장된 Reference Feature 불러오기
-one_shot_reference.npy
-        ↓
-저장된 One-shot Rule 불러오기
-day08_one_shot_rules.json
-        ↓
-Threshold 읽기
-0.982113...
-        ↓
-Pretrained ResNet18 준비
-        ↓
-
-Common Query 준비
-        ↓
-Normal 10장
-+
-Anomaly 10장
-        ↓
-
-Query 이미지 한 장 입력
-        ↓
-ResNet18 Feature 추출
-        ↓
-Reference Feature와
-Cosine Similarity 계산
-        ↓
-Similarity와
-Threshold 비교
-        ↓
-
-Similarity >= Threshold?
-        ↓
-   ┌────┴────┐
-  YES        NO
-   ↓          ↓
-Normal      Anomaly
-   └────┬─────┘
-        ↓
-실제 정답과 비교
-        ↓
-correct
-True / False
-        ↓
-결과 목록에 저장
-        ↓
-다음 Query 이미지 검사
-        ↓
-20장 모두 반복
-        ↓
-day08_one_shot_results.csv 저장
-        ↓
-One-shot Test 완료
-```
-
-### 의사코드
-
-```
-1. Common Query 이미지가 저장된
-   폴더 위치를 지정한다.
-
-2. 20번에서 저장한
-   Reference Feature 파일 위치를 지정한다.
-
-3. 20번에서 저장한
-   One-shot Rule JSON 위치를 지정한다.
-
-4. 검사 결과를 저장할
-   CSV 파일 위치를 지정한다.
-
-5. one_shot_reference.npy에서
-   Reference Feature를 불러온다.
-
-6. day08_one_shot_rules.json을 읽는다.
-
-7. JSON 안에 저장된
-   similarity_threshold 값을 가져온다.
-
-8. 이번 실습에서는 Threshold를
-   다시 계산하지 않는다.
-
-9. 앞에서 만든 공통 함수를 이용하여
-   Pretrained ResNet18 Feature 모델을 준비한다.
-
-10. 결과를 저장할
-    빈 목록을 만든다.
-
-11. Query 이미지 한 장이 들어오면
-    ResNet18로 Feature를 추출한다.
-
-12. Query Feature와
-    Reference Feature의
-    Cosine Similarity를 계산한다.
-
-13. 계산된 Similarity를
-    저장된 Threshold와 비교한다.
-
-14. Similarity가 Threshold 이상이면
-
-    Normal
-
-    로 판정한다.
-
-15. Similarity가 Threshold보다 낮으면
-
-    Anomaly
-
-    로 판정한다.
-
-16. 실제 정답 actual과
-    판정 결과 predicted를 비교한다.
-
-17. 두 값이 같으면
-
-    correct = True
-
-    로 기록한다.
-
-18. 두 값이 다르면
-
-    correct = False
-
-    로 기록한다.
-
-19. 각 이미지에 대해 다음 내용을
-    결과 목록에 저장한다.
-
-    - sample_id
-    - file
-    - actual
-    - similarity
-    - threshold
-    - predicted
-    - correct
-
-20. Common Query의
-    정상 이미지 10장을 차례대로 검사한다.
-
-21. 같은 방식으로
-    broken_small 불량 이미지 10장도 검사한다.
-
-22. 총 20장의 결과를
-    reports/day08_one_shot_results.csv
-    파일에 저장한다.
-
-23. 실행 화면에도 각 이미지의
-    실제 정답, 예측 결과,
-    Similarity, 정답 여부를 출력한다.
-
-24. 다음 24단락에서
-    저장된 CSV를 확인하며
-    어떤 이미지가 맞았고
-    어떤 이미지가 틀렸는지 살펴본다.
-```
-
-## 이번 단계에서 꼭 이해할 것
-
-20번과 23번의 차이를 구분하면 One-shot 전체 흐름이 훨씬 이해하기 쉽습니다.
-
-```
-20번
-Reference + Calibration
-        ↓
-판정 기준 만들기
-        ↓
-Threshold = 0.982113
-
-
-23번
-처음 보는 Query
-        ↓
-이미 만들어 둔 Threshold 적용
-        ↓
-Normal / Anomaly 판정
-```
-
-> 20 단락은 One-shot의 기준을 만드는 단계이고, 23번은 그 기준으로 처음 보는 이미지를 실제 검사하는 단계입니다.
-
+> **핵심 정리:** One-shot은 정상 이미지 1장을 기준으로 검사하는 방법입니다. 이번에는 85%의 정확도가 나왔지만 FP 1장과 FN 2장이 발생했습니다. 다음 Few-shot에서는 정상·불량 예제를 여러 장 사용하여 **같은 20장의 이미지에서 검사 결과가 어떻게 달라지는지** 비교합니다.
 
 ---
 
@@ -4610,7 +5632,7 @@ normal/008.png,008.png,Normal,0.987457,0.982113,Normal,True
 normal/009.png,009.png,Normal,0.987604,0.982113,Normal,True
 ```
 
-## 각 열은 무엇을 의미하나요?
+### 각 열은 무엇을 의미하나요?
 
 |열|의미|
 |---|---|
@@ -4714,6 +5736,8 @@ Few-shot 진행
 
 # 25. One-shot의 한계를 실제 결과와 연결합니다
 
+![[Pasted image 20261031210501.png]]
+
 이번 One-shot 실험에서는 정상 Reference로 **`037.png` 한 장**만 사용했습니다.
 
 그리고 Common Query 20장을 검사한 결과:
@@ -4738,7 +5762,7 @@ Accuracy = 85%
 
 ---
 
-## 정상인데 Anomaly로 판정된 경우
+### 정상인데 Anomaly로 판정된 경우
 
 이번 결과에서는:
 
@@ -4799,7 +5823,7 @@ False Positive
 
 ---
 
-## 불량인데 Normal로 판정된 경우
+### 불량인데 Normal로 판정된 경우
 
 이번 실험에서는 다음 두 이미지가 불량인데도 Normal로 판정되었습니다.
 
@@ -4846,7 +5870,7 @@ False Negative
 
 ---
 
-## 오판이 나오면 무엇을 해야 할까요?
+### 오판이 나오면 무엇을 해야 할까요?
 
 오판이 발생했다고 바로 Threshold를 바꾸지는 않습니다.
 
@@ -4876,7 +5900,7 @@ FP / FN 구분
 
 ---
 
-## One-shot의 장점과 한계
+### One-shot의 장점과 한계
 
 One-shot의 장점은 분명합니다.
 
@@ -4926,7 +5950,7 @@ FN 2건
 
 ---
 
-## 이제 Few-shot으로 넘어갑니다
+### 이제 Few-shot으로 넘어갑니다
 
 지금 이 결과를 억지로 수정하여 100%로 만들지는 않습니다.
 
@@ -5217,7 +6241,7 @@ Anomaly Prototype 생성
 실험 조건 저장
 ```
 
-## 왜 Prototype을 먼저 파일로 저장할까요?
+### 왜 Prototype을 먼저 파일로 저장할까요?
 
 다음 Query 검사에서 Support 10장을 다시 읽어 Prototype을 새로 만들 수도 있습니다.
 
@@ -5274,6 +6298,19 @@ src/66_day08_build_fewshot_prototypes.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#
+#    → json  : Few-shot 검사 설정을 JSON으로 저장
+#    → Path  : 파일과 폴더 경로 관리
+#    → NumPy : Normal / Anomaly Prototype 저장
+#
+#    day08_feature_core의 공통 함수 사용
+#    → create_feature_model() : ResNet18 준비
+#    → extract_feature()      : 이미지 특징 추출
+#    → build_prototype()      : 여러 특징의 대표값 생성
+# ==================================================
 import json
 from pathlib import Path
 
@@ -5286,43 +6323,198 @@ from day08_feature_core import (
 )
 
 
-SUPPORT_ROOT = Path("samples/day08/few_shot/support")
-ARTIFACT_PATH = Path("artifacts/day08/fewshot_prototypes.npz")
-CONFIG_PATH = Path("configs/day08_fewshot_config.json")
+# ==================================================
+# ② 입력 / 출력 경로 설정
+#
+#    → 입력 : 63번에서 분리한 Few-shot Support
+#    → 출력 : 정상·불량 Prototype 저장 파일
+#    → 출력 : Few-shot 검사 설정 JSON 파일
+# ==================================================
+
+# ----------------------------------------------
+# ②-1. Few-shot Support 이미지 폴더
+#
+#       normal/  : 정상 이미지 5장
+#       anomaly/ : 작은 파손 이미지 5장
+# ----------------------------------------------
+SUPPORT_ROOT = Path(
+    "samples/day08/few_shot/support"
+)
+
+# ----------------------------------------------
+# ②-2. Normal / Anomaly Prototype 저장 경로
+#
+#       두 그룹의 대표 Feature를
+#       하나의 NPZ 파일에 저장합니다.
+# ----------------------------------------------
+ARTIFACT_PATH = Path(
+    "artifacts/day08/fewshot_prototypes.npz"
+)
+
+# ----------------------------------------------
+# ②-3. Few-shot 검사 설정 JSON 저장 경로
+# ----------------------------------------------
+CONFIG_PATH = Path(
+    "configs/day08_fewshot_config.json"
+)
 
 
+# ==================================================
+# ③ 특징 추출용 ResNet18 준비
+#
+#    → 공통 함수 create_feature_model() 사용
+#    → ImageNet 사전학습 ResNet18 불러오기
+#    → 이미지마다 512차원 Feature Vector 추출
+#
+#    이번에도 ResNet18을 새로 학습하지 않습니다.
+# ==================================================
 model = create_feature_model()
 
 
+# ==================================================
+# ④ Support 폴더의 Feature를 추출하는 함수
+#
+#    함수: extract_folder()
+#
+#    → 폴더에서 PNG 이미지 목록 가져오기
+#    → 이미지가 없으면 오류 발생
+#    → 각 이미지에서 Feature Vector 추출
+#    → 이미지 목록과 Feature 목록 반환
+#
+#    이 함수를 정상·불량 그룹에 공통 사용합니다.
+# ==================================================
 def extract_folder(folder):
-    files = sorted(folder.glob("*.png"))
 
+    # ----------------------------------------------
+    # ④-1. 해당 폴더의 PNG 이미지 목록 읽기
+    # ----------------------------------------------
+    files = sorted(
+        folder.glob("*.png")
+    )
+
+    # ----------------------------------------------
+    # ④-2. Support 이미지 존재 여부 확인
+    #
+    #       이미지가 없다면 Prototype을
+    #       만들 수 없으므로 오류 발생
+    # ----------------------------------------------
     if not files:
-        raise RuntimeError(f"Support 이미지가 없습니다: {folder}")
+        raise RuntimeError(
+            f"Support 이미지가 없습니다: {folder}"
+        )
 
+    # ----------------------------------------------
+    # ④-3. 이미지마다 Feature Vector 추출
+    #
+    #       예: 정상 이미지 5장
+    #           ↓
+    #       ResNet18 특징 추출
+    #           ↓
+    #       512개 특징값을 가진 Vector 5개
+    #
+    #       공통 함수 extract_feature() 사용
+    # ----------------------------------------------
     features = [
-        extract_feature(model, image_path)
+        extract_feature(
+            model,
+            image_path
+        )
         for image_path in files
     ]
 
+    # ----------------------------------------------
+    # ④-4. 이미지 목록과 Feature 목록 반환
+    # ----------------------------------------------
     return files, features
 
 
+# ==================================================
+# ⑤ 정상 / 불량 Support 이미지에서 Feature 추출
+#
+#    → 정상 이미지 5장의 Feature 추출
+#    → 작은 파손 이미지 5장의 Feature 추출
+#
+#    이후 두 그룹의 Prototype을 따로 만듭니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑤-1. 정상 Support 이미지의 특징 추출
+#
+#       samples/day08/few_shot/support/normal
+#       → 정상 이미지 5장
+#       → 정상 Feature Vector 5개
+# ----------------------------------------------
 normal_files, normal_features = extract_folder(
     SUPPORT_ROOT / "normal"
 )
 
+# ----------------------------------------------
+# ⑤-2. 불량 Support 이미지의 특징 추출
+#
+#       samples/day08/few_shot/support/anomaly
+#       → 작은 파손 이미지 5장
+#       → 불량 Feature Vector 5개
+# ----------------------------------------------
 anomaly_files, anomaly_features = extract_folder(
     SUPPORT_ROOT / "anomaly"
 )
 
 
-normal_prototype = build_prototype(normal_features)
-anomaly_prototype = build_prototype(anomaly_features)
+# ==================================================
+# ⑥ Normal / Anomaly Prototype 생성
+#
+#    → 공통 함수 build_prototype() 사용
+#    → 같은 그룹의 Feature Vector를 평균
+#    → 평균 Feature를 L2 정규화
+#
+#    Normal Prototype  : 정상 병의 대표 특징
+#    Anomaly Prototype : 작은 파손 병의 대표 특징
+#
+#    각 Prototype의 최종 형태는 (512,)입니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 정상 Feature 5개의 대표 특징 생성
+# ----------------------------------------------
+normal_prototype = build_prototype(
+    normal_features
+)
+
+# ----------------------------------------------
+# ⑥-2. 작은 파손 Feature 5개의 대표 특징 생성
+# ----------------------------------------------
+anomaly_prototype = build_prototype(
+    anomaly_features
+)
 
 
-ARTIFACT_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ==================================================
+# ⑦ 생성한 두 Prototype을 NPZ 파일로 저장
+#
+#    → Normal Prototype 저장
+#    → Anomaly Prototype 저장
+#
+#    NPZ는 여러 NumPy 배열을
+#    하나의 파일에 저장할 수 있는 형식입니다.
+#
+#    이후 67번 코드에서 불러와 사용합니다.
+# ==================================================
 
+# ----------------------------------------------
+# ⑦-1. 저장 폴더가 없으면 생성
+# ----------------------------------------------
+ARTIFACT_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ⑦-2. 두 Prototype을 하나의 NPZ로 저장
+#
+#       저장되는 배열 이름:
+#       normal_prototype
+#       anomaly_prototype
+# ----------------------------------------------
 np.savez_compressed(
     ARTIFACT_PATH,
     normal_prototype=normal_prototype,
@@ -5330,18 +6522,67 @@ np.savez_compressed(
 )
 
 
+# ==================================================
+# ⑧ Few-shot 검사 설정을 JSON으로 저장
+#
+#    → Baseline 버전 기록
+#    → 사용한 데이터셋과 모델 기록
+#    → 정상 / 불량 Support 이미지 수 기록
+#    → 불량 예제의 종류 기록
+#    → 검사 판정 규칙 기록
+#
+#    Few-shot의 판정 방법:
+#    → Query와 두 Prototype의 유사도 비교
+#    → 유사도가 더 높은 그룹으로 판정
+#
+#    One-shot과 달리 이번 코드에서는
+#    별도의 단일 Threshold를 계산하지 않습니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. Few-shot 검사 설정 정보 구성
+# ----------------------------------------------
 config = {
+
+    # Few-shot Baseline 버전
     "baseline_version": "day08-few-shot-v1.0",
+
+    # 사용 데이터셋
     "dataset": "MVTec AD bottle",
+
+    # 검사 방법
     "method": "prototype_cosine_similarity",
+
+    # 이미지 특징 추출 모델
     "backbone": "resnet18_imagenet_pretrained",
+
+    # 정상 Support 이미지 수
     "normal_support_count": len(normal_files),
+
+    # 불량 Support 이미지 수
     "anomaly_support_count": len(anomaly_files),
+
+    # 사용한 불량 예제 종류
     "anomaly_support_type": "broken_small",
+
+    # Query 검사 시 사용할 판정 규칙
     "decision_rule": "choose prototype with higher similarity",
 }
 
-CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ----------------------------------------------
+# ⑧-2. configs 폴더가 없으면 생성
+# ----------------------------------------------
+CONFIG_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ⑧-3. 검사 설정을 JSON 파일로 저장
+#
+#       이후 67번에서 확인할
+#       Few-shot 검사 조건을 기록합니다.
+# ----------------------------------------------
 CONFIG_PATH.write_text(
     json.dumps(
         config,
@@ -5352,14 +6593,149 @@ CONFIG_PATH.write_text(
 )
 
 
+# ==================================================
+# ⑨ 실행 결과 확인
+#
+#    → 사용한 정상 Support 이미지 수 출력
+#    → 사용한 불량 Support 이미지 수 출력
+#    → 불량 종류 출력
+#    → NPZ 저장 경로 출력
+#    → JSON 저장 경로 출력
+#
+#    아직 새로운 Query에 대한
+#    Normal / Anomaly 판정은 수행하지 않습니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑨-1. Few-shot Prototype 생성 완료 제목
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 FEW-SHOT PROTOTYPE")
 print("=" * 70)
-print("Normal Support  :", len(normal_files))
-print("Anomaly Support :", len(anomaly_files))
-print("Anomaly Type    : broken_small")
-print("Saved Artifact  :", ARTIFACT_PATH)
-print("Saved Config    :", CONFIG_PATH)
+
+# ----------------------------------------------
+# ⑨-2. 정상 Support 이미지 수 출력
+# ----------------------------------------------
+print(
+    "Normal Support  :",
+    len(normal_files)
+)
+
+# ----------------------------------------------
+# ⑨-3. 불량 Support 이미지 수 출력
+# ----------------------------------------------
+print(
+    "Anomaly Support :",
+    len(anomaly_files)
+)
+
+# ----------------------------------------------
+# ⑨-4. 불량 Support의 결함 종류 출력
+# ----------------------------------------------
+print(
+    "Anomaly Type    : broken_small"
+)
+
+# ----------------------------------------------
+# ⑨-5. Prototype NPZ 저장 경로 출력
+# ----------------------------------------------
+print(
+    "Saved Artifact  :",
+    ARTIFACT_PATH
+)
+
+# ----------------------------------------------
+# ⑨-6. 설정 JSON 저장 경로 출력
+# ----------------------------------------------
+print(
+    "Saved Config    :",
+    CONFIG_PATH
+)
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - json, Path, NumPy를 불러온다.
+   - day08_feature_core의 함수를 불러온다.
+
+     · create_feature_model()
+     · extract_feature()
+     · build_prototype()
+
+② 입력 및 출력 경로 설정
+   - Few-shot Support 폴더를 지정한다.
+   - Prototype을 저장할 NPZ 경로를 지정한다.
+   - 설정을 저장할 JSON 경로를 지정한다.
+
+③ ResNet18 특징 추출기 준비
+   - create_feature_model()을 실행한다.
+   - 사전학습된 ResNet18을 준비한다.
+   - 모델을 새로 학습하지 않는다.
+
+④ extract_folder() 함수 작성
+   - 전달받은 폴더에서 PNG 이미지 목록을 읽는다.
+   - 이미지가 없다면 오류를 발생시킨다.
+   - 이미지마다 extract_feature()를 실행한다.
+   - 512차원 Feature Vector를 추출한다.
+   - 이미지 목록과 Feature 목록을 반환한다.
+
+⑤ 정상 / 불량 Support Feature 추출
+
+   [정상 Support]
+   - 정상 이미지 5장을 읽는다.
+   - 이미지마다 Feature Vector를 추출한다.
+   - 정상 Feature 5개를 준비한다.
+
+   [불량 Support]
+   - 작은 파손 이미지 5장을 읽는다.
+   - 이미지마다 Feature Vector를 추출한다.
+   - 불량 Feature 5개를 준비한다.
+
+⑥ Normal / Anomaly Prototype 생성
+
+   [Normal Prototype]
+   - 정상 Feature Vector 5개를 가져온다.
+   - build_prototype()으로 평균을 계산한다.
+   - L2 정규화하여 정상 대표 특징을 만든다.
+
+   [Anomaly Prototype]
+   - 불량 Feature Vector 5개를 가져온다.
+   - build_prototype()으로 평균을 계산한다.
+   - L2 정규화하여 불량 대표 특징을 만든다.
+
+   결과:
+   정상 Prototype 1개
+   불량 Prototype 1개
+
+⑦ 두 Prototype을 NPZ로 저장
+   - artifacts/day08 폴더를 생성한다.
+   - normal_prototype 배열을 저장한다.
+   - anomaly_prototype 배열을 저장한다.
+
+   → fewshot_prototypes.npz
+
+⑧ 검사 설정 JSON 저장
+   - Baseline 버전을 기록한다.
+   - 사용한 데이터셋과 모델을 기록한다.
+   - 정상 / 불량 Support 이미지 수를 기록한다.
+   - 불량 예제의 종류를 기록한다.
+   - 유사도가 높은 Prototype을 선택한다는
+     판정 규칙을 기록한다.
+   - 설정을 JSON 파일에 저장한다.
+
+   → day08_fewshot_config.json
+
+⑨ 실행 결과 확인
+   - 정상 Support 수를 출력한다.
+   - 불량 Support 수를 출력한다.
+   - 불량 종류를 출력한다.
+   - Prototype NPZ 저장 경로를 출력한다.
+   - 설정 JSON 저장 경로를 출력한다.
+
+   → Few-shot의 정상·불량 대표 기준 생성 완료
+   → 다음 67번에서 Common Query 20장 검사
 ```
 
 실행합니다.
@@ -5508,92 +6884,6 @@ Support 수와
 저장 위치 출력
         ↓
 Few-shot 기준 생성 완료
-```
-
----
-
-## 의사코드
-
-```
-1. Few-shot Support 이미지가 있는
-   폴더 위치를 지정한다.
-
-2. 만들어진 Prototype을 저장할
-   파일 위치를 지정한다.
-
-3. 이번 Few-shot 실험 조건을 저장할
-   Config 파일 위치를 지정한다.
-
-4. 앞에서 만든 공통 함수를 이용하여
-   Pretrained ResNet18 Feature 모델을 준비한다.
-
-5. Normal Support 폴더의
-   PNG 이미지 목록을 읽는다.
-
-6. Normal Support 이미지가 하나도 없다면
-   기준을 만들 수 없으므로 실행을 중단한다.
-
-7. Normal Support 이미지를
-   한 장씩 ResNet18에 입력한다.
-
-8. 각 이미지에서 Feature를 추출한다.
-
-9. 추출한 Normal Feature들을
-   하나의 목록으로 모은다.
-
-10. Normal Feature들의 평균을 계산한다.
-
-11. 평균 Feature를 정리하여
-    Normal Prototype을 만든다.
-
-12. Anomaly Support 폴더의
-    PNG 이미지 목록을 읽는다.
-
-13. Anomaly Support 이미지가 하나도 없다면
-    실행을 중단한다.
-
-14. Anomaly Support 이미지를
-    한 장씩 ResNet18에 입력한다.
-
-15. 각 이미지에서 Feature를 추출한다.
-
-16. 추출한 Anomaly Feature들을
-    하나의 목록으로 모은다.
-
-17. Anomaly Feature들의 평균을 계산한다.
-
-18. 평균 Feature를 정리하여
-    Anomaly Prototype을 만든다.
-
-19. 만들어진 두 Prototype을
-
-    artifacts/day08/fewshot_prototypes.npz
-
-    파일에 함께 저장한다.
-
-20. 이번 실험에서 사용한 조건을 정리한다.
-
-    - Dataset
-    - Feature Extractor
-    - Normal Support 수
-    - Anomaly Support 수
-    - Anomaly Type
-    - 판정 방식
-
-21. 실험 조건을
-
-    configs/day08_fewshot_config.json
-
-    파일에 저장한다.
-
-22. 실제 사용한 Normal Support 수와
-    Anomaly Support 수를 화면에 출력한다.
-
-23. 두 Prototype이 저장된 위치를
-    화면에 출력한다.
-
-24. 다음 실습에서는 저장된 두 Prototype을 불러와
-    Common Query와 각각 Similarity를 계산한다.
 ```
 
 ---
@@ -5794,7 +7084,7 @@ Anomaly Prototype
 
 앞에서 Prototype을 만드는 것까지만 했다면, 이번 코드는 그 Prototype을 실제 판정에 사용하는 단계입니다.
 
-## 이번 코드는 왜 작성할까요?
+### 이번 코드는 왜 작성할까요?
 
 Few-shot에서 기준을 만들었다고 해서 바로 성능을 알 수 있는 것은 아닙니다.
 
@@ -5833,7 +7123,9 @@ Anomaly 10장
 
 ---
 
-## 이번에는 어떻게 판정할까요?
+### 이번에는 어떻게 판정할까요?
+
+![[Pasted image 20261031211201.png]]
 
 One-shot에서는 한 장의 Reference와 비교한 Similarity를 Threshold와 비교했습니다.
 
@@ -5892,7 +7184,7 @@ Predicted = Anomaly
 
 ---
 
-## 이번 코드에서는 무엇을 하나요?
+### 이번 코드에서는 무엇을 하나요?
 
 프로그램은 다음 순서로 동작합니다.
 
@@ -5987,6 +7279,19 @@ src/67_day08_test_fewshot.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#
+#    → csv   : 검사 결과를 CSV로 저장
+#    → Path  : 파일과 폴더 경로 관리
+#    → NumPy : 저장된 Prototype 불러오기
+#
+#    day08_feature_core의 공통 함수 사용
+#    → create_feature_model() : ResNet18 준비
+#    → extract_feature()      : 이미지 특징 추출
+#    → cosine_similarity()    : 유사도 계산
+# ==================================================
 import csv
 from pathlib import Path
 
@@ -5999,54 +7304,256 @@ from day08_feature_core import (
 )
 
 
-QUERY_ROOT = Path("samples/day08/common_query")
-ARTIFACT_PATH = Path("artifacts/day08/fewshot_prototypes.npz")
-CSV_PATH = Path("reports/day08_fewshot_results.csv")
+# ==================================================
+# ② 입력 및 출력 경로 설정
+#
+#    → 63번에서 준비한 Common Query 사용
+#    → 66번에서 저장한 두 Prototype 사용
+#    → 검사 결과를 CSV 파일로 저장
+# ==================================================
+
+# ----------------------------------------------
+# ②-1. 공통 검사 이미지 폴더
+#
+#       normal/                 : 정상 10장
+#       anomaly/broken_small/   : 작은 파손 10장
+# ----------------------------------------------
+QUERY_ROOT = Path(
+    "samples/day08/common_query"
+)
 
 
-prototype_data = np.load(ARTIFACT_PATH)
-normal_prototype = prototype_data["normal_prototype"]
-anomaly_prototype = prototype_data["anomaly_prototype"]
+# ----------------------------------------------
+# ②-2. 66번에서 저장한 Prototype 파일
+#
+#       Normal Prototype 1개
+#       Anomaly Prototype 1개
+# ----------------------------------------------
+ARTIFACT_PATH = Path(
+    "artifacts/day08/fewshot_prototypes.npz"
+)
 
+
+# ----------------------------------------------
+# ②-3. Few-shot 검사 결과 CSV 저장 경로
+# ----------------------------------------------
+CSV_PATH = Path(
+    "reports/day08_fewshot_results.csv"
+)
+
+
+# ==================================================
+# ③ 66번에서 만든 두 Prototype 불러오기
+#
+#    → NPZ 파일에는 두 개의 Feature Vector 저장
+#
+#    normal_prototype
+#    → 정상 Support 5장의 대표 특징
+#
+#    anomaly_prototype
+#    → 작은 파손 Support 5장의 대표 특징
+#
+#    각각 512차원 Feature Vector입니다.
+# ==================================================
+
+# ----------------------------------------------
+# ③-1. NPZ 파일 불러오기
+# ----------------------------------------------
+prototype_data = np.load(
+    ARTIFACT_PATH
+)
+
+
+# ----------------------------------------------
+# ③-2. Normal Prototype 가져오기
+#       → 정상 이미지의 대표 특징
+# ----------------------------------------------
+normal_prototype = prototype_data[
+    "normal_prototype"
+]
+
+
+# ----------------------------------------------
+# ③-3. Anomaly Prototype 가져오기
+#       → 작은 파손 이미지의 대표 특징
+# ----------------------------------------------
+anomaly_prototype = prototype_data[
+    "anomaly_prototype"
+]
+
+
+# ==================================================
+# ④ Feature 추출용 ResNet18 준비
+#
+#    → 사전학습된 ResNet18 사용
+#    → 새로 모델을 학습하지 않음
+#    → Query 이미지의 512차원 특징 추출
+#
+#    rows에는 이미지별 검사 결과를 기록합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. 특징 추출용 ResNet18 준비
+# ----------------------------------------------
 model = create_feature_model()
+
+
+# ----------------------------------------------
+# ④-2. 검사 결과를 저장할 빈 리스트 생성
+# ----------------------------------------------
 rows = []
 
 
-def inspect(image_path, actual, sample_id):
-    feature = extract_feature(model, image_path)
+# ==================================================
+# ⑤ 이미지 한 장을 검사하는 함수 작성
+#
+#    함수: inspect()
+#
+#    처리 과정:
+#    1) Query 이미지의 Feature 추출
+#    2) Normal Prototype과 유사도 계산
+#    3) Anomaly Prototype과 유사도 계산
+#    4) 유사도가 더 높은 쪽으로 판정
+#    5) 실제 정답과 비교하여 결과 기록
+#
+#    One-shot과 다른 점!
+#    → Threshold와 비교하지 않습니다.
+#    → 두 Prototype의 유사도를 직접 비교합니다.
+# ==================================================
+def inspect(
+    image_path,
+    actual,
+    sample_id
+):
 
+    # ----------------------------------------------
+    # ⑤-1. Query 이미지의 Feature 추출
+    #
+    #       새로운 병 이미지 1장
+    #                 ↓
+    #       사전학습된 ResNet18
+    #                 ↓
+    #       512차원 Feature Vector
+    # ----------------------------------------------
+    feature = extract_feature(
+        model,
+        image_path
+    )
+
+
+    # ----------------------------------------------
+    # ⑤-2. Normal Prototype과 유사도 계산
+    #
+    #       Query Feature
+    #             ↕
+    #       Normal Prototype
+    #             ↓
+    #       normal_similarity
+    # ----------------------------------------------
     normal_similarity = cosine_similarity(
         feature,
         normal_prototype,
     )
 
+
+    # ----------------------------------------------
+    # ⑤-3. Anomaly Prototype과 유사도 계산
+    #
+    #       Query Feature
+    #             ↕
+    #       Anomaly Prototype
+    #             ↓
+    #       anomaly_similarity
+    # ----------------------------------------------
     anomaly_similarity = cosine_similarity(
         feature,
         anomaly_prototype,
     )
 
+
+    # ----------------------------------------------
+    # ⑤-4. 두 유사도를 비교하여 판정
+    #
+    #       Normal 유사도 >= Anomaly 유사도
+    #       → Normal
+    #
+    #       Normal 유사도 < Anomaly 유사도
+    #       → Anomaly
+    #
+    #       유사도가 같은 경우에는
+    #       현재 코드에서 Normal로 판정합니다.
+    #
+    #       별도의 Threshold는 사용하지 않습니다.
+    # ----------------------------------------------
     predicted = (
         "Normal"
         if normal_similarity >= anomaly_similarity
         else "Anomaly"
     )
 
+
+    # ----------------------------------------------
+    # ⑤-5. 검사 결과를 리스트에 기록
+    #
+    #       sample_id          : 이미지 식별자
+    #       file               : 이미지 파일명
+    #       actual             : 실제 정답
+    #       normal_similarity  : 정상 대표와 유사도
+    #       anomaly_similarity : 불량 대표와 유사도
+    #       predicted          : 예측 결과
+    #       correct            : 정답 여부
+    #
+    #       True  → 정확하게 판정
+    #       False → 잘못 판정
+    # ----------------------------------------------
     rows.append(
         {
             "sample_id": sample_id,
+
             "file": image_path.name,
+
             "actual": actual,
-            "normal_similarity": round(normal_similarity, 6),
-            "anomaly_similarity": round(anomaly_similarity, 6),
+
+            "normal_similarity": round(
+                normal_similarity,
+                6
+            ),
+
+            "anomaly_similarity": round(
+                anomaly_similarity,
+                6
+            ),
+
             "predicted": predicted,
+
             "correct": predicted == actual,
         }
     )
 
 
+# ==================================================
+# ⑥ 정상 Common Query 이미지 검사
+#
+#    → 정상 Query 이미지 10장 사용
+#    → 실제 정답은 모두 Normal
+#    → inspect() 함수로 한 장씩 검사
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 정상 Query 이미지 목록 반복
+# ----------------------------------------------
 for image_path in sorted(
     (QUERY_ROOT / "normal").glob("*.png")
 ):
+
+    # ------------------------------------------
+    # ⑥-2. 정상 이미지 검사
+    #
+    #       actual = Normal
+    #
+    #       sample_id에 normal/을 기록하여
+    #       검사 이미지의 종류를 구분합니다.
+    # ------------------------------------------
     inspect(
         image_path,
         "Normal",
@@ -6054,13 +7561,41 @@ for image_path in sorted(
     )
 
 
+# ==================================================
+# ⑦ 작은 파손 Common Query 이미지 검사
+#
+#    → 작은 파손 Query 이미지 10장 사용
+#    → 실제 정답은 모두 Anomaly
+#
+#    65번 One-shot에서 사용한 것과
+#    동일한 Common Query 이미지입니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑦-1. 작은 파손 Query 폴더 설정
+# ----------------------------------------------
 anomaly_dir = (
     QUERY_ROOT
     / "anomaly"
     / "broken_small"
 )
 
-for image_path in sorted(anomaly_dir.glob("*.png")):
+
+# ----------------------------------------------
+# ⑦-2. 작은 파손 이미지 반복
+# ----------------------------------------------
+for image_path in sorted(
+    anomaly_dir.glob("*.png")
+):
+
+    # ------------------------------------------
+    # ⑦-3. 작은 파손 이미지 검사
+    #
+    #       actual = Anomaly
+    #
+    #       sample_id에 anomaly/broken_small/
+    #       경로를 기록합니다.
+    # ------------------------------------------
     inspect(
         image_path,
         "Anomaly",
@@ -6068,43 +7603,217 @@ for image_path in sorted(anomaly_dir.glob("*.png")):
     )
 
 
-CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+# ==================================================
+# ⑧ 검사 결과 CSV 파일 저장
+#
+#    → 정상 10장과 작은 파손 10장 결과 기록
+#    → 이미지별 두 Prototype 유사도 기록
+#    → 실제 정답과 예측 결과 기록
+#
+#    저장 결과는 다음 68번 비교에서 사용합니다.
+# ==================================================
 
+# ----------------------------------------------
+# ⑧-1. 저장할 reports 폴더 생성
+# ----------------------------------------------
+CSV_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+# ----------------------------------------------
+# ⑧-2. CSV 파일 열기
+# ----------------------------------------------
 with CSV_PATH.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
+
+    # ------------------------------------------
+    # ⑧-3. 결과 CSV 컬럼명 설정
+    #
+    #       rows[0].keys()
+    #       → 첫 번째 검사 결과의 항목 이름 사용
+    # ------------------------------------------
     writer = csv.DictWriter(
         file,
         fieldnames=rows[0].keys(),
     )
+
+    # ------------------------------------------
+    # ⑧-4. CSV 컬럼명 작성
+    # ------------------------------------------
     writer.writeheader()
-    writer.writerows(rows)
+
+    # ------------------------------------------
+    # ⑧-5. 전체 검사 결과 저장
+    # ------------------------------------------
+    writer.writerows(
+        rows
+    )
 
 
+# ==================================================
+# ⑨ 실행 결과 출력
+#
+#    → 이미지별 실제 정답 출력
+#    → Normal / Anomaly 예측 출력
+#    → 정상·불량 Prototype 유사도 출력
+#    → 정답 여부 출력
+#    → 결과 CSV 저장 경로 출력
+#
+#    전체 Accuracy 비교는 68번에서 진행합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑨-1. 검사 완료 제목 출력
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 FEW-SHOT TEST")
 print("=" * 70)
 
+
+# ----------------------------------------------
+# ⑨-2. 이미지별 검사 결과 출력
+# ----------------------------------------------
 for row in rows:
+
     print(
         row["sample_id"],
+
         "actual=",
         row["actual"],
+
         "predicted=",
         row["predicted"],
+
         "normal_sim=",
         row["normal_similarity"],
+
         "anomaly_sim=",
         row["anomaly_similarity"],
+
         "correct=",
         row["correct"],
     )
 
+
+# ----------------------------------------------
+# ⑨-3. CSV 저장 경로 출력
+# ----------------------------------------------
 print()
-print("Saved:", CSV_PATH)
+
+print(
+    "Saved:",
+    CSV_PATH
+)
 ```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - csv와 Path를 불러온다.
+   - NumPy를 불러온다.
+   - day08_feature_core에서 다음 함수를 불러온다.
+
+     · create_feature_model()
+     · extract_feature()
+     · cosine_similarity()
+
+② 입력 및 출력 경로 설정
+   - Common Query 폴더를 지정한다.
+   - Few-shot Prototype 파일을 지정한다.
+   - 검사 결과 CSV 저장 경로를 지정한다.
+
+③ Normal / Anomaly Prototype 불러오기
+   - fewshot_prototypes.npz 파일을 읽는다.
+   - normal_prototype을 가져온다.
+   - anomaly_prototype을 가져온다.
+
+   → 정상 대표 특징 1개
+   → 불량 대표 특징 1개
+
+④ ResNet18과 결과 리스트 준비
+   - create_feature_model()을 실행한다.
+   - 사전학습된 ResNet18을 준비한다.
+   - 검사 결과를 저장할 빈 리스트를 만든다.
+
+⑤ inspect() 함수 작성
+
+   [Query Feature 추출]
+   - 검사할 이미지 1장을 받는다.
+   - extract_feature()를 실행한다.
+   - 이미지의 512차원 Feature를 추출한다.
+
+   [Normal Similarity 계산]
+   - Query Feature를 Normal Prototype과 비교한다.
+   - cosine_similarity()를 실행한다.
+   - normal_similarity를 계산한다.
+
+   [Anomaly Similarity 계산]
+   - Query Feature를 Anomaly Prototype과 비교한다.
+   - cosine_similarity()를 실행한다.
+   - anomaly_similarity를 계산한다.
+
+   [정상 / 이상 판정]
+   - 두 유사도 중 어느 값이 더 높은지 비교한다.
+
+     Normal Similarity >= Anomaly Similarity
+     → Normal
+
+     Normal Similarity < Anomaly Similarity
+     → Anomaly
+
+   [정답 여부 확인]
+   - 실제 정답(actual)을 확인한다.
+   - 예측 결과(predicted)와 비교한다.
+
+     일치하면 → correct = True
+     다르면   → correct = False
+
+   [결과 기록]
+   - sample_id와 파일명을 기록한다.
+   - 실제 정답을 기록한다.
+   - 두 Prototype 유사도를 기록한다.
+   - 판정 결과를 기록한다.
+   - 정답 여부를 기록한다.
+
+⑥ 정상 Common Query 검사
+   - common_query/normal 폴더를 읽는다.
+   - 정상 Query 10장을 하나씩 검사한다.
+   - actual = Normal로 전달한다.
+   - 검사 결과를 rows에 기록한다.
+
+⑦ 작은 파손 Common Query 검사
+   - common_query/anomaly/broken_small 폴더를 읽는다.
+   - 작은 파손 Query 10장을 하나씩 검사한다.
+   - actual = Anomaly로 전달한다.
+   - 검사 결과를 rows에 기록한다.
+
+⑧ 검사 결과 CSV 저장
+   - reports 폴더를 생성한다.
+   - CSV 파일을 연다.
+   - 컬럼명을 작성한다.
+   - 이미지 20장의 검사 결과를 저장한다.
+
+   → reports/day08_fewshot_results.csv
+
+⑨ 실행 결과 확인
+   - DAY08 FEW-SHOT TEST를 출력한다.
+   - 각 이미지의 실제 정답을 출력한다.
+   - 예측 결과를 출력한다.
+   - Normal Similarity를 출력한다.
+   - Anomaly Similarity를 출력한다.
+   - 정답 여부를 출력한다.
+   - CSV 저장 위치를 출력한다.
+
+   → Few-shot Query 검사 완료
+   → 다음 68번에서 One-shot과 성능 비교
+```
+
 
 실행합니다.
 
@@ -6263,117 +7972,9 @@ Anomaly Prototype과 비교
 즉 Few-shot에서는 One-shot처럼 Threshold 하나를 기준으로 판정하지 않고, 두 Prototype 중 
 어느 쪽과 더 비슷한지를 비교하여 판정합니다.
 
-### 의사코드
-
-```
-1. Common Query 이미지가 저장된
-   폴더 위치를 지정한다.
-
-2. 앞에서 만든
-   fewshot_prototypes.npz 파일 위치를 지정한다.
-
-3. 검사 결과를 저장할
-   CSV 파일 위치를 지정한다.
-
-4. fewshot_prototypes.npz 파일을 불러온다.
-
-5. 파일 안에서
-   Normal Prototype을 가져온다.
-
-6. 파일 안에서
-   Anomaly Prototype을 가져온다.
-
-7. 이미지 Feature를 추출하기 위해
-   Pretrained ResNet18을 준비한다.
-
-8. 검사 결과를 저장할
-   빈 목록을 만든다.
-
-
-9. Common Query에서
-   이미지 한 장을 가져온다.
-
-10. 이미지에서
-    ResNet18 Feature를 추출한다.
-
-11. Query Feature와
-    Normal Prototype의
-    Cosine Similarity를 계산한다.
-
-12. Query Feature와
-    Anomaly Prototype의
-    Cosine Similarity를 계산한다.
-
-
-13. 두 Similarity를 비교한다.
-
-14. Normal Similarity가
-    Anomaly Similarity보다 크거나 같으면
-
-    predicted = Normal
-
-    로 판정한다.
-
-15. Anomaly Similarity가 더 높으면
-
-    predicted = Anomaly
-
-    로 판정한다.
-
-
-16. 실제 정답 actual과
-    예측 결과 predicted를 비교한다.
-
-17. 두 값이 같으면
-
-    correct = True
-
-    로 기록한다.
-
-18. 두 값이 다르면
-
-    correct = False
-
-    로 기록한다.
-
-
-19. 다음 내용을 결과 목록에 저장한다.
-
-    - sample_id
-    - file
-    - actual
-    - normal_similarity
-    - anomaly_similarity
-    - predicted
-    - correct
-
-
-20. Normal Query 10장을
-    같은 방식으로 모두 검사한다.
-
-21. Anomaly Query 10장도
-    같은 방식으로 모두 검사한다.
-
-22. 총 20장의 검사 결과를
-    CSV 파일로 저장한다.
-
-23. 각 이미지의
-
-    실제 정답
-    예측 결과
-    Normal Similarity
-    Anomaly Similarity
-    정답 여부
-
-    를 화면에도 출력한다.
-
-24. 저장된 CSV를 이용하여
-    Few-shot 결과를 확인한다.
-```
-
 ---
 
-# 31. # Few-shot 결과를 읽는 방법
+# 31. Few-shot 결과를 읽는 방법
 
 30번에서 Common Query 20장을 검사한 결과가 다음 파일에 저장되었습니다.
 
@@ -6862,208 +8463,52 @@ Precision / Recall 비교
 
 ---
 
-# 35. `68_day08_compare_methods.py` — 두 방법을 같은 기준으로 비교합니다
+# 35. `68_day08_compare_methods.py` — One-shot과 Few-shot의 성능을 자동으로 비교합니다
 
-# 두 방법을 같은 기준으로 비교합니다
+앞에서 One-shot과 Few-shot 검사를 각각 완료하고 결과를 CSV 파일로 저장했습니다.
 
-앞에서 같은 Common Query 20장을 두 가지 방법으로 각각 검사했습니다.
+이번 68번 코드는 **두 검사 결과를 불러와 동일한 평가 기준으로 계산하고, 한눈에 비교할 수 있도록 정리하는 프로그램**입니다.
 
-```
-One-shot
-Accuracy = 85%
+새로운 병 이미지를 검사하거나 ResNet18을 다시 실행하는 것이 아니라, **이미 저장된 검사 결과를 분석합니다.**
 
-Few-shot
-Accuracy = 90%
-```
-
-숫자만 보면 Few-shot이 더 좋아 보입니다.
-
-하지만 두 방법을 제대로 비교하려면 단순히 Accuracy 하나만 보는 것이 아니라:
+### 이번 코드의 전체 흐름
 
 ```
-정말 같은 Query를 검사했는가?
-
-정상을 얼마나 잘 구분했는가?
-
-불량을 얼마나 잘 찾아냈는가?
-
-어떤 종류의 오판이 발생했는가?
+65번 One-shot 검사 결과 CSV
+             +
+67번 Few-shot 검사 결과 CSV
+             ↓
+   두 CSV의 sample_id 비교
+   (같은 Query인지 확인)
+             ↓
+   각 방법의 성능 자동 계산
+   ├─ Accuracy  : 전체 정답 비율
+   ├─ Precision : 이상 판정의 정확성
+   ├─ Recall    : 실제 이상 검출 비율
+   └─ FP / FN   : 오탐 / 미검출 개수
+             ↓
+      비교 결과 CSV 저장
+             ↓
+reports/day08_method_comparison.csv
 ```
 
-를 같은 기준으로 확인해야 합니다.
+### 이 코드를 실행하면 무엇을 확인할 수 있나요?
 
-그래서 이번에는 앞에서 저장한 두 결과 CSV를 다시 읽어 **같은 방식으로 성능을 계산하고 비교하는 프로그램**을 작성합니다.
+앞의 실습에서는 One-shot의 정확도가 85%, Few-shot의 정확도가 90%로 나타났습니다.
 
----
+68번 코드를 실행하면 이 결과를 **같은 계산 방식으로 자동 정리**하여 정확도뿐 아니라 어떤 오판이 줄었는지도 비교할 수 있습니다.
 
-## 이번 코드는 왜 작성할까요?
-
-One-shot과 Few-shot은 각각 이미 실행을 끝냈습니다.
-
-결과도 다음 파일에 저장되어 있습니다.
-
-```
-One-shot
-reports/day08_one_shot_results.csv
-
-Few-shot
-reports/day08_fewshot_results.csv
-```
-
-이제 사람이 CSV를 한 줄씩 세면서 비교할 수도 있지만, 이미지가 많아지면 실수하기 쉽습니다.
-
-따라서 프로그램이 자동으로:
-
-```
-두 CSV 불러오기
-        ↓
-같은 Query인지 확인
-        ↓
-One-shot 성능 계산
-        ↓
-Few-shot 성능 계산
-        ↓
-두 결과를 같은 형식으로 정리
-        ↓
-비교 CSV 저장
-```
-
-하도록 만듭니다.
-
-> 이번 코드는 새로운 이미지를 검사하는 코드가 아닙니다.  
-> **이미 만들어진 One-shot과 Few-shot 결과를 모아서 비교하는 분석 코드입니다.**
-
----
-
-## 가장 먼저 같은 Query인지 확인합니다
-
-비교하기 전에 두 결과의 `sample_id`가 같은지 확인합니다.
-
-```
-One-shot에서 검사한 이미지
-        =
-Few-shot에서 검사한 이미지
-```
-
-여야 공정한 비교가 가능합니다.
-
-만약 서로 다른 이미지가 들어 있다면 프로그램은 비교를 계속하지 않고 오류를 발생시킵니다.
-
-```
-Common Query가 다름
-        ↓
-비교 중단
-```
-
-즉 서로 다른 시험 문제를 풀고 나온 점수를 비교하는 일을 막는 것입니다.
-
----
-
-## 어떤 성능을 계산할까요?
-
-각 방법에 대해 다음 값을 계산합니다.
-
-```
-Accuracy
-→ 전체 20장 중 몇 장을 맞혔는가?
-
-Anomaly Precision
-→ Anomaly라고 판정한 이미지 중
-   실제 Anomaly는 얼마나 되는가?
-
-Anomaly Recall
-→ 실제 Anomaly 중
-   몇 장을 찾아냈는가?
-
-TP / TN / FP / FN
-→ 어떤 종류의 정답과 오판이 발생했는가?
-```
-
-앞에서 살펴본 실제 결과도 이 계산을 통해 다시 정리됩니다.
-
-```
-One-shot
-Accuracy = 85%
-FP = 1
-FN = 2
-
-Few-shot
-Accuracy = 90%
-FP = 0
-FN = 2
-```
-
-이번 프로그램은 이러한 값을 사람이 직접 세지 않고 자동으로 계산합니다.
-
----
-
-## 실행이 끝나면 무엇이 만들어질까요?
-
-비교 결과는 다음 파일에 저장합니다.
+결과는 다음 파일에 저장됩니다.
 
 ```
 reports/day08_method_comparison.csv
 ```
 
-이 파일에는 One-shot과 Few-shot이 같은 형식으로 정리됩니다.
-
-```
-method
-samples
-accuracy
-anomaly_precision
-anomaly_recall
-tp
-tn
-fp
-fn
-```
-
-따라서 다음 36번에서는 이 CSV를 보고:
-
-```
-어느 방법의 Accuracy가 높은가?
-
-FP는 줄었는가?
-
-FN은 줄었는가?
-
-Anomaly Recall은 어떻게 달라졌는가?
-```
-
-를 비교할 수 있습니다.
+> **핵심 정리:** 68번 코드는 One-shot과 Few-shot을 다시 검사하는 프로그램이 아니라, **65번과 67번에서 저장한 결과를 불러와 성능을 자동으로 계산·비교하는 분석 프로그램**입니다. 실제 비교 결과의 의미는 다음 36번 단락에서 확인합니다.
 
 ---
 
-## 이번 코드의 전체 역할
-
-```
-One-shot 결과 CSV
-        ↓
-        ┐
-        │
-        ├→ 같은 Query인지 확인
-        │
-Few-shot 결과 CSV
-        ↓
-        ↓
-각 방법의 성능 계산
-        ↓
-Accuracy
-Precision
-Recall
-TP / TN / FP / FN
-        ↓
-같은 형식으로 정리
-        ↓
-day08_method_comparison.csv 저장
-```
-
-> **35번의 목적은 One-shot과 Few-shot을 다시 실행하는 것이 아니라, 이미 얻은 두 결과를 같은 기준으로 계산하여 공정하게 비교하는 것입니다.**
-
----
-
-## 파일을 작성합니다
+### 파일을 작성합니다
 
 ```text
 src/68_day08_compare_methods.py
@@ -7072,42 +8517,227 @@ src/68_day08_compare_methods.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#
+#    → csv    : 성능 비교 결과를 CSV로 저장
+#    → Path   : 입력 및 출력 파일 경로 관리
+#    → pandas: One-shot / Few-shot 결과 분석
+#
+#    이번 코드는 이미 저장된 검사 결과를 비교합니다.
+#    ResNet18 모델을 다시 실행하지 않습니다.
+# ==================================================
 import csv
 from pathlib import Path
 
 import pandas as pd
 
 
-ONE_PATH = Path("reports/day08_one_shot_results.csv")
-FEW_PATH = Path("reports/day08_fewshot_results.csv")
-OUTPUT_PATH = Path("reports/day08_method_comparison.csv")
+# ==================================================
+# ② 입력 / 출력 파일 경로 설정
+#
+#    → 65번에서 저장한 One-shot 결과
+#    → 67번에서 저장한 Few-shot 결과
+#    → 두 방법의 성능 비교 결과 저장 경로
+# ==================================================
+
+# ----------------------------------------------
+# ②-1. One-shot 검사 결과 CSV
+# ----------------------------------------------
+ONE_PATH = Path(
+    "reports/day08_one_shot_results.csv"
+)
+
+# ----------------------------------------------
+# ②-2. Few-shot 검사 결과 CSV
+# ----------------------------------------------
+FEW_PATH = Path(
+    "reports/day08_fewshot_results.csv"
+)
+
+# ----------------------------------------------
+# ②-3. 성능 비교 결과 CSV
+# ----------------------------------------------
+OUTPUT_PATH = Path(
+    "reports/day08_method_comparison.csv"
+)
 
 
-one = pd.read_csv(ONE_PATH)
-few = pd.read_csv(FEW_PATH)
+# ==================================================
+# ③ One-shot / Few-shot 검사 결과 불러오기
+#
+#    → pandas로 두 CSV 파일을 읽습니다.
+#
+#    각 CSV에는 다음과 같은 내용이 있습니다.
+#    sample_id : 검사한 이미지 식별자
+#    actual    : 실제 정답
+#    predicted : 검사기의 판정 결과
+#
+#    두 방법에서 공통으로 사용할 항목입니다.
+# ==================================================
+
+# ----------------------------------------------
+# ③-1. One-shot 결과 불러오기
+# ----------------------------------------------
+one = pd.read_csv(
+    ONE_PATH
+)
+
+# ----------------------------------------------
+# ③-2. Few-shot 결과 불러오기
+# ----------------------------------------------
+few = pd.read_csv(
+    FEW_PATH
+)
 
 
+# ==================================================
+# ④ 같은 Common Query를 사용했는지 확인
+#
+#    → sample_id를 비교합니다.
+#
+#    One-shot과 Few-shot은 동일한 평가 이미지로
+#    검사했을 때 성능을 공정하게 비교할 수 있습니다.
+#
+#    이미지 목록이 다르면 프로그램을 중단합니다.
+# ==================================================
 if set(one["sample_id"]) != set(few["sample_id"]):
+
     raise RuntimeError(
         "One-shot과 Few-shot의 Common Query가 서로 다릅니다."
     )
 
 
+# ==================================================
+# ⑤ 성능 평가 함수 작성
+#
+#    함수: metrics()
+#
+#    → 실제 정답(actual)과 예측(predicted)을 비교
+#    → TP / TN / FP / FN 개수 계산
+#    → Accuracy / Precision / Recall 계산
+#
+#    이번 수업에서는 Anomaly를 Positive로 취급합니다.
+# ==================================================
 def metrics(df):
+
+    # ----------------------------------------------
+    # ⑤-1. 실제 정답과 검사 결과 가져오기
+    # ----------------------------------------------
     actual = df["actual"]
     predicted = df["predicted"]
 
-    tp = int(((actual == "Anomaly") & (predicted == "Anomaly")).sum())
-    tn = int(((actual == "Normal") & (predicted == "Normal")).sum())
-    fp = int(((actual == "Normal") & (predicted == "Anomaly")).sum())
-    fn = int(((actual == "Anomaly") & (predicted == "Normal")).sum())
+    # ----------------------------------------------
+    # ⑤-2. TP (True Positive)
+    #
+    #       실제 이상 → 이상으로 정확히 판정
+    # ----------------------------------------------
+    tp = int(
+        (
+            (actual == "Anomaly")
+            & (predicted == "Anomaly")
+        ).sum()
+    )
 
-    total = tp + tn + fp + fn
+    # ----------------------------------------------
+    # ⑤-3. TN (True Negative)
+    #
+    #       실제 정상 → 정상으로 정확히 판정
+    # ----------------------------------------------
+    tn = int(
+        (
+            (actual == "Normal")
+            & (predicted == "Normal")
+        ).sum()
+    )
 
-    accuracy = (tp + tn) / total if total else 0.0
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    # ----------------------------------------------
+    # ⑤-4. FP (False Positive)
+    #
+    #       실제 정상 → 이상으로 잘못 판정
+    #       → 정상 제품 오탐
+    # ----------------------------------------------
+    fp = int(
+        (
+            (actual == "Normal")
+            & (predicted == "Anomaly")
+        ).sum()
+    )
 
+    # ----------------------------------------------
+    # ⑤-5. FN (False Negative)
+    #
+    #       실제 이상 → 정상으로 잘못 판정
+    #       → 불량 제품 미검출
+    # ----------------------------------------------
+    fn = int(
+        (
+            (actual == "Anomaly")
+            & (predicted == "Normal")
+        ).sum()
+    )
+
+    # ----------------------------------------------
+    # ⑤-6. 전체 검사 이미지 개수 계산
+    #
+    #       TP + TN : 정확하게 판정한 이미지
+    #       FP + FN : 잘못 판정한 이미지
+    # ----------------------------------------------
+    total = (
+        tp
+        + tn
+        + fp
+        + fn
+    )
+
+    # ----------------------------------------------
+    # ⑤-7. Accuracy (정확도)
+    #
+    #       전체 이미지 중 정확히 판정한 비율
+    #
+    #       (TP + TN) / 전체 이미지
+    # ----------------------------------------------
+    accuracy = (
+        (tp + tn) / total
+        if total
+        else 0.0
+    )
+
+    # ----------------------------------------------
+    # ⑤-8. Precision (정밀도)
+    #
+    #       이상이라고 판정한 이미지 중
+    #       실제 이상인 이미지의 비율
+    #
+    #       TP / (TP + FP)
+    # ----------------------------------------------
+    precision = (
+        tp / (tp + fp)
+        if (tp + fp)
+        else 0.0
+    )
+
+    # ----------------------------------------------
+    # ⑤-9. Recall (재현율)
+    #
+    #       실제 불량 이미지 중
+    #       이상으로 찾아낸 이미지의 비율
+    #
+    #       TP / (TP + FN)
+    # ----------------------------------------------
+    recall = (
+        tp / (tp + fn)
+        if (tp + fn)
+        else 0.0
+    )
+
+    # ----------------------------------------------
+    # ⑤-10. 계산한 성능 지표 반환
+    #
+    #       이후 One-shot과 Few-shot에서
+    #       같은 함수를 사용합니다.
+    # ----------------------------------------------
     return {
         "samples": total,
         "accuracy": accuracy,
@@ -7120,17 +8750,60 @@ def metrics(df):
     }
 
 
+# ==================================================
+# ⑥ 두 방법의 성능을 각각 계산
+#
+#    → One-shot 결과를 metrics()에 전달
+#    → Few-shot 결과를 metrics()에 전달
+#    → 같은 평가 지표로 두 방법을 분석
+#
+#    결과는 rows 리스트에 저장합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑥-1. 비교 결과를 저장할 빈 리스트
+# ----------------------------------------------
 rows = []
 
+# ----------------------------------------------
+# ⑥-2. One-shot / Few-shot 순서대로 평가
+# ----------------------------------------------
 for method, df in [
     ("one_shot", one),
     ("few_shot", few),
 ]:
-    result = metrics(df)
+
+    # ------------------------------------------
+    # ⑥-3. 현재 방법의 성능 지표 계산
+    # ------------------------------------------
+    result = metrics(
+        df
+    )
+
+    # ------------------------------------------
+    # ⑥-4. 검사 방법 이름 추가
+    #
+    #       one_shot 또는 few_shot
+    # ------------------------------------------
     result["method"] = method
-    rows.append(result)
+
+    # ------------------------------------------
+    # ⑥-5. 계산 결과를 리스트에 저장
+    # ------------------------------------------
+    rows.append(
+        result
+    )
 
 
+# ==================================================
+# ⑦ 비교 결과 CSV 컬럼 설정
+#
+#    → 검사 방법과 이미지 개수
+#    → 정확도 / 정밀도 / 재현율
+#    → TP / TN / FP / FN 개수
+#
+#    두 방법의 차이를 한 표에서 확인할 수 있습니다.
+# ==================================================
 fieldnames = [
     "method",
     "samples",
@@ -7143,43 +8816,243 @@ fieldnames = [
     "fn",
 ]
 
-OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# ==================================================
+# ⑧ 성능 비교 결과 CSV 저장
+#
+#    → reports 폴더 생성
+#    → CSV 컬럼명 작성
+#    → 각 방법의 성능 지표 저장
+#
+#    비율은 소수점 4자리로 반올림하여 저장합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑧-1. reports 폴더가 없으면 생성
+# ----------------------------------------------
+OUTPUT_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------------------------
+# ⑧-2. 비교 결과 CSV 열기
+# ----------------------------------------------
 with OUTPUT_PATH.open(
     "w",
     newline="",
     encoding="utf-8-sig",
 ) as file:
+
+    # ------------------------------------------
+    # ⑧-3. CSV 작성 도구 준비
+    # ------------------------------------------
     writer = csv.DictWriter(
         file,
         fieldnames=fieldnames,
     )
+
+    # ------------------------------------------
+    # ⑧-4. CSV 컬럼명 작성
+    # ------------------------------------------
     writer.writeheader()
 
+    # ------------------------------------------
+    # ⑧-5. One-shot / Few-shot 결과 반복
+    # ------------------------------------------
     for row in rows:
+
+        # 원본 계산 결과를 복사
         output = dict(row)
-        output["accuracy"] = round(output["accuracy"], 4)
-        output["anomaly_precision"] = round(output["anomaly_precision"], 4)
-        output["anomaly_recall"] = round(output["anomaly_recall"], 4)
-        writer.writerow(output)
+
+        # --------------------------------------
+        # ⑧-6. 성능 지표를 소수점 4자리로 반올림
+        # --------------------------------------
+        output["accuracy"] = round(
+            output["accuracy"],
+            4
+        )
+
+        output["anomaly_precision"] = round(
+            output["anomaly_precision"],
+            4
+        )
+
+        output["anomaly_recall"] = round(
+            output["anomaly_recall"],
+            4
+        )
+
+        # --------------------------------------
+        # ⑧-7. 현재 방법의 결과를 CSV에 기록
+        # --------------------------------------
+        writer.writerow(
+            output
+        )
 
 
+# ==================================================
+# ⑨ 실행 결과 출력
+#
+#    → 검사한 전체 이미지 수 출력
+#    → Accuracy / Precision / Recall 출력
+#    → TP / TN / FP / FN 출력
+#    → 결과 CSV 저장 경로 출력
+#
+#    실제 비교 결과를 확인하고
+#    다음 실습에서 성능 차이를 해석합니다.
+# ==================================================
+
+# ----------------------------------------------
+# ⑨-1. 비교 결과 제목 출력
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 METHOD COMPARISON")
 print("=" * 70)
 
-for row in rows:
-    print()
-    print("Method            :", row["method"])
-    print("Samples           :", row["samples"])
-    print("Accuracy          :", f"{row['accuracy']:.4f}")
-    print("Anomaly Precision :", f"{row['anomaly_precision']:.4f}")
-    print("Anomaly Recall    :", f"{row['anomaly_recall']:.4f}")
-    print("TP / TN / FP / FN :", row["tp"], row["tn"], row["fp"], row["fn"])
 
+# ----------------------------------------------
+# ⑨-2. One-shot / Few-shot 결과 각각 출력
+# ----------------------------------------------
+for row in rows:
+
+    print()
+
+    # 현재 검사 방법
+    print(
+        "Method            :",
+        row["method"]
+    )
+
+    # 검사 이미지 수
+    print(
+        "Samples           :",
+        row["samples"]
+    )
+
+    # 전체 정확도
+    print(
+        "Accuracy          :",
+        f"{row['accuracy']:.4f}"
+    )
+
+    # 이상 검출 정밀도
+    print(
+        "Anomaly Precision :",
+        f"{row['anomaly_precision']:.4f}"
+    )
+
+    # 이상 검출 재현율
+    print(
+        "Anomaly Recall    :",
+        f"{row['anomaly_recall']:.4f}"
+    )
+
+    # TP / TN / FP / FN 개수
+    print(
+        "TP / TN / FP / FN :",
+        row["tp"],
+        row["tn"],
+        row["fp"],
+        row["fn"]
+    )
+
+
+# ----------------------------------------------
+# ⑨-3. 결과 파일 저장 위치 출력
+# ----------------------------------------------
 print()
-print("Saved:", OUTPUT_PATH)
+
+print(
+    "Saved:",
+    OUTPUT_PATH
+)
 ```
+
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - csv를 불러온다.
+   - Path를 불러온다.
+   - pandas를 불러온다.
+
+② 입력 / 출력 경로 설정
+   - One-shot 검사 결과 CSV를 지정한다.
+   - Few-shot 검사 결과 CSV를 지정한다.
+   - 비교 결과 CSV 저장 경로를 지정한다.
+
+③ 두 검사 결과 불러오기
+   - 65번에서 생성한 One-shot CSV를 읽는다.
+   - 67번에서 생성한 Few-shot CSV를 읽는다.
+
+④ 같은 Common Query 사용 여부 확인
+   - 두 결과의 sample_id 목록을 가져온다.
+   - 검사 이미지 식별자가 같은지 비교한다.
+
+   [서로 다르면]
+   → 오류 발생
+   → 비교 중단
+
+   [서로 같으면]
+   → 성능 비교 진행
+
+⑤ metrics() 평가 함수 작성
+
+   [실제 정답과 예측 읽기]
+   - actual 컬럼을 가져온다.
+   - predicted 컬럼을 가져온다.
+
+   [TP / TN / FP / FN 계산]
+   - TP : 이상을 이상으로 맞게 판정한 수
+   - TN : 정상을 정상으로 맞게 판정한 수
+   - FP : 정상을 이상으로 잘못 판정한 수
+   - FN : 이상을 정상으로 놓친 수
+
+   [성능 지표 계산]
+   - Accuracy  : 전체 이미지 중 맞힌 비율
+   - Precision : 이상 판정 중 실제 이상인 비율
+   - Recall    : 실제 이상 중 찾아낸 비율
+
+   [결과 반환]
+   - 이미지 수
+   - Accuracy / Precision / Recall
+   - TP / TN / FP / FN
+
+⑥ One-shot / Few-shot 각각 성능 계산
+   - One-shot 결과를 metrics()에 전달한다.
+   - 계산한 성능 지표를 저장한다.
+   - Few-shot 결과를 metrics()에 전달한다.
+   - 계산한 성능 지표를 저장한다.
+   - 각 결과에 method 이름을 기록한다.
+
+⑦ 비교 결과 컬럼 설정
+   - method
+   - samples
+   - accuracy
+   - anomaly_precision
+   - anomaly_recall
+   - tp / tn / fp / fn
+
+⑧ 비교 결과 CSV 저장
+   - reports 폴더가 없으면 생성한다.
+   - CSV 파일을 연다.
+   - 컬럼명을 작성한다.
+   - 성능 지표를 소수점 4자리로 반올림한다.
+   - One-shot과 Few-shot 결과를 각각 저장한다.
+
+   → reports/day08_method_comparison.csv
+
+⑨ 실행 결과 확인
+   - 비교 완료 메시지를 출력한다.
+   - One-shot의 성능 지표를 출력한다.
+   - Few-shot의 성능 지표를 출력한다.
+   - TP / TN / FP / FN을 비교한다.
+   - 결과 CSV 저장 경로를 출력한다.
+
+   → 두 검사 방법의 성능 비교 완료
+```
+
 
 실행합니다.
 
@@ -7323,108 +9196,6 @@ Recall 계산
 day08_method_comparison.csv 저장
       ↓
 프로그램 종료
-```
-
----
-
-## 의사코드로 이해합니다
-
-```
-1. One-shot 결과 CSV의 위치를 지정한다.
-
-2. Few-shot 결과 CSV의 위치를 지정한다.
-
-3. 비교 결과를 저장할 CSV 위치를 지정한다.
-
-
-4. One-shot 결과를 읽는다.
-
-5. Few-shot 결과를 읽는다.
-
-
-6. 두 결과의 sample_id를 비교한다.
-
-7. 검사한 Query가 서로 다르면
-   공정한 비교를 할 수 없으므로
-   실행을 중단한다.
-
-
-8. 성능을 계산하는 함수를 만든다.
-
-9. 실제 정답 actual과
-   예측 결과 predicted를 확인한다.
-
-
-10. 실제 Anomaly를
-    Anomaly로 맞힌 수를 계산한다.
-
-    → TP
-
-11. 실제 Normal을
-    Normal로 맞힌 수를 계산한다.
-
-    → TN
-
-12. 실제 Normal을
-    Anomaly로 잘못 판정한 수를 계산한다.
-
-    → FP
-
-13. 실제 Anomaly를
-    Normal로 놓친 수를 계산한다.
-
-    → FN
-
-
-14. TP + TN + FP + FN을 이용해
-    전체 이미지 수를 계산한다.
-
-15. 전체 중 맞힌 비율을 계산한다.
-
-    → Accuracy
-
-16. Anomaly라고 판정한 것 중
-    실제 Anomaly 비율을 계산한다.
-
-    → Anomaly Precision
-
-17. 실제 Anomaly 중
-    찾아낸 비율을 계산한다.
-
-    → Anomaly Recall
-
-
-18. 같은 계산을
-    One-shot에 적용한다.
-
-19. 같은 계산을
-    Few-shot에 적용한다.
-
-
-20. 두 방법의 결과를
-    같은 형식으로 정리한다.
-
-21. 다음 값을 저장한다.
-
-    - method
-    - samples
-    - accuracy
-    - anomaly_precision
-    - anomaly_recall
-    - tp
-    - tn
-    - fp
-    - fn
-
-
-22. 비교 결과를
-
-    reports/day08_method_comparison.csv
-
-    파일로 저장한다.
-
-23. 화면에도
-    One-shot과 Few-shot 결과를 출력한다.
 ```
 
 ---
@@ -7617,104 +9388,132 @@ Synthetic Defect
 
 ---
 
-# 39. 결함 부분은 어떻게 정확하게 찾을까요?
+# 39. Ground Truth Mask로 실제 결함 부분을 추출합니다
 
-불량 이미지에서 결함 Patch를 잘라내려면 먼저:
+앞의 `63_day08_prepare_dataset.py`에서는 MVTec `bottle` 원본에서 작은 파손(`broken_small`) 
+이미지 2장과 해당 Ground Truth Mask를 선택하여 8일차 실습 폴더에 복사했습니다.
 
-```
-이 이미지의 어느 부분이 실제 결함인가?
-```
+이번 실습에서는 이 데이터를 이용하여 실제 파손 부분만 잘라냅니다.
 
-를 알아야 합니다.
+### 실제 사용할 데이터는 어디에 있나요?
 
-MVTec AD에는 불량 이미지와 함께 **Ground Truth Mask**가 제공됩니다.
+63번 코드에서 준비한 경로는 다음과 같습니다.
 
-예를 들어 불량 이미지:
-
-```
-test/broken_small/000.png
-```
-
-에는 다음 Mask가 대응됩니다.
+**불량 이미지 2장**
 
 ```
-ground_truth/broken_small/000_mask.png
+samples/day08/cutpaste/defect_source/broken_small/images/
 ```
 
-Mask에서는 결함 위치가 흰색으로 표시되어 있습니다.
-
-쉽게 보면:
+**해당 불량의 Ground Truth Mask 2장**
 
 ```
-불량 원본 이미지
-        +
-Ground Truth Mask
-결함 위치 표시
-        ↓
-Mask의 흰 영역 확인
-        ↓
-실제 결함 부분만 추출
-        ↓
-Defect Patch
+samples/day08/cutpaste/defect_source/broken_small/masks/
 ```
 
-입니다.
+실제 파일명을 확인해 봅니다.
 
-7일차에서는 Ground Truth Mask를 **Anomaly Heatmap이 실제 결함 위치를 잘 찾았는지 확인하는 정답**으로 사용했습니다.
-
-8일차에서는 같은 Mask를 다른 목적으로 사용합니다.
-
-```
-7일차
-Ground Truth Mask
-→ 검출 위치가 맞는지 비교
-
-8일차
-Ground Truth Mask
-→ 실제 결함 위치를 잘라내기
+```bash
+ls samples/day08/cutpaste/defect_source/broken_small/images/
+ls samples/day08/cutpaste/defect_source/broken_small/masks/
 ```
 
-즉 이번에는 Mask를 이용하여 불량 이미지 전체가 아니라 **실제 결함 영역만 Patch로 추출**합니다.
+이미지 이름이 `012.png`라면 대응하는 Mask 이름은 `012_mask.png`입니다.
+
+어떤 파일 2장이 선택되는지는 63번 코드에서 정한 이미지 선택 결과에 따라 결정됩니다.
+
+### Ground Truth Mask란 무엇인가요?
+
+**Ground Truth Mask는 실제 결함이 있는 위치를 흰색으로 표시한 정답 이미지**입니다.
+
+- 흰색 영역: 실제 결함 위치
+    
+- 검은색 영역: 결함으로 표시되지 않은 위치
+    
+
+따라서 불량 이미지와 Mask를 함께 사용하면 어느 부분을 잘라내야 하는지 알 수 있습니다.
+
+### 이번 실습에서는 어떻게 사용하나요?
+
+```
+① 실제 작은 파손 이미지
+           +
+② 해당 Ground Truth Mask
+           ↓
+③ Mask의 흰색 영역 확인
+   (실제 결함 위치)
+           ↓
+④ 결함을 포함한 영역 잘라내기
+   (Defect Patch + Patch Mask)
+           ↓
+⑤ 정상 병 이미지에 합성
+           ↓
+⑥ Synthetic Defect
+   (합성 불량 이미지)
+```
+
+여기서 **Defect Patch**는 실제 불량 이미지에서 결함을 포함하여 잘라낸 작은 이미지 영역입니다. 함께 추출한 Patch Mask를 이용해 실제 결함으로 표시된 부분만 정상 이미지에 합성합니다.
+
+### 7일차와 8일차에서는 사용 목적이 다릅니다
+
+|구분|Ground Truth Mask의 사용 목적|
+|---|---|
+|7일차|Heatmap에서 차이가 크게 나타난 위치와 실제 결함 위치를 비교|
+|8일차|실제 결함 영역을 추출하여 새로운 합성 불량 이미지 생성|
+
+> **핵심 정리:** 39번에서는 63번에서 복사한 `broken_small` 이미지 2장과 Ground Truth Mask를 사용한다는 점을 이해하면 됩니다. 실제 결함 영역을 추출하고 정상 이미지에 합성하는 코드는 다음 **41번 `day08_cutpaste_core.py`**에서 작성합니다.
 
 ---
 
-# 40. 합성에 사용할 불량도 Query와 분리합니다
+# 40. 합성 불량을 만들 이미지와 평가용 이미지를 구분합니다
 
-오늘 `broken_small` 이미지는 처음부터 역할을 나누어 준비했습니다.
+39번에서는 작은 파손 이미지와 Ground Truth Mask를 이용하여 실제 결함 부분을 추출할 수 있다는 것을 확인했습니다.
 
-```
-broken_small
+그렇다면 **어떤 불량 이미지에서 결함을 추출해야 할까요?**
 
-Support
-5장
-→ Few-shot 기준 생성
+앞에서 실행한 `63_day08_prepare_dataset.py`는 `broken_small` 원본 이미지 22장 중 17장을 다음 세 가지 역할로 나누었습니다.
 
-Query
-10장
-→ 실제 성능 평가
+| 데이터 <br>역할       | 수량  | 실제 저장 위치                                                    | 사용 목적                   |
+| ---------------- | --- | ----------------------------------------------------------- | ----------------------- |
+| Few-shot Support | 5장  | `samples/day08/few_shot/support/anomaly/`                   | 불량 Prototype 생성         |
+| Common Query     | 10장 | `samples/day08/common_query/anomaly/broken_small/`          | One-shot·Few-shot 성능 평가 |
+| Cut-Paste Source | 2장  | `samples/day08/cutpaste/defect_source/broken_small/images/` | 결함 Patch <br>추출         |
 
-Cut-Paste Source
-2장
-→ Synthetic Defect 생성
-```
+이번 합성 실습에서는 **Cut-Paste Source 2장만 결함 원본으로 사용**합니다.
 
-여기서 Cut-Paste Source 2장은 **합성 데이터를 만들기 위한 재료**입니다.
-
-Query 10장은 **성능을 평가하기 위한 시험 데이터**입니다.
-
-따라서 두 역할을 섞지 않습니다.
+### 실제 합성 데이터는 어떻게 만드나요?
 
 ```
-Cut-Paste Source
-→ 결함 Patch 추출에 사용
-
-Common Query
-→ 성능 평가에 사용
+Cut-Paste Source : 작은 파손 2장
++
+해당 Ground Truth Mask 2장
+        ↓
+실제 결함 영역 추출
+        ↓
+Cut-Paste Normal : 정상 병 10장
+        ↓
+정상 병에 결함을 합성
+        ↓
+Synthetic Defect 생성
 ```
 
-Cut-Paste Source로 사용한 이미지를 다시 Query에 넣지 않습니다. 현재 교재도 Support 5장, Query 10장, Cut-Paste Source 2장으로 역할을 분리하도록 구성되어 있습니다.
+합성 대상이 되는 정상 병 10장은 다음 폴더에 있습니다.
 
-> 합성 데이터를 만드는 실습에서도 “데이터를 만드는 데 사용한 이미지”와 “평가에 사용하는 이미지”는 구분합니다.
+```
+samples/day08/cutpaste/normal/
+```
+
+이후 69번 코드에서는 이 데이터를 이용하여 합성 불량 이미지 20장을 생성합니다.
+
+### 왜 Common Query를 사용하지 않나요?
+
+Common Query 20장은 앞에서 One-shot과 Few-shot의 성능을 평가하는 데 사용한 이미지입니다.
+
+이 이미지를 합성 데이터 제작에도 사용하면 **평가에 사용한 정보가 데이터 제작 과정에 섞일 수 있습니다.**
+
+따라서 이번 실습에서는 별도로 분리한 Cut-Paste Source와 정상 이미지만 합성 재료로 사용합니다.
+
+> **핵심 정리:** 63번에서 준비한 Cut-Paste Source는 **불량을 만드는 재료**, Common Query는 **검사 성능을 평가하는 데이터**입니다. 두 역할을 구분하여 실험 결과의 신뢰성을 유지합니다.
 
 ---
 
@@ -7800,259 +9599,6 @@ Synthetic Defect 생성
 
 ---
 
-파일을 작성합니다
-
-```text
-src/day08_cutpaste_core.py
-```
-
-작성합니다.
-
-```python
-import csv
-import random
-from pathlib import Path
-
-import cv2
-import numpy as np
-
-
-def extract_patch(image_path, mask_path):
-    image = cv2.imread(str(image_path))
-    mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
-    if image is None:
-        raise FileNotFoundError(image_path)
-
-    if mask is None:
-        raise FileNotFoundError(mask_path)
-
-    binary = np.where(mask > 0, 255, 0).astype(np.uint8)
-    points = cv2.findNonZero(binary)
-
-    if points is None:
-        raise RuntimeError(f"Mask가 비어 있습니다: {mask_path}")
-
-    x, y, w, h = cv2.boundingRect(points)
-
-    patch = image[y:y + h, x:x + w].copy()
-    patch_mask = binary[y:y + h, x:x + w].copy()
-
-    return patch, patch_mask
-
-
-def rotate_pair(patch, mask, angle):
-    height, width = patch.shape[:2]
-    center = (width / 2.0, height / 2.0)
-
-    matrix = cv2.getRotationMatrix2D(
-        center,
-        angle,
-        1.0,
-    )
-
-    rotated_patch = cv2.warpAffine(
-        patch,
-        matrix,
-        (width, height),
-        flags=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_REFLECT,
-    )
-
-    rotated_mask = cv2.warpAffine(
-        mask,
-        matrix,
-        (width, height),
-        flags=cv2.INTER_NEAREST,
-        borderValue=0,
-    )
-
-    return rotated_patch, rotated_mask
-
-
-def paste_patch(
-    background,
-    patch,
-    mask,
-    rng,
-    scale_range=(0.7, 1.2),
-    angle_range=(-15.0, 15.0),
-):
-    result = background.copy()
-
-    scale = rng.uniform(*scale_range)
-    angle = rng.uniform(*angle_range)
-
-    new_width = max(4, int(patch.shape[1] * scale))
-    new_height = max(4, int(patch.shape[0] * scale))
-
-    patch = cv2.resize(
-        patch,
-        (new_width, new_height),
-        interpolation=cv2.INTER_LINEAR,
-    )
-
-    mask = cv2.resize(
-        mask,
-        (new_width, new_height),
-        interpolation=cv2.INTER_NEAREST,
-    )
-
-    patch, mask = rotate_pair(
-        patch,
-        mask,
-        angle,
-    )
-
-    image_h, image_w = result.shape[:2]
-    patch_h, patch_w = patch.shape[:2]
-
-    if patch_w >= image_w or patch_h >= image_h:
-        raise RuntimeError("Defect Patch가 정상 이미지보다 큽니다.")
-
-    # MVTec bottle은 제품이 중앙에 있으므로
-    # 교육용 Baseline에서는 중앙 영역을 우선 사용합니다.
-    x_min = int(image_w * 0.25)
-    x_max = int(image_w * 0.75) - patch_w
-
-    y_min = int(image_h * 0.10)
-    y_max = int(image_h * 0.90) - patch_h
-
-    if x_max <= x_min:
-        x_min = 0
-        x_max = image_w - patch_w
-
-    if y_max <= y_min:
-        y_min = 0
-        y_max = image_h - patch_h
-
-    x = rng.randint(x_min, x_max)
-    y = rng.randint(y_min, y_max)
-
-    roi = result[
-        y:y + patch_h,
-        x:x + patch_w,
-    ]
-
-    alpha = mask.astype(np.float32) / 255.0
-    alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
-    alpha = alpha[..., None]
-
-    blended = (
-        patch.astype(np.float32) * alpha
-        + roi.astype(np.float32) * (1.0 - alpha)
-    )
-
-    result[
-        y:y + patch_h,
-        x:x + patch_w,
-    ] = np.clip(blended, 0, 255).astype(np.uint8)
-
-    info = {
-        "x": x,
-        "y": y,
-        "width": patch_w,
-        "height": patch_h,
-        "rotation": round(angle, 2),
-        "scale": round(scale, 3),
-    }
-
-    return result, info
-
-
-def generate_synthetic_set(
-    normal_dir,
-    defect_image_dir,
-    defect_mask_dir,
-    output_dir,
-    metadata_path,
-    defect_type,
-    count,
-    seed,
-    scale_range=(0.7, 1.2),
-    angle_range=(-15.0, 15.0),
-):
-    normal_files = sorted(Path(normal_dir).glob("*.png"))
-    defect_files = sorted(Path(defect_image_dir).glob("*.png"))
-
-    if not normal_files:
-        raise RuntimeError("Normal Target 이미지가 없습니다.")
-
-    if not defect_files:
-        raise RuntimeError("Defect Source 이미지가 없습니다.")
-
-    output_dir = Path(output_dir)
-    metadata_path = Path(metadata_path)
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    metadata_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # 재실행할 때 이전 synthetic 결과를 섞지 않습니다.
-    for old_file in output_dir.glob("synthetic_*.png"):
-        old_file.unlink()
-
-    rng = random.Random(seed)
-    rows = []
-
-    for index in range(count):
-        normal_path = rng.choice(normal_files)
-        defect_path = rng.choice(defect_files)
-
-        mask_path = (
-            Path(defect_mask_dir)
-            / f"{defect_path.stem}_mask.png"
-        )
-
-        background = cv2.imread(str(normal_path))
-
-        if background is None:
-            raise FileNotFoundError(normal_path)
-
-        patch, mask = extract_patch(
-            defect_path,
-            mask_path,
-        )
-
-        synthetic, info = paste_patch(
-            background,
-            patch,
-            mask,
-            rng,
-            scale_range=scale_range,
-            angle_range=angle_range,
-        )
-
-        output_name = f"synthetic_{index:03d}.png"
-        output_path = output_dir / output_name
-
-        cv2.imwrite(str(output_path), synthetic)
-
-        rows.append(
-            {
-                "synthetic_file": output_name,
-                "source_normal": normal_path.name,
-                "source_defect": defect_path.name,
-                "defect_type": defect_type,
-                "seed": seed,
-                **info,
-            }
-        )
-
-    with metadata_path.open(
-        "w",
-        newline="",
-        encoding="utf-8-sig",
-    ) as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=rows[0].keys(),
-        )
-        writer.writeheader()
-        writer.writerows(rows)
-
-    return rows
-```
-
 이 공통 함수는 다음 일을 담당합니다.
 
 ```text
@@ -8070,6 +9616,916 @@ Mask로 합성
         ↓
 Metadata 반환
 ```
+
+파일을 작성합니다
+
+```text
+src/day08_cutpaste_core.py
+```
+
+작성합니다.
+
+```python
+
+# ==================================================
+# ① 필요한 라이브러리 불러오기
+#
+#    → csv    : 합성 과정의 Metadata를 CSV로 저장
+#    → random : 이미지, 합성 위치, 크기, 각도 무작위 선택
+#    → Path   : 파일과 폴더 경로 관리
+#    → cv2    : 이미지 읽기, 결함 추출, 회전, 합성
+#    → NumPy  : Mask와 픽셀값 계산
+# ==================================================
+import csv
+import random
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+
+# ==================================================
+# ② extract_patch() — 실제 결함 영역 추출
+#
+#    입력:
+#    → image_path : 작은 파손이 있는 실제 이미지
+#    → mask_path  : 해당 이미지의 Ground Truth Mask
+#
+#    처리:
+#    → 불량 이미지와 Mask 읽기
+#    → Mask의 흰색 결함 영역 찾기
+#    → 결함을 포함하는 사각형 영역 계산
+#    → 결함 Patch와 Patch Mask 추출
+#
+#    반환:
+#    → patch      : 결함이 포함된 이미지 조각
+#    → patch_mask : 같은 영역의 결함 위치 Mask
+# ==================================================
+def extract_patch(image_path, mask_path):
+
+    # ----------------------------------------------
+    # ②-1. 실제 불량 이미지 읽기
+    #
+    #       예: broken_small 이미지 1장
+    # ----------------------------------------------
+    image = cv2.imread(
+        str(image_path)
+    )
+
+    # ----------------------------------------------
+    # ②-2. 해당 이미지의 Ground Truth Mask 읽기
+    #
+    #       IMREAD_GRAYSCALE
+    #       → Mask를 흑백 이미지로 읽습니다.
+    # ----------------------------------------------
+    mask = cv2.imread(
+        str(mask_path),
+        cv2.IMREAD_GRAYSCALE
+    )
+
+    # ----------------------------------------------
+    # ②-3. 이미지와 Mask가 정상적으로 열렸는지 확인
+    # ----------------------------------------------
+    if image is None:
+        raise FileNotFoundError(
+            image_path
+        )
+
+    if mask is None:
+        raise FileNotFoundError(
+            mask_path
+        )
+
+    # ----------------------------------------------
+    # ②-4. Mask를 흑백 2진 이미지로 변환
+    #
+    #       Mask 값 > 0 → 255 (흰색, 결함)
+    #       나머지      → 0   (검은색, 배경)
+    #
+    #       binary에는 결함 위치가 표시됩니다.
+    # ----------------------------------------------
+    binary = np.where(
+        mask > 0,
+        255,
+        0
+    ).astype(np.uint8)
+
+    # ----------------------------------------------
+    # ②-5. Mask에서 흰색 픽셀 위치 찾기
+    #
+    #       findNonZero()
+    #       → 값이 0이 아닌 픽셀의 좌표를 찾습니다.
+    # ----------------------------------------------
+    points = cv2.findNonZero(
+        binary
+    )
+
+    # ----------------------------------------------
+    # ②-6. 결함 영역이 없는 Mask인지 확인
+    # ----------------------------------------------
+    if points is None:
+        raise RuntimeError(
+            f"Mask가 비어 있습니다: {mask_path}"
+        )
+
+    # ----------------------------------------------
+    # ②-7. 결함 전체를 포함하는 사각형 계산
+    #
+    #       x, y : 사각형의 시작 위치
+    #       w    : 사각형의 너비
+    #       h    : 사각형의 높이
+    #
+    #       여러 흰색 픽셀이 있는 영역을
+    #       하나의 Bounding Rectangle로 묶습니다.
+    # ----------------------------------------------
+    x, y, w, h = cv2.boundingRect(
+        points
+    )
+
+    # ----------------------------------------------
+    # ②-8. 불량 이미지에서 해당 사각형 잘라내기
+    #
+    #       이 Patch에는 결함뿐 아니라
+    #       주변 픽셀도 포함될 수 있습니다.
+    # ----------------------------------------------
+    patch = image[
+        y:y + h,
+        x:x + w
+    ].copy()
+
+    # ----------------------------------------------
+    # ②-9. 같은 위치의 결함 Mask 잘라내기
+    #
+    #       이후 합성할 때 흰색 영역만
+    #       붙이는 데 사용합니다.
+    # ----------------------------------------------
+    patch_mask = binary[
+        y:y + h,
+        x:x + w
+    ].copy()
+
+    # ----------------------------------------------
+    # ②-10. 추출한 Patch와 Mask 반환
+    # ----------------------------------------------
+    return patch, patch_mask
+
+
+# ==================================================
+# ③ rotate_pair() — 결함 Patch와 Mask 함께 회전
+#
+#    입력:
+#    → patch : 결함 이미지 조각
+#    → mask  : 결함 위치 Mask
+#    → angle : 회전 각도
+#
+#    중요한 점:
+#    결함 이미지와 Mask를 같은 각도로 회전해야
+#    Mask의 흰 영역이 실제 결함 위치와 일치합니다.
+# ==================================================
+def rotate_pair(patch, mask, angle):
+
+    # ----------------------------------------------
+    # ③-1. Patch의 높이와 너비 확인
+    # ----------------------------------------------
+    height, width = patch.shape[:2]
+
+    # ----------------------------------------------
+    # ③-2. Patch의 중심점을 회전 중심으로 설정
+    # ----------------------------------------------
+    center = (
+        width / 2.0,
+        height / 2.0
+    )
+
+    # ----------------------------------------------
+    # ③-3. 회전 변환 행렬 생성
+    #
+    #       angle : 회전 각도
+    #       1.0   : 크기를 유지하는 배율
+    # ----------------------------------------------
+    matrix = cv2.getRotationMatrix2D(
+        center,
+        angle,
+        1.0,
+    )
+
+    # ----------------------------------------------
+    # ③-4. 결함 Patch 회전
+    #
+    #       INTER_LINEAR : 이미지 픽셀 보간
+    #       BORDER_REFLECT: 경계 픽셀 반사 처리
+    #
+    #       출력 크기는 원래 Patch 크기를 유지
+    # ----------------------------------------------
+    rotated_patch = cv2.warpAffine(
+        patch,
+        matrix,
+        (width, height),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_REFLECT,
+    )
+
+    # ----------------------------------------------
+    # ③-5. Mask도 같은 각도로 회전
+    #
+    #       INTER_NEAREST
+    #       → Mask의 결함 영역을 처리할 때 사용
+    #
+    #       borderValue=0
+    #       → 회전 후 빈 영역은 검은색 처리
+    # ----------------------------------------------
+    rotated_mask = cv2.warpAffine(
+        mask,
+        matrix,
+        (width, height),
+        flags=cv2.INTER_NEAREST,
+        borderValue=0,
+    )
+
+    # ----------------------------------------------
+    # ③-6. 회전한 Patch와 Mask 반환
+    # ----------------------------------------------
+    return rotated_patch, rotated_mask
+
+
+# ==================================================
+# ④ paste_patch() — 정상 이미지에 결함 합성
+#
+#    입력:
+#    → background  : 정상 병 이미지
+#    → patch       : 실제 결함 Patch
+#    → mask        : 결함 위치 Mask
+#    → rng         : 무작위 숫자 생성기
+#    → scale_range : 결함 크기 변경 범위
+#    → angle_range : 결함 회전 각도 범위
+#
+#    처리:
+#    → Patch 크기와 회전 각도 변경
+#    → 정상 병 이미지에서 붙일 위치 결정
+#    → Mask를 이용해 결함만 합성
+#
+#    반환:
+#    → result : 합성한 이미지
+#    → info   : 결함 위치·크기·각도 등의 정보
+# ==================================================
+def paste_patch(
+    background,
+    patch,
+    mask,
+    rng,
+    scale_range=(0.7, 1.2),
+    angle_range=(-15.0, 15.0),
+):
+
+    # ----------------------------------------------
+    # ④-1. 정상 이미지 복사
+    #
+    #       원본 background를 직접 수정하지 않고
+    #       복사본에 결함을 합성합니다.
+    # ----------------------------------------------
+    result = background.copy()
+
+    # ----------------------------------------------
+    # ④-2. 결함의 크기 배율과 회전 각도 선택
+    #
+    #       scale: 0.7 ~ 1.2
+    #       angle: -15도 ~ +15도
+    #
+    #       범위 안에서 무작위로 선택합니다.
+    # ----------------------------------------------
+    scale = rng.uniform(
+        *scale_range
+    )
+
+    angle = rng.uniform(
+        *angle_range
+    )
+
+    # ----------------------------------------------
+    # ④-3. 변경할 Patch 너비와 높이 계산
+    #
+    #       최소 크기는 4픽셀로 제한합니다.
+    # ----------------------------------------------
+    new_width = max(
+        4,
+        int(patch.shape[1] * scale)
+    )
+
+    new_height = max(
+        4,
+        int(patch.shape[0] * scale)
+    )
+
+    # ----------------------------------------------
+    # ④-4. Patch 크기 변경
+    #
+    #       INTER_LINEAR로 이미지 크기 조절
+    # ----------------------------------------------
+    patch = cv2.resize(
+        patch,
+        (new_width, new_height),
+        interpolation=cv2.INTER_LINEAR,
+    )
+
+    # ----------------------------------------------
+    # ④-5. Mask도 같은 크기로 변경
+    #
+    #       Patch와 Mask 크기가 같아야 합니다.
+    # ----------------------------------------------
+    mask = cv2.resize(
+        mask,
+        (new_width, new_height),
+        interpolation=cv2.INTER_NEAREST,
+    )
+
+    # ----------------------------------------------
+    # ④-6. 결함 Patch와 Mask 함께 회전
+    #
+    #       앞에서 만든 rotate_pair() 호출
+    # ----------------------------------------------
+    patch, mask = rotate_pair(
+        patch,
+        mask,
+        angle,
+    )
+
+    # ----------------------------------------------
+    # ④-7. 정상 이미지와 Patch의 크기 확인
+    # ----------------------------------------------
+    image_h, image_w = result.shape[:2]
+    patch_h, patch_w = patch.shape[:2]
+
+    # ----------------------------------------------
+    # ④-8. Patch가 정상 이미지보다 크면 중단
+    # ----------------------------------------------
+    if patch_w >= image_w or patch_h >= image_h:
+        raise RuntimeError(
+            "Defect Patch가 정상 이미지보다 큽니다."
+        )
+
+    # ----------------------------------------------
+    # ④-9. 결함을 붙일 X축 범위 설정
+    #
+    #       MVTec bottle은 제품이 중앙에 있으므로
+    #       교육용 Baseline에서는 중앙 영역 우선
+    #
+    #       x_min : 이미지 너비의 25% 위치
+    #       x_max : 이미지 너비의 75%에서
+    #               Patch 너비를 뺀 위치
+    # ----------------------------------------------
+    x_min = int(image_w * 0.25)
+
+    x_max = (
+        int(image_w * 0.75)
+        - patch_w
+    )
+
+    # ----------------------------------------------
+    # ④-10. 결함을 붙일 Y축 범위 설정
+    #
+    #        이미지 높이의 10% ~ 90% 영역 우선
+    # ----------------------------------------------
+    y_min = int(image_h * 0.10)
+
+    y_max = (
+        int(image_h * 0.90)
+        - patch_h
+    )
+
+    # ----------------------------------------------
+    # ④-11. 중앙 영역에 넣기 어려우면
+    #        전체 이미지 범위로 조정
+    # ----------------------------------------------
+    if x_max <= x_min:
+        x_min = 0
+        x_max = image_w - patch_w
+
+    if y_max <= y_min:
+        y_min = 0
+        y_max = image_h - patch_h
+
+    # ----------------------------------------------
+    # ④-12. 결함을 붙일 실제 위치 무작위 선택
+    #
+    #        x, y는 Patch의 왼쪽 위 좌표입니다.
+    # ----------------------------------------------
+    x = rng.randint(
+        x_min,
+        x_max
+    )
+
+    y = rng.randint(
+        y_min,
+        y_max
+    )
+
+    # ----------------------------------------------
+    # ④-13. 정상 이미지에서 합성 위치 잘라내기
+    #
+    #        ROI = Region Of Interest
+    #        → 결함이 붙을 이미지 영역
+    # ----------------------------------------------
+    roi = result[
+        y:y + patch_h,
+        x:x + patch_w,
+    ]
+
+    # ----------------------------------------------
+    # ④-14. Mask를 Alpha 값으로 변환
+    #
+    #        255 (흰색) → 1.0 : 결함 픽셀
+    #          0 (검정) → 0.0 : 정상 픽셀 유지
+    # ----------------------------------------------
+    alpha = (
+        mask.astype(np.float32)
+        / 255.0
+    )
+
+    # ----------------------------------------------
+    # ④-15. 경계가 너무 날카롭지 않도록 Blur
+    #
+    #        GaussianBlur로 결함 경계의
+    #        Alpha 값을 부드럽게 만듭니다.
+    # ----------------------------------------------
+    alpha = cv2.GaussianBlur(
+        alpha,
+        (3, 3),
+        0
+    )
+
+    # ----------------------------------------------
+    # ④-16. 컬러 이미지 계산용 차원 추가
+    #
+    #        (높이, 너비)
+    #              ↓
+    #        (높이, 너비, 1)
+    # ----------------------------------------------
+    alpha = alpha[..., None]
+
+    # ----------------------------------------------
+    # ④-17. 결함 Patch와 정상 ROI를 합성
+    #
+    #        alpha가 1에 가까운 곳
+    #        → 결함 Patch 비중이 큼
+    #
+    #        alpha가 0에 가까운 곳
+    #        → 정상 이미지 비중이 큼
+    # ----------------------------------------------
+    blended = (
+        patch.astype(np.float32) * alpha
+        + roi.astype(np.float32) * (1.0 - alpha)
+    )
+
+    # ----------------------------------------------
+    # ④-18. 합성 결과를 정상 이미지에 적용
+    #
+    #        픽셀값을 0~255로 제한한 뒤
+    #        uint8 이미지로 변환합니다.
+    # ----------------------------------------------
+    result[
+        y:y + patch_h,
+        x:x + patch_w,
+    ] = np.clip(
+        blended,
+        0,
+        255
+    ).astype(np.uint8)
+
+    # ----------------------------------------------
+    # ④-19. 결함 합성 정보 기록
+    #
+    #        x, y     : 붙인 위치
+    #        width    : Patch 너비
+    #        height   : Patch 높이
+    #        rotation : 회전 각도
+    #        scale    : 크기 변경 배율
+    # ----------------------------------------------
+    info = {
+        "x": x,
+        "y": y,
+        "width": patch_w,
+        "height": patch_h,
+        "rotation": round(angle, 2),
+        "scale": round(scale, 3),
+    }
+
+    # ----------------------------------------------
+    # ④-20. 합성 이미지와 Metadata 반환
+    # ----------------------------------------------
+    return result, info
+
+
+# ==================================================
+# ⑤ generate_synthetic_set() — 합성 데이터셋 생성
+#
+#    앞에서 만든 세 함수를 연결합니다.
+#
+#    → 정상 이미지와 불량 원본 목록 준비
+#    → 이미지들을 무작위로 선택
+#    → extract_patch()로 결함 추출
+#    → paste_patch()로 정상 이미지에 합성
+#    → 합성 이미지 PNG 저장
+#    → 생성 정보 Metadata CSV 저장
+#
+#    이 함수는 뒤의 69번 실행 파일에서 호출합니다.
+# ==================================================
+def generate_synthetic_set(
+    normal_dir,
+    defect_image_dir,
+    defect_mask_dir,
+    output_dir,
+    metadata_path,
+    defect_type,
+    count,
+    seed,
+    scale_range=(0.7, 1.2),
+    angle_range=(-15.0, 15.0),
+):
+
+    # ----------------------------------------------
+    # ⑤-1. 정상 이미지 목록 불러오기
+    #
+    #       이번 실습에서는 정상 이미지 10장
+    # ----------------------------------------------
+    normal_files = sorted(
+        Path(normal_dir).glob("*.png")
+    )
+
+    # ----------------------------------------------
+    # ⑤-2. 결함 원본 이미지 목록 불러오기
+    #
+    #       이번 실습에서는 broken_small 2장
+    # ----------------------------------------------
+    defect_files = sorted(
+        Path(defect_image_dir).glob("*.png")
+    )
+
+    # ----------------------------------------------
+    # ⑤-3. 정상 이미지가 존재하는지 확인
+    # ----------------------------------------------
+    if not normal_files:
+        raise RuntimeError(
+            "Normal Target 이미지가 없습니다."
+        )
+
+    # ----------------------------------------------
+    # ⑤-4. 결함 원본이 존재하는지 확인
+    # ----------------------------------------------
+    if not defect_files:
+        raise RuntimeError(
+            "Defect Source 이미지가 없습니다."
+        )
+
+    # ----------------------------------------------
+    # ⑤-5. 출력 경로를 Path 객체로 변환
+    # ----------------------------------------------
+    output_dir = Path(
+        output_dir
+    )
+
+    metadata_path = Path(
+        metadata_path
+    )
+
+    # ----------------------------------------------
+    # ⑤-6. 합성 이미지와 Metadata 저장 폴더 생성
+    # ----------------------------------------------
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    metadata_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    # ----------------------------------------------
+    # ⑤-7. 이전 합성 결과 이미지 정리
+    #
+    #       synthetic_*.png만 삭제합니다.
+    #
+    #       같은 폴더의 다른 파일은 유지합니다.
+    # ----------------------------------------------
+    for old_file in output_dir.glob(
+        "synthetic_*.png"
+    ):
+        old_file.unlink()
+
+    # ----------------------------------------------
+    # ⑤-8. 고정 Seed로 무작위 선택기 생성
+    #
+    #       같은 데이터와 설정을 사용하면
+    #       같은 선택 순서를 재현할 수 있습니다.
+    # ----------------------------------------------
+    rng = random.Random(
+        seed
+    )
+
+    # ----------------------------------------------
+    # ⑤-9. Metadata를 저장할 빈 리스트
+    # ----------------------------------------------
+    rows = []
+
+    # ----------------------------------------------
+    # ⑤-10. 요청한 count만큼 합성 반복
+    #
+    #        예: count=20이면 총 20회 반복
+    # ----------------------------------------------
+    for index in range(count):
+
+        # ------------------------------------------
+        # ⑤-11. 정상 이미지 1장 무작위 선택
+        # ------------------------------------------
+        normal_path = rng.choice(
+            normal_files
+        )
+
+        # ------------------------------------------
+        # ⑤-12. 결함 원본 1장 무작위 선택
+        # ------------------------------------------
+        defect_path = rng.choice(
+            defect_files
+        )
+
+        # ------------------------------------------
+        # ⑤-13. 결함 원본과 짝이 되는 Mask 경로
+        #
+        #        예:
+        #        012.png → 012_mask.png
+        # ------------------------------------------
+        mask_path = (
+            Path(defect_mask_dir)
+            / f"{defect_path.stem}_mask.png"
+        )
+
+        # ------------------------------------------
+        # ⑤-14. 정상 바탕 이미지 읽기
+        # ------------------------------------------
+        background = cv2.imread(
+            str(normal_path)
+        )
+
+        # ------------------------------------------
+        # ⑤-15. 정상 이미지 읽기 실패 확인
+        # ------------------------------------------
+        if background is None:
+            raise FileNotFoundError(
+                normal_path
+            )
+
+        # ------------------------------------------
+        # ⑤-16. extract_patch()로 실제 결함 추출
+        #
+        #        입력: 불량 원본 + Ground Truth Mask
+        #        출력: Patch + Patch Mask
+        # ------------------------------------------
+        patch, mask = extract_patch(
+            defect_path,
+            mask_path,
+        )
+
+        # ------------------------------------------
+        # ⑤-17. paste_patch()로 합성 불량 생성
+        #
+        #        → 결함 크기·회전 변경
+        #        → 붙일 위치 선택
+        #        → 정상 이미지에 결함 합성
+        #
+        #        출력:
+        #        synthetic : 합성 이미지
+        #        info      : 합성 위치·크기 정보
+        # ------------------------------------------
+        synthetic, info = paste_patch(
+            background,
+            patch,
+            mask,
+            rng,
+            scale_range=scale_range,
+            angle_range=angle_range,
+        )
+
+        # ------------------------------------------
+        # ⑤-18. 합성 이미지 파일명 생성
+        #
+        #        synthetic_000.png
+        #        synthetic_001.png
+        #        ...
+        # ------------------------------------------
+        output_name = (
+            f"synthetic_{index:03d}.png"
+        )
+
+        output_path = (
+            output_dir / output_name
+        )
+
+        # ------------------------------------------
+        # ⑤-19. 합성 이미지를 PNG 파일로 저장
+        # ------------------------------------------
+        cv2.imwrite(
+            str(output_path),
+            synthetic
+        )
+
+        # ------------------------------------------
+        # ⑤-20. 현재 합성 이미지의 Metadata 기록
+        #
+        #        → 합성 파일명
+        #        → 사용한 정상 이미지
+        #        → 사용한 결함 원본
+        #        → 결함 종류
+        #        → Seed
+        #        → 위치·크기·회전·배율
+        # ------------------------------------------
+        rows.append(
+            {
+                "synthetic_file": output_name,
+                "source_normal": normal_path.name,
+                "source_defect": defect_path.name,
+                "defect_type": defect_type,
+                "seed": seed,
+                **info,
+            }
+        )
+
+    # ----------------------------------------------
+    # ⑤-21. Metadata CSV 파일 열기
+    # ----------------------------------------------
+    with metadata_path.open(
+        "w",
+        newline="",
+        encoding="utf-8-sig",
+    ) as file:
+
+        # ------------------------------------------
+        # ⑤-22. 첫 번째 Metadata의 항목을
+        #        CSV 컬럼명으로 사용
+        # ------------------------------------------
+        writer = csv.DictWriter(
+            file,
+            fieldnames=rows[0].keys(),
+        )
+
+        # ------------------------------------------
+        # ⑤-23. CSV 컬럼명 작성
+        # ------------------------------------------
+        writer.writeheader()
+
+        # ------------------------------------------
+        # ⑤-24. 모든 합성 이미지의 Metadata 저장
+        # ------------------------------------------
+        writer.writerows(
+            rows
+        )
+
+    # ----------------------------------------------
+    # ⑤-25. 생성된 Metadata 목록 반환
+    #
+    #        호출한 69번 코드에서 결과 확인 가능
+    # ----------------------------------------------
+    return rows
+```
+
+### 의사코드
+
+```
+① 필요한 라이브러리 불러오기
+   - CSV 저장을 위한 csv를 불러온다.
+   - 무작위 선택을 위한 random을 불러온다.
+   - 파일 경로 관리를 위한 Path를 불러온다.
+   - 이미지 처리를 위한 OpenCV를 불러온다.
+   - 픽셀 계산을 위한 NumPy를 불러온다.
+
+
+② extract_patch() — 실제 결함 영역 추출
+
+   [이미지 준비]
+   - 실제 불량 이미지 1장을 읽는다.
+   - 해당 이미지의 Ground Truth Mask를 읽는다.
+   - 이미지나 Mask가 없으면 오류를 발생시킨다.
+
+   [결함 위치 찾기]
+   - Mask에서 결함 부분을 흰색으로 만든다.
+   - 흰색 픽셀들의 좌표를 찾는다.
+   - 결함을 포함하는 사각형 영역을 계산한다.
+
+   [결함 잘라내기]
+   - 불량 이미지에서 사각형 영역을 잘라낸다.
+   - Mask에서도 동일한 영역을 잘라낸다.
+
+   [결과 반환]
+   - 결함 Patch를 반환한다.
+   - Patch Mask를 반환한다.
+
+
+③ rotate_pair() — 결함과 Mask 함께 회전
+
+   [회전 준비]
+   - Patch의 크기를 확인한다.
+   - Patch 중심점을 찾는다.
+   - 지정한 각도로 회전 행렬을 만든다.
+
+   [회전 실행]
+   - 결함 Patch를 회전한다.
+   - Mask도 같은 각도로 회전한다.
+
+   [결과 반환]
+   - 회전된 Patch를 반환한다.
+   - 회전된 Mask를 반환한다.
+
+
+④ paste_patch() — 정상 병에 결함 합성
+
+   [정상 이미지 준비]
+   - 정상 이미지를 복사한다.
+
+   [결함 모양 변경]
+   - 결함의 크기 배율을 무작위로 정한다.
+   - 결함의 회전 각도를 무작위로 정한다.
+   - Patch와 Mask 크기를 함께 변경한다.
+   - rotate_pair()로 Patch와 Mask를 회전한다.
+
+   [붙일 위치 결정]
+   - 정상 이미지의 크기를 확인한다.
+   - 결함 Patch가 이미지보다 크면 오류를 발생시킨다.
+   - 이미지 중앙 부근에서 붙일 위치를 선택한다.
+   - 선택한 위치의 ROI를 가져온다.
+
+   [결함 합성]
+   - Mask를 0~1 사이 Alpha 값으로 바꾼다.
+   - GaussianBlur로 경계를 부드럽게 만든다.
+   - Alpha를 이용해 결함 Patch와 정상 ROI를 합성한다.
+   - 합성 결과를 정상 이미지에 적용한다.
+
+   [결과 반환]
+   - 합성 불량 이미지를 반환한다.
+   - 결함 위치, 크기, 회전, 배율 정보를 반환한다.
+
+
+⑤ generate_synthetic_set() — 합성 이미지 여러 장 생성
+
+   [입력 데이터 준비]
+   - 정상 이미지 목록을 읽는다.
+   - 불량 원본 이미지 목록을 읽는다.
+   - 필요한 이미지가 없으면 오류를 발생시킨다.
+
+   [저장 폴더 준비]
+   - 합성 이미지 저장 폴더를 생성한다.
+   - Metadata 저장 폴더를 생성한다.
+   - 이전 synthetic_*.png 파일을 정리한다.
+
+   [합성 반복]
+   - Seed를 고정하여 무작위 선택기를 준비한다.
+   - 요청한 count만큼 다음 작업을 반복한다.
+
+       1. 정상 이미지 1장 선택
+       2. 불량 원본 이미지 1장 선택
+       3. 해당 Ground Truth Mask 찾기
+       4. extract_patch()로 결함 추출
+       5. paste_patch()로 정상 이미지에 결함 합성
+       6. synthetic_000.png 형식으로 이미지 저장
+       7. 사용한 원본과 합성 조건을 Metadata에 기록
+
+   [Metadata 저장]
+   - CSV 파일을 연다.
+   - 컬럼명을 작성한다.
+   - 합성 이미지별 생성 정보를 저장한다.
+
+   [결과 반환]
+   - 생성한 Metadata 목록을 반환한다.
+
+   → Synthetic Defect 생성 기능 준비 완료
+   → 다음 69번 코드에서 호출하여 실제 생성
+```
+
+### 이번 코드에서 특히 중요한 부분
+
+```python
+patch, mask = extract_patch(
+    defect_path,
+    mask_path,
+)
+
+synthetic, info = paste_patch(
+    background,
+    patch,
+    mask,
+    rng,
+    scale_range=scale_range,
+    angle_range=angle_range,
+)
+```
+
+이 두 호출이 이번 실습의 핵심입니다.
+
+첫 번째 함수는 불량 이미지에서 결함을 추출하고, 두 번째 함수는 추출한 결함을 정상 이미지에 합성합니다.
+
+여기서 Patch를 잘라낼 때는 결함 주변 픽셀도 포함될 수 있지만, 합성할 때는 `Patch Mask`를 사용하여 실제 결함 영역을 중심으로 붙입니다.
+
+또한 중앙 근처에 무작위로 배치하는 현재 방식이 결함을 항상 병의 올바른 위치에 붙여 주는 것은 아닙니다. 따라서 뒤의 실습에서 **합성 이미지가 자연스러운지 직접 확인하는 품질 검사(QA)**가 필요합니다.
+
+핵심 정리: `day08_cutpaste_core.py`는 결함 추출, 회전, 합성, 여러 장의 데이터 생성을 담당하는 공통 함수 파일입니다. 다음 69번 `69_day08_make_cutpaste_defects.py`에서 이 기능을 호출하여 실제 합성 불량 이미지 20장을 생성합니다.
 
 ---
 
@@ -8171,6 +10627,21 @@ src/69_day08_make_cutpaste_defects.py
 작성합니다.
 
 ```python
+
+# ==================================================
+# ① 필요한 라이브러리와 공통 함수 불러오기
+#
+#    → Path : 파일과 폴더 경로 관리
+#
+#    day08_cutpaste_core에서 다음 함수 사용
+#    → generate_synthetic_set()
+#
+#    이 함수는 다음 작업을 수행합니다.
+#    → 실제 결함 Patch 추출
+#    → 정상 이미지에 결함 합성
+#    → 합성 이미지 여러 장 생성
+#    → 합성 정보 Metadata CSV 저장
+# ==================================================
 from pathlib import Path
 
 from day08_cutpaste_core import (
@@ -8178,38 +10649,315 @@ from day08_cutpaste_core import (
 )
 
 
-NORMAL_DIR = Path("samples/day08/cutpaste/normal")
+# ==================================================
+# ② 입력 / 출력 경로 설정
+#
+#    앞의 63번에서 준비한 실습 데이터를 사용합니다.
+#
+#    입력:
+#    → 정상 병 이미지 10장
+#    → 작은 파손 원본 이미지 2장
+#    → 해당 Ground Truth Mask 2장
+#
+#    출력:
+#    → Synthetic Defect 이미지 20장
+#    → 합성 과정 Metadata CSV
+# ==================================================
 
+# ----------------------------------------------
+# ②-1. 합성에 사용할 정상 병 이미지 폴더
+#
+#       정상 이미지 10장이 준비되어 있습니다.
+#
+#       이 정상 이미지 위에
+#       실제 파손 결함을 붙입니다.
+# ----------------------------------------------
+NORMAL_DIR = Path(
+    "samples/day08/cutpaste/normal"
+)
+
+
+# ----------------------------------------------
+# ②-2. 작은 파손 원본 데이터 폴더
+#
+#       내부에는 두 폴더가 있습니다.
+#
+#       images/
+#       → 실제 작은 파손 이미지 2장
+#
+#       masks/
+#       → 각 파손 위치의 Ground Truth Mask 2장
+# ----------------------------------------------
 DEFECT_ROOT = Path(
     "samples/day08/cutpaste/defect_source/broken_small"
 )
 
-OUTPUT_DIR = Path("outputs/day08/cutpaste/generated")
-METADATA_PATH = Path("reports/day08_defect_metadata.csv")
+
+# ----------------------------------------------
+# ②-3. 합성 불량 이미지 저장 폴더
+#
+#       synthetic_000.png
+#       synthetic_001.png
+#       ...
+#       synthetic_019.png
+# ----------------------------------------------
+OUTPUT_DIR = Path(
+    "outputs/day08/cutpaste/generated"
+)
 
 
+# ----------------------------------------------
+# ②-4. 합성 정보 Metadata CSV 저장 경로
+#
+#       각 합성 이미지에 대해 다음 정보 기록
+#       → 사용한 정상 이미지
+#       → 사용한 불량 원본
+#       → 결함 위치
+#       → 결함 크기·회전 각도·배율
+# ----------------------------------------------
+METADATA_PATH = Path(
+    "reports/day08_defect_metadata.csv"
+)
+
+
+# ==================================================
+# ③ Cut-Paste 합성 불량 이미지 20장 생성
+#
+#    generate_synthetic_set()을 호출합니다.
+#
+#    함수 내부 처리:
+#    1) 정상 이미지 1장 선택
+#    2) 작은 파손 이미지와 Mask 선택
+#    3) Mask를 이용하여 결함 Patch 추출
+#    4) 결함 크기와 회전 각도 변경
+#    5) 정상 병 이미지에 결함 붙이기
+#    6) Synthetic Defect 이미지 저장
+#    7) Metadata 기록
+#
+#    위 과정을 count=20만큼 반복합니다.
+#
+#    참고:
+#    정상 이미지와 불량 원본은 매번
+#    무작위로 선택하므로 같은 원본이
+#    여러 번 사용될 수 있습니다.
+# ==================================================
 rows = generate_synthetic_set(
+
+    # ------------------------------------------
+    # ③-1. 합성 바탕이 되는 정상 이미지 폴더
+    # ------------------------------------------
     normal_dir=NORMAL_DIR,
-    defect_image_dir=DEFECT_ROOT / "images",
-    defect_mask_dir=DEFECT_ROOT / "masks",
+
+    # ------------------------------------------
+    # ③-2. 실제 작은 파손 이미지 폴더
+    #
+    #       DEFECT_ROOT / "images"
+    # ------------------------------------------
+    defect_image_dir=(
+        DEFECT_ROOT / "images"
+    ),
+
+    # ------------------------------------------
+    # ③-3. 실제 결함 위치 Mask 폴더
+    #
+    #       DEFECT_ROOT / "masks"
+    # ------------------------------------------
+    defect_mask_dir=(
+        DEFECT_ROOT / "masks"
+    ),
+
+    # ------------------------------------------
+    # ③-4. 합성 이미지 저장 폴더
+    # ------------------------------------------
     output_dir=OUTPUT_DIR,
+
+    # ------------------------------------------
+    # ③-5. Metadata CSV 저장 경로
+    # ------------------------------------------
     metadata_path=METADATA_PATH,
+
+    # ------------------------------------------
+    # ③-6. 합성할 결함 종류
+    #
+    #       이번 본 실습은 broken_small 사용
+    # ------------------------------------------
     defect_type="broken_small",
+
+    # ------------------------------------------
+    # ③-7. 생성할 합성 불량 이미지 수
+    #
+    #       총 20장 생성
+    # ------------------------------------------
     count=20,
+
+    # ------------------------------------------
+    # ③-8. 무작위 선택 Seed 고정
+    #
+    #       동일한 입력 데이터와 설정에서
+    #       합성 결과를 재현하기 위한 값
+    # ------------------------------------------
     seed=42,
+
+    # ------------------------------------------
+    # ③-9. 결함 Patch 크기 변경 범위
+    #
+    #       0.7 → 원래 크기의 70%
+    #       1.2 → 원래 크기의 120%
+    #
+    #       범위 안에서 무작위로 선택
+    # ------------------------------------------
     scale_range=(0.7, 1.2),
+
+    # ------------------------------------------
+    # ③-10. 결함 Patch 회전 각도 범위
+    #
+    #        -15도 ~ +15도
+    #
+    #        범위 안에서 무작위로 선택
+    # ------------------------------------------
     angle_range=(-15.0, 15.0),
 )
 
 
+# ==================================================
+# ④ 실행 결과 확인
+#
+#    → 합성한 결함 종류 출력
+#    → 실제 생성한 이미지 수 출력
+#    → 합성 이미지 저장 경로 출력
+#    → Metadata CSV 저장 경로 출력
+#
+#    rows에는 생성한 이미지 20장의
+#    Metadata 정보가 들어 있습니다.
+# ==================================================
+
+# ----------------------------------------------
+# ④-1. 실행 결과 제목 출력
+# ----------------------------------------------
 print("=" * 70)
 print("DAY08 CUT-PASTE DEFECT GENERATION")
 print("=" * 70)
-print("Defect Type      : broken_small")
-print("Generated Images :", len(rows))
-print("Output           :", OUTPUT_DIR)
-print("Metadata         :", METADATA_PATH)
+
+
+# ----------------------------------------------
+# ④-2. 합성한 결함 종류 출력
+# ----------------------------------------------
+print(
+    "Defect Type      : broken_small"
+)
+
+
+# ----------------------------------------------
+# ④-3. 생성한 이미지 수 출력
+#
+#       len(rows)
+#       → 생성 결과 Metadata 개수
+#       → 정상 완료 시 20
+# ----------------------------------------------
+print(
+    "Generated Images :",
+    len(rows)
+)
+
+
+# ----------------------------------------------
+# ④-4. 합성 이미지 저장 위치 출력
+# ----------------------------------------------
+print(
+    "Output           :",
+    OUTPUT_DIR
+)
+
+
+# ----------------------------------------------
+# ④-5. Metadata CSV 저장 위치 출력
+# ----------------------------------------------
+print(
+    "Metadata         :",
+    METADATA_PATH
+)
 ```
+
+### 의사코드
+
+```
+① 필요한 라이브러리와 공통 함수 불러오기
+   - 파일 경로 관리를 위한 Path를 불러온다.
+   - day08_cutpaste_core에서
+     generate_synthetic_set() 함수를 불러온다.
+
+   → 앞에서 작성한 결함 합성 기능을 재사용한다.
+
+
+② 입력 / 출력 경로 설정
+
+   [정상 이미지]
+   - Cut-Paste에 사용할 정상 병 폴더를 지정한다.
+   - 정상 이미지 10장을 사용한다.
+
+   [불량 이미지와 Mask]
+   - broken_small 결함 원본 폴더를 지정한다.
+   - 실제 작은 파손 이미지 2장을 사용한다.
+   - 해당 Ground Truth Mask 2장을 사용한다.
+
+   [출력 경로]
+   - 합성 이미지를 저장할 폴더를 지정한다.
+   - Metadata CSV 저장 경로를 지정한다.
+
+
+③ generate_synthetic_set() 실행
+
+   [입력 설정]
+   - 정상 이미지 폴더를 전달한다.
+   - 작은 파손 이미지 폴더를 전달한다.
+   - Ground Truth Mask 폴더를 전달한다.
+
+   [합성 조건 설정]
+   - 결함 종류를 broken_small로 지정한다.
+   - 생성 개수를 20장으로 설정한다.
+   - Seed를 42로 설정한다.
+   - 결함 크기 배율을 0.7~1.2로 설정한다.
+   - 결함 회전 범위를 -15도~+15도로 설정한다.
+
+   [함수 내부에서 반복하는 작업]
+
+   다음 과정을 20회 반복한다.
+
+     1. 정상 이미지 1장을 무작위 선택한다.
+
+     2. 작은 파손 이미지 1장을 무작위 선택한다.
+
+     3. 해당 Ground Truth Mask를 찾는다.
+
+     4. Mask를 이용해 실제 결함 Patch를 추출한다.
+
+     5. 결함 Patch의 크기와 회전 각도를 변경한다.
+
+     6. 정상 이미지에서 붙일 위치를 선택한다.
+
+     7. 정상 이미지에 결함 Patch를 합성한다.
+
+     8. 합성 불량 이미지를 PNG 파일로 저장한다.
+
+     9. 사용한 이미지와 합성 조건을 기록한다.
+
+   [결과 저장]
+   - 합성 불량 이미지 20장을 저장한다.
+   - 이미지별 Metadata를 CSV 파일로 저장한다.
+   - Metadata 목록을 rows로 반환한다.
+
+
+④ 실행 결과 확인
+   - DAY08 CUT-PASTE DEFECT GENERATION을 출력한다.
+   - 결함 종류 broken_small을 출력한다.
+   - 생성한 이미지 수를 출력한다.
+   - 합성 이미지 저장 경로를 출력한다.
+   - Metadata CSV 저장 경로를 출력한다.
+
+   → Synthetic Defect 20장 생성 완료
+   → 다음 단계에서 실제 이미지와 품질 확인
+```
+
 
 실행합니다.
 
@@ -8240,7 +10988,7 @@ Metadata 저장 완료
 
 여기서 확인한 것은 합성 이미지 생성이 정상적으로 완료되었다는 것입니다. 실제 불량처럼 자연스럽게 만들어졌는지는 다음 단계에서 이미지를 직접 확인합니다.
 
-### ## 코드의 전체 흐름
+### 코드의 전체 흐름
 
 이번 코드는 41번에서 만든 `generate_synthetic_set()` 함수를 실제 데이터에 적용하는 실행 코드입니다. 함수 내부에서는 정상 이미지와 불량 Source를 선택하고, 대응하는 Mask로 결함 Patch를 추출한 뒤 크기·회전·위치를 변경하여 합성하고 Metadata까지 저장합니다.
 
@@ -8284,79 +11032,6 @@ Synthetic 이미지 저장
         ↓
 생성 결과 출력
 ```
-
-### 의사코드
-
-```
-1. 정상 이미지가 있는 폴더를 지정한다.
-
-2. broken_small 불량 이미지가 있는
-   폴더를 지정한다.
-
-3. Ground Truth Mask가 있는
-   폴더를 지정한다.
-
-4. Synthetic 이미지를 저장할
-   폴더를 지정한다.
-
-5. Metadata를 저장할
-   CSV 파일 위치를 지정한다.
-
-6. generate_synthetic_set()을 실행한다.
-
-
-7. 정상 이미지 중 한 장을 선택한다.
-
-8. 실제 불량 이미지 중 한 장을 선택한다.
-
-9. 선택한 불량 이미지에 대응하는
-   Ground Truth Mask를 찾는다.
-
-10. Mask를 이용하여
-    실제 결함 Patch를 추출한다.
-
-11. 결함 Patch의 크기를 변경한다.
-
-12. 결함 Patch를 회전한다.
-
-13. 정상 이미지에서
-    Patch를 붙일 위치를 정한다.
-
-14. 정상 이미지에
-    결함 Patch를 합성한다.
-
-15. 완성된 Synthetic Defect를
-    이미지 파일로 저장한다.
-
-16. 다음 정보를 Metadata에 기록한다.
-
-    - 사용한 Normal 이미지
-    - 사용한 Defect 이미지
-    - Defect Type
-    - 위치
-    - 크기
-    - 회전
-    - Scale
-
-17. 같은 과정을 반복하여
-    총 20장을 생성한다.
-
-18. 생성된 이미지 수와
-    저장 위치를 화면에 출력한다.
-```
-
-핵심만 기억합니다.
-
-```
-41번
-→ Cut-Paste 기능을 만듦
-
-42번
-→ 그 기능을 실제로 실행
-→ Synthetic Defect 20장 생성
-```
-
-이번 단계의 목표는 실제 불량 Patch를 이용해 합성 불량 데이터를 만들어 보는 것입니다. 생성 품질이 좋은지는 다음 단계에서 직접 확인합니다.
 
 ---
 
@@ -8439,8 +11114,6 @@ Patch 경계가 눈에 띔
 outputs/day08/cutpaste/generated
 ```
 
-![[{6569837F-6ED2-4C90-9D92-4F5CA7D7F7EC}.png]]
-
 오늘은 모든 이미지를 정밀하게 평가하는 것이 아니라 대표 이미지 5장 정도를 확인하면 충분합니다.
 
 ### 생성된 Synthetic Defect의 품질을 확인합니다
@@ -8496,13 +11169,34 @@ Patch 경계가 강하게 보임
 
 예를 들어 다음과 같이 판단해 볼 수 있습니다.
 
+![[{6569837F-6ED2-4C90-9D92-4F5CA7D7F7EC}.png]]
+
+### 합성 불량 이미지 20장 QA 평가
+
 |파일|Keep / Reject|간단한 이유|
 |---|---|---|
-|`synthetic_000.png`|Reject|결함이 너무 크고 길게 퍼져 있어 `broken_small`로 보기 어려움|
-|`synthetic_004.png`|Keep 후보|비교적 작은 영역에 결함이 위치하며 전체 크기도 상대적으로 작음|
-|`synthetic_007.png`|Reject|결함 영역이 크고 밝은 경계가 강하게 보여 합성 느낌이 큼|
-|`synthetic_013.png`|Keep 후보|결함이 비교적 국소적으로 나타나고 크기도 상대적으로 작음|
-|`synthetic_017.png`|Keep 후보|다른 결과보다 결함 크기가 작고 한 영역에 모여 있음|
+|`synthetic_000.png`|Reject|결함이 크고 길게 퍼져 있어 작은 파손으로 보기 어려움|
+|`synthetic_001.png`|Reject|긴 결함 조각이 병 입구를 가로질러 부자연스러움|
+|`synthetic_002.png`|Reject|결함이 중앙에서 오른쪽으로 길게 이어져 합성 흔적이 뚜렷함|
+|`synthetic_003.png`|Reject|결함이 병 안쪽에 떠 있는 조각처럼 보여 자연스럽지 않음|
+|`synthetic_004.png`|Keep 후보|결함이 상대적으로 작고 한 영역에 모여 있어 추가 확인 가능|
+|`synthetic_005.png`|Reject|결함 조각이 병 중앙에 따로 붙은 것처럼 보여 부자연스러움|
+|`synthetic_006.png`|Reject|결함이 크고 밝은 부분이 두드러져 합성 느낌이 강함|
+|`synthetic_007.png`|Reject|결함 영역이 크고 밝은 경계가 강하게 나타남|
+|`synthetic_008.png`|Reject|긴 결함 조각이 병 입구 위쪽을 가로질러 나타남|
+|`synthetic_009.png`|Reject|결함이 넓게 퍼져 있고 실제 작은 파손보다 크게 보임|
+|`synthetic_010.png`|Reject|결함이 길게 돌출되고 밝은 합성 부분이 과도하게 나타남|
+|`synthetic_011.png`|Reject|반원 형태의 큰 결함이 병 입구를 가로질러 부자연스러움|
+|`synthetic_012.png`|Reject|결함이 병 외곽까지 돌출되고 합성 영역이 지나치게 큼|
+|`synthetic_013.png`|Keep 후보|결함이 병 아래쪽 한 영역에 모여 있어 추가 확인 가능|
+|`synthetic_014.png`|Reject|커다란 결함 조각이 병 입구 상단을 넓게 가로지름|
+|`synthetic_015.png`|Reject|결함이 병 아래쪽 가장자리를 따라 길게 퍼져 있음|
+|`synthetic_016.png`|Reject|결함 영역이 크고 밝은 부분이 강해 합성 흔적이 뚜렷함|
+|`synthetic_017.png`|Keep 후보|결함이 비교적 작고 국소적으로 나타나 추가 확인 가능|
+|`synthetic_018.png`|Reject|결함이 크게 돌출되어 작은 파손으로 보기 어려움|
+|`synthetic_019.png`|Reject|결함이 중앙에 크게 합성되어 실제 파손 위치와 어색함|
+
+![[Pasted image 20261031214122.png]]
 
 여기서 `Keep 후보`라고 표현하는 이유가 중요합니다.
 
@@ -8534,7 +11228,7 @@ Keep / Reject 결정
 
 다음과 같이 짧게 작성하면 충분합니다.
 
-```
+```markdown
 # Day08 Synthetic Quality Check
 
 ## 확인 대상
@@ -8616,65 +11310,55 @@ Keep / Reject 판단
 
 # 45. Domain Gap을 이해하고 PART6을 마무리합니다
 
-Synthetic Defect가 자연스럽게 보여도 실제 불량과 완전히 같지는 않을 수 있습니다.
+앞에서 Cut-Paste 방식으로 **합성 불량 이미지 20장**을 생성했습니다.
 
-실제 데이터와 합성 데이터 사이의 이러한 차이를 `Domain Gap`이라고 합니다.
+하지만 실제 이미지를 확인해 보니 결함이 지나치게 크거나, 병 입구와 어색하게 연결되어 실제 파손처럼 보이지 않는 경우가 많았습니다.
 
-```
-Real Defect
-        VS
-Synthetic Defect
+육안 품질 검사(QA) 결과, **20장 중 3장은 Keep 후보, 17장은 Reject**로 분류했습니다. Keep 후보도 실제 학습에 사용하기 전에 추가 확인이 필요합니다.
 
-차이가 날 수 있는 요소
+## Domain Gap이란 무엇인가요?
 
-조명
-질감
-경계
-색상
-그림자
-결함 위치
-결함 크기
-카메라 노이즈
-```
+**Domain Gap은 실제 데이터(Real Data)와 합성 데이터(Synthetic Data) 사이에 존재하는 차이**를 의미합니다.
 
-따라서 합성데이터는:
+예를 들어 실제 병의 파손은 제품의 표면과 자연스럽게 연결되지만, 합성한 결함은 별도의 조각을 붙인 것처럼 보일 수 있습니다.
+
+또한 결함의 크기, 위치, 색상, 질감, 조명, 그림자 등이 실제 불량과 다르게 나타날 수 있습니다.
+
+이러한 차이가 크면 합성 이미지로 학습한 AI가 **실제 불량 이미지에서는 기대한 만큼 잘 작동하지 않을 가능성**이 있습니다.
+
+따라서 합성 이미지는 만들어졌다는 이유만으로 바로 학습 데이터에 추가해서는 안 됩니다.
+
+## 이번 PART6에서 무엇을 배웠나요?
 
 ```
-생성
-        ↓
-품질 확인
-        ↓
-사용 가능한 데이터 선별
-        ↓
-필요한 경우
-학습·검사 데이터 보강에 활용
+실제 작은 파손 이미지 + Ground Truth Mask
+                  ↓
+           실제 결함 영역 추출
+                  ↓
+          정상 병 이미지에 합성
+                  ↓
+          합성 불량 이미지 20장
+                  ↓
+             육안 품질 검사
+                  ↓
+       Keep 후보 3장 / Reject 17장
+                  ↓
+       실제 불량과의 차이 확인
+                  ↓
+       사용 가능 여부 추가 검토
 ```
 
-하는 순서로 다루는 것이 중요합니다.
+이번 실습을 통해 **합성 데이터를 생성하는 기술뿐 아니라, 생성한 데이터의 품질을 평가하는 과정도 중요하다**는 것을 확인했습니다.
 
-이번 PART6에서는 다음 흐름을 경험했습니다.
+다만 이번 QA는 이미지의 자연스러움을 육안으로 평가한 것이며, 합성 데이터를 AI 학습에 추가했을 때 실제 검출 성능이 향상되는지까지 검증한 것은 아닙니다.
 
-```
-불량 데이터 부족
-        ↓
-실제 결함 + Ground Truth Mask
-        ↓
-Defect Patch 추출
-        ↓
-정상 이미지에 Cut-Paste
-        ↓
-Synthetic Defect 생성
-        ↓
-Metadata 기록
-        ↓
-품질 확인
-        ↓
-사용 가능 여부 판단
-```
+### PART6 핵심 정리
 
-> Synthetic Data는 많이 만드는 것보다, 실제 데이터와 얼마나 비슷하고 사용할 만한 품질인지 확인하는 과정이 중요합니다.
+> **합성 데이터는 많이 생성하는 것보다 실제 데이터와 얼마나 비슷하고, 학습에 사용할 만큼 품질이 좋은지 확인하는 것이 중요합니다.**
 
-VAE, GAN, Diffusion, 3D Graphics를 이용한 다양한 합성 방법과 **Synthetic Data를 실제 학습에 추가했을 때 성능이 어떻게 달라지는지 비교하는 과정은 교과11에서 더 본격적으로 다룹니다.**
+이번에는 실제 결함을 잘라 붙이는 간단한 Cut-Paste 방식을 실습했습니다.
+
+이후 **교과 11에서는 VAE·GAN·Diffusion·3D Graphics 등의 합성 데이터 생성 방법**을 더 깊이 다루고, 합성 데이터를 AI 학습에 추가했을 때 실제 성능이 어떻게 달라지는지도 비교합니다.
 
 ---
 
